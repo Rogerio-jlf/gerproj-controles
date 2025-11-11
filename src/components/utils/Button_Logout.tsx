@@ -3,7 +3,7 @@
 import { useFilters } from '@/context/FiltersContext';
 import { useRouter } from 'next/navigation';
 import { IoLogOut } from 'react-icons/io5';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 // Componente funcional para o botão de logout
 export function ButtonLogout() {
@@ -15,7 +15,7 @@ export function ButtonLogout() {
   const handleLogout = () => {
     logout(); // Realiza o logout do usuário
     clearFilters(); // Limpa os filtros aplicados
-    router.push('/login'); // Redireciona o usuário para a página de login
+    router.push('/paginas/login'); // Redireciona o usuário para a página de login
   };
 
   // Renderiza o botão de logout com estilos aprimorados

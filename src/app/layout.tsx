@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Kodchasan } from 'next/font/google';
-import { ClientProviders } from '../app/ClientProvider'; // importe correto
+import { ClientProviders } from '../app/ClientProvider';
 import './globals.css';
 
 const kodchasan = Kodchasan({
@@ -9,7 +9,6 @@ const kodchasan = Kodchasan({
   weight: ['400', '500', '600', '700'],
 });
 
-// ✅ Export de metadata (sem themeColor)
 export const metadata: Metadata = {
   title: 'Solutii - Dashboard Cliente',
   description: 'Painel de controle para clientes da Solutii',
@@ -30,7 +29,6 @@ export const metadata: Metadata = {
   },
 };
 
-// ✅ Novo export para o tema da barra de status do navegador
 export const viewport: Viewport = {
   themeColor: '#ffffff',
 };

@@ -1,7 +1,6 @@
-import Background from '../../components/login/Background';
-import LoginForm from '../../components/login/LoginForm';
-import LogoHeader from '../../components/login/LogoHeader';
-import './style_login.css';
+import Background from '../../../components/login/Background';
+import LoginForm from '../../../components/login/LoginForm';
+import LogoHeader from '../../../components/login/LogoHeader';
 
 export default function LoginPage() {
   return (

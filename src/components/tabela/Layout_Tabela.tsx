@@ -1,9 +1,9 @@
 'use client';
 
 import { ReactNode, useEffect, useState } from 'react';
-import MobileHeader from '../Mobile_Header';
-import ProtecaoRotas from '../ProtecaoRotas';
-import Sidebar from '../Sidebar';
+import MobileHeader from '../utils/Mobile_Header';
+import ProtecaoRotas from '../utils/ProtecaoRotas';
+import Sidebar from '../utils/Sidebar';
 
 // Define as props esperadas pelo componente LayoutTabela.
 interface LayoutProps {

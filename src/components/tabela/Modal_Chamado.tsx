@@ -30,7 +30,7 @@ import {
 import { formatarCodString } from '../../formatters/formatar-numeros';
 import { corrigirTextoCorrompido } from '../../formatters/formatar-texto-corrompido';
 import { removerAcentos } from '../../formatters/remover-acentuacao';
-import { LoadingButton } from '../Loading';
+import { LoadingButton } from '../utils/Loading_Button';
 import { TableRowProps } from './Colunas_Tabela';
 
 interface ModalDataProps {

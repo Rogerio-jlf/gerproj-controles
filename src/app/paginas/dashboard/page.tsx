@@ -3,14 +3,13 @@
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect } from 'react';
-import './style_dashboard.css';
 
 // components
 import { useFilters } from '@/context/FiltersContext';
-import ContainerHoraRecursoHoraApontada from '../../components/dashboard/Container_Cards_Graficos';
-import DashboardLayout from '../../components/dashboard/Layout_Dashboard';
-import ContainerCardsMetricas from '../../components/dashboard/metricas/Container_Cards';
-import Filtros from '../../components/Filtros';
+import ContainerHoraRecursoHoraApontada from '../../../components/dashboard/Container_Cards_Graficos';
+import DashboardLayout from '../../../components/dashboard/Layout_Dashboard';
+import ContainerCardsMetricas from '../../../components/dashboard/metricas/Container_Cards';
+import Filtros from '../../../components/utils/Filtros';
 
 export default function DashboardPage() {
   const { isLoggedIn, isAdmin, codCliente } = useAuth();
@@ -20,7 +19,7 @@ export default function DashboardPage() {
   // Redireciona para a página de login se o usuário não estiver logado
   useEffect(() => {
     if (!isLoggedIn) {
-      router.push('/login');
+      router.push('/paginas/login');
     }
   }, [isLoggedIn, router]);
 

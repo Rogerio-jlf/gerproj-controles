@@ -4,8 +4,8 @@
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { ReactNode, useEffect, useState } from 'react';
-import MobileHeader from '../Mobile_Header';
-import Sidebar from '../Sidebar';
+import MobileHeader from '../utils/Mobile_Header';
+import Sidebar from '../utils/Sidebar';
 
 interface LayoutProps {
   children: ReactNode;

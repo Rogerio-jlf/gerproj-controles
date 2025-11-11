@@ -1,7 +1,7 @@
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { IsLoggedIn } from '../components/IsLoggedIn';
+import { IsLoggedIn } from '../utils/IsLoggedIn';
 
 export default function ProtecaoRotas({
   children,
@@ -18,7 +18,7 @@ export default function ProtecaoRotas({
 
     if (!isLoggedIn) {
       console.log('Usuário não logado, redirecionando para /login');
-      router.push('/login');
+      router.push('/paginas/login');
       return;
     }
 

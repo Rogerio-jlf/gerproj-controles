@@ -1,6 +1,6 @@
 
 # ========================================
-# API ORDENS-SERVIÇO
+# API - ORDENS-SERVIÇO
 # ========================================
 
 ### Buscar todas as OS's com (admin)
@@ -15,7 +15,7 @@ GET http://localhost:3000/api/ordens-servico?isAdmin=true&mes=11&ano=2025&codCli
 # ===============================================================================================================================================
 
 # ========================================
-# API HRS-CONTRATADAS-HRS-EXECUTADAS
+# API - HRS-CONTRATADAS-HRS-EXECUTADAS
 # ========================================
 
 ### Buscar todas as OS's com (admin)
@@ -27,5 +27,13 @@ GET http://localhost:3000/api/hrs-contratadas-hrs-executadas?isAdmin=true&mes=11
 ### Buscar todas as OS's com (admin) e filtra por codCliente e codRecurso
 GET http://localhost:3000/api/hrs-contratadas-hrs-executadas?isAdmin=true&mes=11&ano=2025&codClienteFilter=120&codRecursoFilter=122
 
+
+# ===============================================================================================================================================
+
+# ========================================
+# API - TABELA
+# ========================================
+### Buscar todos os dados da tabela com (admin)
+GET http://localhost:3000/api/tabela?isAdmin=true&mes=11&ano=2025
 
 # ===============================================================================================================================================

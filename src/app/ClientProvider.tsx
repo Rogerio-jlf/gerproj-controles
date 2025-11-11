@@ -15,7 +15,7 @@ export function ClientProviders({ children }: { children: ReactNode }) {
       <AuthProvider>
         <FiltersProvider>
           {children}
-          <Toaster 
+          <Toaster
             position="top-center"
             containerClassName="!z-[9999]"
             toastOptions={{

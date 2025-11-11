@@ -11,7 +11,7 @@ import { corrigirTextoCorrompido } from '../../formatters/formatar-texto-corromp
 import { ColumnDef } from '@tanstack/react-table';
 import { Clock } from 'lucide-react';
 import { FaCheckCircle, FaClock, FaTimesCircle } from 'react-icons/fa';
-import { TooltipTabela } from '../Tooltip';
+import { TooltipTabela } from '../utils/Tooltip';
 
 // Define o tipo das propriedades de cada linha da tabela
 export type TableRowProps = {

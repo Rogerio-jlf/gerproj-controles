@@ -56,13 +56,13 @@ export default function LoginForm() {
 
         if (userData.isAdmin) {
           console.log('Redirecionando para dashboard (admin)');
-          await router.push('/dashboard');
+          await router.push('/paginas/dashboard');
         } else if (userData.codCliente) {
           console.log('Redirecionando para dashboard (cliente)');
-          await router.push('/dashboard');
+          await router.push('/paginas/dashboard');
         } else if (userData.codRecurso) {
           console.log('Redirecionando para tabela chamados (recurso)');
-          await router.push('/testes/tabela-chamados-abertos');
+          await router.push('/paginas/tabela-chamados-abertos');
         } else {
           console.log('Nenhuma permissão encontrada:', userData);
           setError('Usuário autenticado, mas sem permissões definidas.');
