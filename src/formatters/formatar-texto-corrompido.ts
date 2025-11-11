@@ -1,0 +1,87 @@
+// export function corrigirTextoCorrompido(texto: string | null | undefined): string {
+//   if (!texto) return '';
+
+//   try {
+//     // Converte texto que está com codificação errada (UTF-8 como Latin1)
+//     return decodeURIComponent(escape(texto));
+//   } catch {
+//     return texto;
+//   }
+// }
+
+
+/**
+ * Corrige textos corrompidos por encoding (UTF-8 lido como ISO-8859-1 / WIN1252)
+ * Detecta automaticamente se o texto parece corrompido.
+ *
+ * Exemplo: "DivergÃªncia no estoque" → "Divergência no estoque"
+ */
+export function corrigirTextoCorrompido(texto: string | null | undefined): string {
+  if (!texto) return '';
+
+  // Se o texto não tiver caracteres suspeitos, retorna como está
+  const suspeitos = /[ÃãÂâÊêÔôÛûÇç©§�]/;
+  if (!suspeitos.test(texto)) return texto;
+
+  try {
+    // Primeira tentativa — corrigir encoding UTF-8 lido como Latin1
+    const corrigido = decodeURIComponent(escape(texto));
+
+    // Se após correção ainda tiver caracteres estranhos, faz substituições manuais
+    if (/�/.test(corrigido) || /Ã|Â|Ê|Ô|Û/.test(corrigido)) {
+      return corrigirManual(corrigido);
+    }
+
+    return corrigido;
+  } catch {
+    // Fallback em caso de erro
+    return corrigirManual(texto);
+  }
+}
+
+/**
+ * Substitui manualmente caracteres corrompidos comuns.
+ * Útil quando o decodeURIComponent falha parcialmente.
+ */
+function corrigirManual(texto: string): string {
+  const mapa: Record<string, string> = {
+    'Ã¡': 'á',
+    'Ã ': 'à',
+    'Ã¢': 'â',
+    'Ã£': 'ã',
+    'Ãª': 'ê',
+    'Ã©': 'é',
+    'Ã¨': 'è',
+    'Ã§': 'ç',
+    'Ã³': 'ó',
+    'Ã´': 'ô',
+    'Ãº': 'ú',
+    'Ã¼': 'ü',
+    'Ã“': 'Ó',
+    'Ã‰': 'É',
+    'Ã€': 'À',
+    'ÃŠ': 'Ê',
+    'Ã‡': 'Ç',
+    'Ã': 'Á',
+    'â€“': '–',
+    'â€”': '—',
+    'â€œ': '"',
+    'â€�': '"',
+    'â€˜': "'",
+    'â€™': "'",
+    'â€¢': '•',
+    'â€¦': '…',
+    'Âº': 'º',
+    'Âª': 'ª',
+    'Â°': '°',
+    'Â': '',
+    '�': '', // remove replacement character
+  };
+
+  let corrigido = texto;
+  for (const [errado, certo] of Object.entries(mapa)) {
+    corrigido = corrigido.replaceAll(errado, certo);
+  }
+
+  return corrigido;
+}

@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model chamados {
+  cod_chamado       String    @id @db.VarChar
+  data_chamado      String?   @db.VarChar
+  hora_chamado      String?   @db.VarChar
+  data_hora_chamado DateTime? @db.Timestamp(6)
+  conclusao_chamado String?   @db.VarChar
+  status_chamado    String?   @db.VarChar
+  dtenvio_chamado   DateTime? @db.Timestamp(6)
+  cod_recurso       String?   @db.VarChar
+  nome_recurso      String?   @db.VarChar
+  cod_cliente       String?   @db.VarChar
+  nome_cliente      String?   @db.VarChar
+  razao_cliente     String?   @db.VarChar
+  assunto_chamado   String?   @db.VarChar
+  email_chamado     String?   @db.VarChar
+  prior_chamado     String?   @db.VarChar
+  cod_classificacao String?   @db.VarChar
+  qtd_limmes_tarefa Float?    @db.Real
+  dat_load          DateTime? @db.Timestamp(6)
+
+  apontamentos chamados_apontamentos[] @relation("ChamadoApontamentos")
+}
+
+model chamados_apontamentos {
+  chamado_os    String?   @db.VarChar
+  cod_os        String    @id @db.VarChar
+  dtini_os      String?   @db.VarChar
+  hrini_os      String?   @db.VarChar
+  hrfim_os      String?   @db.VarChar
+  dthrini_apont DateTime? @db.Timestamp(6)
+  dthrfim_apont DateTime? @db.Timestamp(6)
+  respcli_os    String?   @db.VarChar
+  obs           String?   @db.VarChar
+  codrec_os     String?   @db.VarChar
+  cod_cliente   String?   @db.VarChar
+  limmes_tarefa Float?    @db.Real
+  dat_load      DateTime? @db.Timestamp(6)
+
+  chamado chamados? @relation("ChamadoApontamentos", fields: [chamado_os], references: [cod_chamado])
+}
+
+model Apontamentos {
+  id             String    @id @db.Uuid
+  chamado_os     String?   @db.VarChar
+  cod_os         String?   @db.VarChar
+  dtini_os       String?   @db.VarChar
+  hrini_os       String?   @db.VarChar
+  hrfim_os       String?   @db.VarChar
+  dthrini_apont  DateTime? @db.Timestamp(6)
+  dthrfim_apont  DateTime? @db.Timestamp(6)
+  respcli_os     String?   @db.VarChar
+  obs            String?   @db.VarChar
+  codrec_os      String?   @db.VarChar
+  cod_cliente    String?   @db.VarChar
+  limmes_tarefa  Float?    @db.Real
+  dat_load       DateTime? @db.Timestamp(6)
+  status_chamado String?   @db.VarChar
+  nome_cliente   String?   @db.VarChar
+  nome_recurso   String?   @db.VarChar
+
+  @@map("Apontamentos")
+}

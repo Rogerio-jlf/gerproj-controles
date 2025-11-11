@@ -1,0 +1,60 @@
+             ┌──────────────────────────────┐
+             │ Recebe a requisição GET      │
+             └────────────┬─────────────────┘
+                          │
+                          ▼
+          ┌───────────────────────────────────────────────────────┐
+          │ Extrai parâmetros da URL:                             │
+          │ - anoParam                                            │
+          │ - mesParam                                            │
+          │ - isAdmin                                             │
+          │ - codRecurso (se não for admin)                       │
+          │ - cliente (usado se for admin)                        │
+          │ - recurso (opcional, para filtrar por recurso)        │
+          └────────────┬──────────────────────────────────────────┘
+                       │
+                       ▼
+         ┌────────────────────────────────────────────────┐
+         │ Valida os parâmetros                           │
+         │ - mes entre 1 e 12                              │
+         │ - ano entre 2000 e 3000                         │
+         │ - se não for admin → codRecurso obrigatório     │
+         └────────────┬────────────────────────────────────┘
+                      │
+                      ▼
+       ┌──────────────────────────────────────┐
+       │ Cria intervalo de datas do mês       │
+       │ dataInicio: 01/mes/ano 00:00         │
+       │ dataFim: 01/mes+1/ano 00:00          │
+       └────────────┬─────────────────────────┘
+                    │
+                    ▼
+      ┌──────────────────────────────────────────────────────────────┐
+      │ Cria objeto de filtro para o banco de dados                  │
+      │ - data_chamado entre dataInicio e dataFim                    │
+      │ - se for admin e cliente informado → filtra por cliente      │
+      │ - se não for admin → filtra por codRecurso                   │
+      │ - se "recurso" foi passado → filtra por nome do recurso      │
+      └────────────┬─────────────────────────────────────────────────┘
+                   │
+                   ▼
+     ┌──────────────────────────────────────────────────────────────┐
+     │ Consulta no banco de dados usando Prisma ORM:                │
+     │ - Busca os chamados com os filtros definidos                 │
+     │ - Agrupa por status (distinct status_chamado)                │
+     │ - Retorna somente o campo status_chamado                     │
+     └────────────┬─────────────────────────────────────────────────┘
+                  │
+                  ▼
+   ┌───────────────────────────────────────────────────────────┐
+   │ Transforma o resultado:                                   │
+   │ - Extrai apenas os status                                 │
+   │ - Remove valores nulos ou vazios                          │
+   │ - Ordena os status em ordem alfabética (locale pt-BR)     │
+   └────────────┬──────────────────────────────────────────────┘
+                │
+                ▼
+     ┌──────────────────────────────────────┐
+     │ Retorna os status únicos encontrados │
+     │ em formato JSON para o frontend      │
+     └──────────────────────────────────────┘
