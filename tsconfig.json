@@ -30,7 +30,6 @@
     "noEmit": true
   },
   "include": [
-    "cron.ts",
     "next-env.d.ts",
     "server.ts",
     "src/**/*",
