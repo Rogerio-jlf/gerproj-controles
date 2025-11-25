@@ -1,0 +1,21 @@
+2025-11-24 10:39:36:    ▲ Next.js 15.3.3
+2025-11-24 10:39:36:    - Local:        http://localhost:3001
+2025-11-24 10:39:36:    - Network:      http://0.0.0.0:3001
+2025-11-24 10:39:36: 
+2025-11-24 10:39:36:  ✓ Starting...
+2025-11-24 10:39:36:  ✓ Ready in 1110ms
+2025-11-24 11:19:55: [Login] Tentativa de login para: administrador@email.com.br
+2025-11-24 11:19:55: [Login] 15 usuários carregados
+2025-11-24 11:19:55: [Login] Login bem-sucedido: administrador@email.com.br
+2025-11-24 14:12:11: [Login] Tentativa de login para: administrador@email.com.br
+2025-11-24 14:12:11: [Login] 15 usuários carregados
+2025-11-24 14:12:12: [Login] Login bem-sucedido: administrador@email.com.br
+2025-11-24 14:20:41: [Login] Tentativa de login para: financeiro@somapel.com.br
+2025-11-24 14:20:41: [Login] 15 usuários carregados
+2025-11-24 14:20:42: [Login] Login bem-sucedido: financeiro@somapel.com.br
+2025-11-24 14:57:10: [Login] Tentativa de login para: administrador@email.com.br
+2025-11-24 14:57:10: [Login] 15 usuários carregados
+2025-11-24 14:57:10: [Login] Login bem-sucedido: administrador@email.com.br
+2025-11-24 14:59:28: [Login] Tentativa de login para: administrador@email.com.br
+2025-11-24 14:59:28: [Login] 15 usuários carregados
+2025-11-24 14:59:28: [Login] Login bem-sucedido: administrador@email.com.br

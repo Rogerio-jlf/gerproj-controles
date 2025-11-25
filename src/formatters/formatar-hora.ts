@@ -149,3 +149,37 @@ const formatTimeOutput = (hours: number, minutes: number): string => {
     : `${hoursFormatted}hs:${minutesStr}min`;
 };
 // ====================================================================================================
+
+export const formatarDiferencaHoras = (diferenca: number): string => {
+  // Se a diferença for muito pequena (menos de 0.5h), retorna "No prazo"
+  if (Math.abs(diferenca) < 0.5) {
+    return 'No prazo';
+  }
+
+  // Converte o decimal em horas e minutos
+  const horas = Math.floor(Math.abs(diferenca));
+  const minutos = Math.round((Math.abs(diferenca) - horas) * 60);
+
+  // Formata a string
+  let resultado = '';
+  
+  if (horas > 0 && minutos > 0) {
+    // Ex: 2hs:30min ou 1h:30min
+    resultado = `${horas}${horas === 1 ? 'h' : 'hs'}:${minutos}min`;
+  } else if (horas > 0) {
+    // Ex: 2hs ou 1h
+    resultado = `${horas}${horas === 1 ? 'h' : 'hs'}`;
+  } else if (minutos > 0) {
+    // Ex: 30min (sem horas)
+    resultado = `${minutos}min`;
+  }
+
+  // Adiciona o sinal de + ou - conforme necessário
+  if (diferenca > 0) {
+    return `+${resultado}`;
+  } else if (diferenca < 0) {
+    return `-${resultado}`;
+  }
+
+  return resultado;
+};

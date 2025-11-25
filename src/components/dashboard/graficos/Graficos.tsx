@@ -732,7 +732,7 @@ export function Graficos({ filters }: FilterProps) {
                   CONSULTORES
                 </p>
                 <p className="text-2xl font-bold text-green-700 tracking-widest select-none">
-                  {formatarHorasTotaisSufixo(totalizadores.TOTAL_RECURSOS)}
+                  {totalizadores.TOTAL_RECURSOS}
                 </p>
               </div>
             </div>

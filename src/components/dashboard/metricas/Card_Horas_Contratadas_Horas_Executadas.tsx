@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Minus } from 'lucide-react';
 import { FaExclamationTriangle } from 'react-icons/fa';
 import { IoIosTrendingDown, IoIosTrendingUp } from 'react-icons/io';
-import { formatarHorasTotaisSufixo } from '../../../formatters/formatar-hora';
+import { formatarDiferencaHoras, formatarHorasTotaisSufixo } from '../../../formatters/formatar-hora';
 
 interface FiltersProps {
   filters: {
@@ -203,16 +203,12 @@ export function CardHorasContratadasHorasExecutadas({ filters }: FiltersProps) {
         {/* ===== */}
 
         {/* Status */}
-        <div
+     <div
           className={`flex items-center justify-center mt-2 gap-2.5 shadow-xs shadow-black rounded-md border ${statusConfig.border} ${statusConfig.bg} bg-gradient-to-r ${statusConfig.gradient} p-2 text-sm font-extrabold tracking-widest select-none`}
         >
           {getStatusIcon()}
           <span className={statusConfig.color}>
-            {Math.abs(diferenca) < 0.5
-              ? 'No prazo'
-              : diferenca > 0
-                ? `+${diferenca.toFixed(1)}h`
-                : `${diferenca.toFixed(1)}h`}
+            {formatarDiferencaHoras(diferenca)}
             <span className="ml-3 text-sm font-extrabold tracking-widest text-slate-500 select-none">
               ({percentual.toFixed(0)}%)
             </span>
