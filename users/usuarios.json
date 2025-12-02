@@ -63,7 +63,7 @@
     "isAdmin": false
   },
   {
-    "email": "wardiney.guimaraes@tecnosulfur.com.br",
+    "email": "denilson.souza@tecnosulfur.com.br",
     "password": "$2b$10$yBDAZ6OhheeCJKI9bZQ8hurO/PRjeIGefJF4ML0xBP9EhuWB8pNhq",
     "cod_cliente": "156",
     "codrec_os": null,
@@ -100,6 +100,12 @@
     "email": "trzservice@trzservice.com.br",
     "password": "$2b$10$gIV3Ef3XGcIfKXVhQNuuyeAdOfwPqmJCYy2vZnE7skHYWVzLXNvF2",
     "cod_cliente": "164",
+    "isAdmin": false
+  },
+  {
+    "email": "fiscal@montepetro.com.br ",
+    "password": "$2b$10$2mqpI882n7fukbvloLmoouaE0FLdbMWD1Gow0Khx8U1VysM3S.yAG",
+    "cod_cliente": "168",
     "isAdmin": false
   }
 ]

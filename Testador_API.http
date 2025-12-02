@@ -48,10 +48,10 @@ GET http://localhost:3000/api/hrs-contratadas-hrs-executadas?isAdmin=true&mes=11
 GET http://localhost:3000/api/tabela?isAdmin=true&mes=11&ano=2025
 
 ### Buscar todos os dados da tabela com (admin) e filtra por codCliente
-GET http://localhost:3000/api/tabela?isAdmin=true&mes=11&ano=2025&codClienteFilter=120
+GET http://localhost:3000/api/tabela?isAdmin=true&mes=11&ano=2025&codClienteFilter=156
 
 ### Buscar todos os dados da tabela com (admin) e filtra por codCliente e codRecurso
-GET http://localhost:3000/api/tabela?isAdmin=true&mes=11&ano=2025&codClienteFilter=120&codRecursoFilter=122
+GET http://localhost:3000/api/tabela?isAdmin=true&mes=11&ano=2025&codClienteFilter=156&codRecursoFilter=122
 
 # ===============================================================================================================================================
 

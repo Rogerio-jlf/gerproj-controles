@@ -108,7 +108,7 @@ export function ExportaPDFButton({
     setIsExporting(true);
 
     // Pequeno delay para garantir que o loading apareça
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     try {
       const doc = new jsPDF('l', 'mm', 'a4');
@@ -161,23 +161,27 @@ export function ExportaPDFButton({
       ).filter(Boolean).length;
 
       // Calcular total de horas
-      let totalMs = 0;
+      // Calcular total de horas - converte o formato da API de volta para minutos
+      let totalMinutos = 0;
       data.forEach((item) => {
         if (item.total_horas && item.total_horas !== '-') {
-          const match = item.total_horas.match(/(\d+)h:?(\d+)/);
-          if (match) {
-            const horas = parseInt(match[1]);
-            const minutos = parseInt(match[2]);
-            totalMs += (horas * 60 + minutos) * 60 * 1000;
-          }
+          const tempo = item.total_horas;
+
+          // Extrair horas (pode ser "1h", "03hs", "10hs", etc)
+          const horasMatch = tempo.match(/(\d+)h/);
+          const horas = horasMatch ? parseInt(horasMatch[1]) : 0;
+
+          // Extrair minutos (pode ser "30min", "05min", etc)
+          const minutosMatch = tempo.match(/(\d+)min/);
+          const minutos = minutosMatch ? parseInt(minutosMatch[1]) : 0;
+
+          totalMinutos += horas * 60 + minutos;
         }
       });
 
-      const totalMinutes = Math.floor(totalMs / (1000 * 60));
-      const horas = Math.floor(totalMinutes / 60);
-      const minutos = totalMinutes % 60;
+      const horas = Math.floor(totalMinutos / 60);
+      const minutos = totalMinutos % 60;
       const totalHoras = `${String(horas).padStart(2, '0')}h:${String(minutos).padStart(2, '0')}min`;
-
       const totalizadores = [
         {
           label: 'Total de Chamados',
@@ -308,7 +312,10 @@ export function ExportaPDFButton({
           if (data.column.index === 4 && data.section === 'body') {
             const status = data.cell.text[0]?.toLowerCase();
 
-            if (status?.includes('concluído') || status?.includes('concluido')) {
+            if (
+              status?.includes('concluído') ||
+              status?.includes('concluido')
+            ) {
               data.cell.styles.fillColor = [34, 197, 94];
               data.cell.styles.textColor = [255, 255, 255];
               data.cell.styles.fontStyle = 'bold';

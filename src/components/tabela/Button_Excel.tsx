@@ -90,7 +90,7 @@ export function ExportaExcelButton({
     setIsExporting(true);
 
     // Pequeno delay para garantir que o loading apareça
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     try {
       const workbook = new ExcelJS.Workbook();
@@ -319,22 +319,27 @@ export function ExportaExcelButton({
       ).filter(Boolean).length;
 
       // Calcular total de horas
-      let totalMs = 0;
+      // Calcular total de horas - converte o formato da API de volta para minutos
+      let totalMinutos = 0;
       data.forEach((item) => {
         if (item.total_horas && item.total_horas !== '-') {
-          const match = item.total_horas.match(/(\d+)h:?(\d+)/);
-          if (match) {
-            const horas = parseInt(match[1]);
-            const minutos = parseInt(match[2]);
-            totalMs += (horas * 60 + minutos) * 60 * 1000;
-          }
+          const tempo = item.total_horas;
+
+          // Extrair horas (pode ser "1h", "03hs", "10hs", etc)
+          const horasMatch = tempo.match(/(\d+)h/);
+          const horas = horasMatch ? parseInt(horasMatch[1]) : 0;
+
+          // Extrair minutos (pode ser "30min", "05min", etc)
+          const minutosMatch = tempo.match(/(\d+)min/);
+          const minutos = minutosMatch ? parseInt(minutosMatch[1]) : 0;
+
+          totalMinutos += horas * 60 + minutos;
         }
       });
-      const totalMinutes = Math.floor(totalMs / (1000 * 60));
-      const horas = Math.floor(totalMinutes / 60);
-      const minutos = totalMinutes % 60;
-      const totalHoras = `${String(horas).padStart(2, '0')}h:${String(minutos).padStart(2, '0')}min`;
 
+      const horas = Math.floor(totalMinutos / 60);
+      const minutos = totalMinutos % 60;
+      const totalHoras = `${String(horas).padStart(2, '0')}h:${String(minutos).padStart(2, '0')}min`;
       const totHeaders = [
         'Total de Chamados',
         'Total de Recursos',
@@ -427,7 +432,9 @@ export function ExportaExcelButton({
       // ================================================================================
       data.forEach((detalhe) => {
         const rowData = [
-          formatarNumeros(detalhe.chamado_os) || (`T-${formatarNumeros(detalhe.codtrf_os)}`) || 'n/a',
+          formatarNumeros(detalhe.chamado_os) ||
+            `T-${formatarNumeros(detalhe.codtrf_os)}` ||
+            'n/a',
           formatarNumeros(detalhe.cod_os) || null,
           formatarDataParaBR(detalhe.dtini_os) || null,
           renderizarDoisPrimeirosNomes(detalhe.nome_cliente) || null,
@@ -544,7 +551,10 @@ export function ExportaExcelButton({
       {isExporting ? (
         <LoadingSpinner />
       ) : (
-        <RiFileExcel2Fill className="text-white group-hover:scale-110" size={24} />
+        <RiFileExcel2Fill
+          className="text-white group-hover:scale-110"
+          size={24}
+        />
       )}
     </button>
   );

@@ -207,7 +207,7 @@ export function Sidebar() {
                     : 'text-white/80'
                 }`}
               >
-                Tabela
+                Relatório
               </span>
             </Link>
           </div>
