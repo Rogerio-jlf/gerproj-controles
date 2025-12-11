@@ -1,4 +1,4 @@
-// src/components/tabela/Layout_Tabela.tsx
+// src/components/chamados/Layout_Tabela_Chamados.tsx
 'use client';
 
 import { ReactNode } from 'react';
@@ -10,7 +10,7 @@ interface LayoutProps {
   pageTitle: string;
 }
 
-export function LayoutTabelaOS({ children }: LayoutProps) {
+export function LayoutTabelaChamados({ children }: LayoutProps) {
   return (
     <ProtecaoRotas>
       <div className="flex h-screen bg-white overflow-hidden">

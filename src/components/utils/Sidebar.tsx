@@ -3,9 +3,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { IoMdAnalytics } from 'react-icons/io';
-import { IoHome } from 'react-icons/io5';
+import { IoHome, IoCall } from 'react-icons/io5';
 import { ButtonLogout } from './Button_Logout';
-
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -38,19 +37,15 @@ export function Sidebar() {
         className="relative flex h-full w-[260px] flex-col items-center rounded-xl shadow-md shadow-black bg-purple-900 p-6 text-white overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Loading Overlay - agora com absolute ao invés de fixed */}
+        {/* Loading Overlay */}
         {isNavigating && (
           <div className="absolute inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-purple-900/95 via-indigo-900/95 to-blue-900/95 backdrop-blur-md rounded-xl">
             <div className="flex flex-col items-center gap-6">
               {/* Spinner com círculos concêntricos */}
               <div className="relative h-24 w-24">
-                {/* Círculo externo */}
                 <div className="absolute inset-0 animate-ping rounded-full border-4 border-purple-400/30"></div>
-                {/* Círculo do meio */}
                 <div className="absolute inset-2 animate-spin rounded-full border-4 border-transparent border-t-purple-400 border-r-blue-400"></div>
-                {/* Círculo interno */}
                 <div className="absolute inset-4 animate-pulse rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20"></div>
-                {/* Centro brilhante */}
                 <div
                   className="absolute inset-8 animate-spin rounded-full bg-gradient-to-br from-purple-400 to-blue-400"
                   style={{
@@ -76,6 +71,7 @@ export function Sidebar() {
                 <p className="animate-pulse text-sm font-semibold text-white tracking-widest select-none">
                   {targetRoute === '/paginas/dashboard' && 'Carregando Dashboard'}
                   {targetRoute === '/paginas/tabela' && 'Carregando Tabela'}
+                  {targetRoute === '/paginas/chamados' && 'Carregando Chamados'}
                 </p>
               </div>
 
@@ -92,7 +88,6 @@ export function Sidebar() {
             </div>
           </div>
         )}
-        {/* ===== */}
 
         {/* Conteúdo da sidebar */}
         <div className="relative z-10 flex h-full w-full flex-col items-center">
@@ -110,13 +105,12 @@ export function Sidebar() {
               />
             </div>
           </div>
-          {/* ===== */}
 
           {/* Divisor elegante */}
           <div className="mb-12 h-px w-full bg-gradient-to-r from-transparent via-white/80 to-transparent"></div>
 
           {/* Links de Navegação */}
-          <div className="flex w-full flex-1 flex-col gap-12">
+          <div className="flex w-full flex-1 flex-col gap-6">
             {/* Dashboard Link */}
             <Link
               href="/paginas/dashboard"
@@ -131,13 +125,10 @@ export function Sidebar() {
                   : 'hover:scale-[1.02] active:scale-95'
               }`}
             >
-
-              {/* Barra lateral indicadora */}
               {pathname === '/paginas/dashboard' && (
                 <div className="absolute left-0 top-1/2 h-3/4 w-1.5 -translate-y-1/2 rounded-r-full bg-teal-500 shadow-lg shadow-black animate-pulse"></div>
               )}
 
-              {/* Ícone ou Spinner */}
               <div className="relative flex items-center justify-center">
                 {isNavigating && targetRoute === '/paginas/dashboard' ? (
                   <div className="h-7 w-7 animate-spin rounded-full border-3 border-white/20 border-t-white"></div>
@@ -152,7 +143,6 @@ export function Sidebar() {
                 )}
               </div>
 
-              {/* Label */}
               <span
                 className={`ml-4 text-lg font-extrabold tracking-widest select-none transition-all ${
                   pathname === '/paginas/dashboard'
@@ -164,7 +154,7 @@ export function Sidebar() {
               </span>
             </Link>
 
-            {/* Chamados Link */}
+            {/* Relatório Link */}
             <Link
               href="/paginas/tabela"
               onClick={(e) => handleNavigation(e, '/paginas/tabela')}
@@ -178,13 +168,10 @@ export function Sidebar() {
                   : 'hover:scale-[1.02] active:scale-95'
               }`}
             >
-
-              {/* Barra lateral indicadora */}
               {pathname === '/paginas/tabela' && (
                 <div className="absolute left-0 top-1/2 h-3/4 w-1.5 -translate-y-1/2 rounded-r-full bg-teal-500 shadow-lg shadow-black animate-pulse"></div>
               )}
 
-              {/* Ícone ou Spinner */}
               <div className="relative flex items-center justify-center">
                 {isNavigating && targetRoute === '/paginas/tabela' ? (
                   <div className="h-7 w-7 animate-spin rounded-full border-3 border-white/20 border-t-white"></div>
@@ -199,7 +186,6 @@ export function Sidebar() {
                 )}
               </div>
 
-              {/* Label */}
               <span
                 className={`ml-4 text-lg font-extrabold tracking-widest select-none transition-all ${
                   pathname === '/paginas/tabela'
@@ -208,6 +194,49 @@ export function Sidebar() {
                 }`}
               >
                 Relatório
+              </span>
+            </Link>
+
+            {/* ⭐ NOVO: Chamados Link */}
+            <Link
+              href="/paginas/chamados"
+              onClick={(e) => handleNavigation(e, '/paginas/chamados')}
+              className={`group relative flex items-center rounded-2xl px-5 py-4 transition-all ${
+                pathname === '/paginas/chamados'
+                  ? 'bg-gradient-to-r from-purple-950 to-blue-950 ring-2 ring-teal-500'
+                  : 'bg-white/20 hover:bg-white/30 shadow-md shadow-black hover:shadow-lg hover:shadow-black hover:scale-105'
+              } ${
+                isNavigating && targetRoute === '/paginas/chamados'
+                  ? 'pointer-events-none opacity-60'
+                  : 'hover:scale-[1.02] active:scale-95'
+              }`}
+            >
+              {pathname === '/paginas/chamados' && (
+                <div className="absolute left-0 top-1/2 h-3/4 w-1.5 -translate-y-1/2 rounded-r-full bg-teal-500 shadow-lg shadow-black animate-pulse"></div>
+              )}
+
+              <div className="relative flex items-center justify-center">
+                {isNavigating && targetRoute === '/paginas/chamados' ? (
+                  <div className="h-7 w-7 animate-spin rounded-full border-3 border-white/20 border-t-white"></div>
+                ) : (
+                  <IoCall
+                    className={`h-7 w-7 transition-all ${
+                      pathname === '/paginas/chamados'
+                        ? 'text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]'
+                        : 'text-white/80 group-hover:text-white group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]'
+                    }`}
+                  />
+                )}
+              </div>
+
+              <span
+                className={`ml-4 text-lg font-extrabold tracking-widest select-none transition-all ${
+                  pathname === '/paginas/chamados'
+                    ? 'text-white'
+                    : 'text-white/80'
+                }`}
+              >
+                Chamados
               </span>
             </Link>
           </div>

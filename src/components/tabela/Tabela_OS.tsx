@@ -1,6 +1,8 @@
+// src/components/tabela/Tabela_OS.tsx
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
+import { useFilters } from '@/context/FiltersContext';
 import { useQuery } from '@tanstack/react-query';
 import {
   ColumnFiltersState,
@@ -8,8 +10,9 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FaEraser } from 'react-icons/fa';
+import { FiRefreshCw } from 'react-icons/fi';
 import { IoCall } from 'react-icons/io5';
 import { corrigirTextoCorrompido } from '../../formatters/formatar-texto-corrompido';
 import { IsError } from '../utils/IsError';
@@ -23,7 +26,6 @@ import {
 } from './Filtro_Header_Tabela';
 import { ModalChamado } from './Modal_Chamado';
 import { StatusBadge } from './Status_Badge';
-import { FiRefreshCw } from 'react-icons/fi';
 
 // ==================== TIPOS ====================
 interface FiltersProps {
@@ -169,15 +171,24 @@ const fetchChamados = async ({
 };
 
 // ==================== COMPONENTE PRINCIPAL ====================
-export default function TabelaChamados({
-  ano,
-  mes,
-  cliente,
-  recurso,
-  status,
-}: FiltersProps) {
+export function TabelaOS() {
   // Contexto
   const { isAdmin, codCliente, isLoggedIn } = useAuth();
+  const { filters } = useFilters();
+
+  // Extraia os filtros do contexto e force valores padrão
+  const { ano, mes, cliente, recurso, status } = filters;
+
+  // DEBUG: Log dos filtros recebidos
+  useEffect(() => {
+    console.log('📋 TabelaOS - Filtros recebidos:', {
+      ano,
+      mes,
+      cliente,
+      recurso,
+      status,
+    });
+  }, [ano, mes, cliente, recurso, status]);
 
   // Estados do modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -197,27 +208,27 @@ export default function TabelaChamados({
     refetch,
   } = useQuery({
     queryKey: [
-      'chamados',
-      ano,
-      mes,
-      cliente,
-      recurso,
-      status,
+      'tabela-os',
+      ano ?? 0,
+      mes ?? 0,
+      cliente ?? '',
+      recurso ?? '',
+      status ?? '',
       isAdmin,
-      codCliente,
+      codCliente ?? '',
     ],
     queryFn: () =>
       fetchChamados({
-        ano,
-        mes,
+        ano: String(ano ?? new Date().getFullYear()),
+        mes: String(mes ?? new Date().getMonth() + 1),
         isAdmin,
         codCliente,
-        cliente,
-        recurso,
-        status,
+        cliente: cliente ?? '',
+        recurso: recurso ?? '',
+        status: status ?? '',
       }),
-    enabled: isLoggedIn,
-    staleTime: 1000 * 60 * 5, // 5 minutos
+    enabled: isLoggedIn && !!ano && !!mes, // Só busca se tiver ano e mês
+    staleTime: 1000 * 60 * 5,
     retry: 2,
   });
 
@@ -437,8 +448,8 @@ export default function TabelaChamados({
           hasActiveFilters={hasActiveFilters}
           clearAllFilters={clearAllFilters}
           filteredData={dadosFiltrados}
-          mes={mes}
-          ano={ano}
+          mes={String(mes)}
+          ano={String(ano)}
         />
 
         {/* Tabela */}
@@ -529,9 +540,9 @@ function HeaderSection({
             }, 100);
           }}
           title="Atualizar Dados"
-          className="cursor-pointer text-white transition-all hover:scale-125 hover:rotate-180 active:scale-95 mr-7" size={52}
-        >
-        </FiRefreshCw>
+          className="cursor-pointer text-white transition-all hover:scale-125 hover:rotate-180 active:scale-95 mr-7"
+          size={52}
+        ></FiRefreshCw>
       </div>
 
       {/* Badges e Ações */}

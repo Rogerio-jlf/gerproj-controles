@@ -281,7 +281,7 @@ export async function GET(request: Request) {
       dataFim,
     ]);
 
-    const sqlFinal = `${sql} ORDER BY RECURSO.NOME_RECURSO ASC, OS.DTINI_OS ASC, OS.HRINI_OS ASC`;
+    const sqlFinal = `${sql} ORDER BY OS.CHAMADO_OS ASC, OS.DTINI_OS ASC, OS.HRINI_OS ASC`;
 
     const apontamentos = await firebirdQuery(sqlFinal, sqlParams);
 

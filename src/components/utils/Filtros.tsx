@@ -10,31 +10,20 @@ import { Relogio } from './Relogio';
 
 // ==================== INTERFACES ====================
 interface FiltersProps {
-  onFiltersChange: (filters: {
-    ano: number;
-    mes: number;
-    cliente: string;
-    recurso: string;
-    status: string;
-  }) => void;
   showRefreshButton?: boolean;
 }
-// =====
 
 interface Cliente {
   cod: string;
   nome: string;
 }
-// =====
 
 interface Recurso {
   cod: string;
   nome: string;
 }
-// =====
 
 // ==================== FUNÇÕES DE FETCH ====================
-// Função para buscar clientes com base nos filtros
 const fetchClientes = async ({
   mes,
   ano,
@@ -63,9 +52,7 @@ const fetchClientes = async ({
 
   return response.json();
 };
-// ====================
 
-// Função para buscar recursos com base nos filtros
 const fetchRecursos = async ({
   mes,
   ano,
@@ -100,9 +87,7 @@ const fetchRecursos = async ({
 
   return response.json();
 };
-// ====================
 
-// Função para buscar status com base nos filtros
 const fetchStatus = async ({
   mes,
   ano,
@@ -143,46 +128,43 @@ const fetchStatus = async ({
 
   return response.json();
 };
-// ===================
 
 // ==================== COMPONENTE PRINCIPAL ====================
-export function Filtros({
-  onFiltersChange,
-  showRefreshButton = false,
-}: FiltersProps) {
+export function Filtros({ showRefreshButton = false }: FiltersProps) {
   const hoje = new Date();
   const { filters, setFilters } = useFilters();
   const { isAdmin, codCliente } = useAuth();
   const queryClient = useQueryClient();
 
-  // ==================== ESTADO DO RELÓGIO ====================
-  const [horaAtual, setHoraAtual] = useState(
-    new Date().toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-    }),
-  );
+  // ==================== INICIALIZAÇÃO CORRETA ====================
+  // CRITICAL: Use apenas os valores do contexto, SEM valores padrão locais
+  // Estados locais - inicializados APENAS com valores do contexto
+  const [ano, setAno] = useState(filters.ano);
+  const [mes, setMes] = useState(filters.mes);
+  const [clienteSelecionado, setClienteSelecionado] = useState(filters.cliente);
+  const [recursoSelecionado, setRecursoSelecionado] = useState(filters.recurso);
+  const [statusSelecionado, setStatusSelecionado] = useState(filters.status);
 
-  // Estados locais para ano e mês selecionados
-  const [ano, setAno] = useState(filters.ano || hoje.getFullYear());
-  const [mes, setMes] = useState(filters.mes || hoje.getMonth() + 1);
+  // Flag para controlar se já foi inicializado
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Estados para cliente, recurso e status selecionados
-  const [clienteSelecionado, setClienteSelecionado] = useState(
-    filters.cliente || (!isAdmin && codCliente ? codCliente : ''),
-  );
-  const [recursoSelecionado, setRecursoSelecionado] = useState(
-    filters.recurso || '',
-  );
-  const [statusSelecionado, setStatusSelecionado] = useState(
-    filters.status || '',
-  );
+  // IMPORTANT: Sincroniza estado local com contexto APENAS na montagem
+  useEffect(() => {
+    console.log('🎯 Filtros montado - Sincronizando com contexto:', filters);
 
-  // Debounce dos filtros para evitar chamadas excessivas
-  const [debouncedAno] = useDebounce(ano, 300);
-  const [debouncedMes] = useDebounce(mes, 300);
+    // Atualiza os estados locais com os valores do contexto
+    setAno(filters.ano);
+    setMes(filters.mes);
+    setClienteSelecionado(filters.cliente);
+    setRecursoSelecionado(filters.recurso);
+    setStatusSelecionado(filters.status);
+
+    // Marca como inicializado
+    setIsInitialized(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Executa apenas na montagem
+
+  // Debounce apenas dos filtros opcionais (não ano/mês)
   const [debouncedClienteSelecionado] = useDebounce(clienteSelecionado, 300);
   const [debouncedRecursoSelecionado] = useDebounce(recursoSelecionado, 300);
   const [debouncedStatusSelecionado] = useDebounce(statusSelecionado, 300);
@@ -191,22 +173,33 @@ export function Filtros({
   const { data: clientesData = [], isLoading: clientesLoading } = useQuery({
     queryKey: ['clientes', mes, ano, isAdmin, codCliente],
     queryFn: () => fetchClientes({ mes, ano, isAdmin, codCliente }),
-    enabled: !!(mes && ano),
-    staleTime: 1000 * 60 * 5, // 5 minutos
-    retry: 2,
-  });
-  // ===================
-
-  // ==================== REACT QUERY - RECURSOS ====================
-  const { data: recursosData = [], isLoading: recursosLoading } = useQuery({
-    queryKey: ['recursos', mes, ano, isAdmin, codCliente, clienteSelecionado],
-    queryFn: () =>
-      fetchRecursos({ mes, ano, isAdmin, codCliente, clienteSelecionado }),
-    enabled: !!(mes && ano && (isAdmin || codCliente)),
+    enabled: !!(mes && ano && isInitialized),
     staleTime: 1000 * 60 * 5,
     retry: 2,
   });
-  // ====================
+
+  // ==================== REACT QUERY - RECURSOS ====================
+  const { data: recursosData = [], isLoading: recursosLoading } = useQuery({
+    queryKey: [
+      'recursos',
+      mes,
+      ano,
+      isAdmin,
+      codCliente,
+      debouncedClienteSelecionado,
+    ],
+    queryFn: () =>
+      fetchRecursos({
+        mes,
+        ano,
+        isAdmin,
+        codCliente,
+        clienteSelecionado: debouncedClienteSelecionado,
+      }),
+    enabled: !!(mes && ano && (isAdmin || codCliente) && isInitialized),
+    staleTime: 1000 * 60 * 5,
+    retry: 2,
+  });
 
   // ==================== REACT QUERY - STATUS ====================
   const { data: statusData = [], isLoading: statusLoading } = useQuery({
@@ -216,8 +209,8 @@ export function Filtros({
       ano,
       isAdmin,
       codCliente,
-      clienteSelecionado,
-      recursoSelecionado,
+      debouncedClienteSelecionado,
+      debouncedRecursoSelecionado,
     ],
     queryFn: () =>
       fetchStatus({
@@ -225,115 +218,132 @@ export function Filtros({
         ano,
         isAdmin,
         codCliente,
-        clienteSelecionado,
-        recursoSelecionado,
+        clienteSelecionado: debouncedClienteSelecionado,
+        recursoSelecionado: debouncedRecursoSelecionado,
       }),
-    enabled: !!(mes && ano && (isAdmin || codCliente)),
+    enabled: !!(mes && ano && (isAdmin || codCliente) && isInitialized),
     staleTime: 1000 * 60 * 5,
     retry: 2,
   });
-  // ====================
 
   // ==================== EFEITOS ====================
-  // Atualiza o contexto de filtro e notifica o componente pai quando filtros mudam
+  // CRITICAL: Atualiza o contexto apenas após inicialização completa
   useEffect(() => {
-    setFilters({
-      ano: debouncedAno,
-      mes: debouncedMes,
+    if (!isInitialized) return;
+
+    console.log('📤 Atualizando contexto com:', {
+      ano,
+      mes,
       cliente: debouncedClienteSelecionado,
       recurso: debouncedRecursoSelecionado,
       status: debouncedStatusSelecionado,
     });
-    onFiltersChange({
-      ano: debouncedAno,
-      mes: debouncedMes,
+
+    setFilters({
+      ano,
+      mes,
       cliente: debouncedClienteSelecionado,
       recurso: debouncedRecursoSelecionado,
       status: debouncedStatusSelecionado,
     });
   }, [
-    debouncedAno,
-    debouncedMes,
+    ano,
+    mes,
     debouncedClienteSelecionado,
     debouncedRecursoSelecionado,
     debouncedStatusSelecionado,
-    onFiltersChange,
+    isInitialized,
     setFilters,
   ]);
-  // ====================
 
   // Validação de cliente selecionado quando a lista de clientes muda
   useEffect(() => {
+    if (!isInitialized) return;
+
     if (clienteSelecionado && clientesData.length > 0) {
       const clienteExiste = clientesData.some(
         (c) => c.cod === clienteSelecionado,
       );
       if (!clienteExiste) {
+        console.log('⚠️ Cliente selecionado não existe na lista, limpando...');
         setClienteSelecionado('');
         setRecursoSelecionado('');
         setStatusSelecionado('');
       }
     }
-  }, [clientesData, clienteSelecionado]);
-  // ====================
+  }, [clientesData, clienteSelecionado, isInitialized]);
 
   // Sincroniza cliente quando não é admin
   useEffect(() => {
+    if (!isInitialized) return;
+
     if (!isAdmin && codCliente && clientesData.length > 0) {
       setClienteSelecionado(codCliente);
     }
-  }, [isAdmin, codCliente, clientesData]);
-  // ====================
+  }, [isAdmin, codCliente, clientesData, isInitialized]);
 
   // Validação de recurso selecionado quando a lista de recursos muda
   useEffect(() => {
+    if (!isInitialized) return;
+
     if (recursoSelecionado && recursosData.length > 0) {
       const recursoExiste = recursosData.some(
         (r) => r.cod === recursoSelecionado,
       );
       if (!recursoExiste) {
+        console.log('⚠️ Recurso selecionado não existe na lista, limpando...');
         setRecursoSelecionado('');
         setStatusSelecionado('');
       }
     }
-  }, [recursosData, recursoSelecionado]);
-  // ====================
+  }, [recursosData, recursoSelecionado, isInitialized]);
 
   // Validação de status selecionado quando a lista de status muda
   useEffect(() => {
+    if (!isInitialized) return;
+
     if (statusSelecionado && statusData.length > 0) {
       const statusExiste = statusData.includes(statusSelecionado);
       if (!statusExiste) {
+        console.log('⚠️ Status selecionado não existe na lista, limpando...');
         setStatusSelecionado('');
       }
     }
-  }, [statusData, statusSelecionado]);
-  // ===================
+  }, [statusData, statusSelecionado, isInitialized]);
 
   // Função para limpar todos os filtros
   const clearAllFilters = () => {
-    setAno(hoje.getFullYear());
-    setMes(hoje.getMonth() + 1);
+    const novoAno = hoje.getFullYear();
+    const novoMes = hoje.getMonth() + 1;
+
+    setAno(novoAno);
+    setMes(novoMes);
     setClienteSelecionado('');
     setRecursoSelecionado('');
     setStatusSelecionado('');
+
+    // Atualiza o contexto imediatamente
+    setFilters({
+      ano: novoAno,
+      mes: novoMes,
+      cliente: '',
+      recurso: '',
+      status: '',
+    });
   };
-  // ===================
 
   // Função para atualizar os dados e limpar os filtros
   const handleRefresh = () => {
     clearAllFilters();
-    // Invalida todas as queries para forçar um refetch
     queryClient.invalidateQueries({ queryKey: ['clientes'] });
     queryClient.invalidateQueries({ queryKey: ['recursos'] });
     queryClient.invalidateQueries({ queryKey: ['status'] });
+    queryClient.invalidateQueries({ queryKey: ['tabela-chamados'] }); // Adicione
+    queryClient.invalidateQueries({ queryKey: ['tabela-os'] }); // Adicione
   };
-  // ===================
 
   // ==================== CONSTANTES ====================
   const years = [2024, 2025];
-  // =====
-
   const months = [
     'Janeiro',
     'Fevereiro',
@@ -348,13 +358,10 @@ export function Filtros({
     'Novembro',
     'Dezembro',
   ];
-  // =====
 
   const isLoading = recursosLoading || statusLoading;
-  // =====
 
   // ==================== SUBCOMPONENTE ====================
-  // Componente de Select com botão de limpar
   interface SelectWithClearProps {
     value: string | number;
     onChange: (value: string) => void;
@@ -422,7 +429,6 @@ export function Filtros({
       </div>
     );
   }
-  // ===================
 
   // ==================== RENDERIZAÇÃO PRINCIPAL ====================
   return (
@@ -449,19 +455,17 @@ export function Filtros({
           )}
           <div className="flex items-center justify-center gap-2 text-xl font-extrabold tracking-widest select-none text-black">
             <MdCalendarMonth className="text-black" size={32} />
-            {new Date().toLocaleString('pt-BR', {
+            {hoje.toLocaleString('pt-BR', {
               day: '2-digit',
               month: '2-digit',
               year: 'numeric',
             })}
           </div>
-          {/* ===== */}
           <div>
             <Relogio />
           </div>
         </div>
       </header>
-      {/* ========== */}
 
       {/* ========== FILTROS ========== */}
       <div className="grid grid-cols-5 gap-6">
@@ -481,7 +485,6 @@ export function Filtros({
             </option>
           ))}
         </select>
-        {/* ===== */}
 
         {/* Mês */}
         <select
@@ -499,7 +502,6 @@ export function Filtros({
             </option>
           ))}
         </select>
-        {/* ===== */}
 
         {/* Cliente */}
         <SelectWithClear
@@ -514,7 +516,6 @@ export function Filtros({
           showClear={!codCliente}
           className="w-full cursor-pointer rounded-md tracking-widest font-extrabold text-lg select-none border p-3 shadow-md shadow-black transition-all hover:shadow-lg hover:shadow-black focus:ring-2 focus:ring-purple-600 focus:outline-none disabled:cursor-not-allowed disabled:opacity-30"
         />
-        {/* ===== */}
 
         {/* Recurso */}
         <SelectWithClear
@@ -528,7 +529,6 @@ export function Filtros({
           }
           className="w-full cursor-pointer rounded-md tracking-widest font-extrabold text-lg select-none border p-3 shadow-md shadow-black transition-all hover:shadow-lg hover:shadow-black focus:ring-2 focus:ring-purple-600 focus:outline-none"
         />
-        {/* ===== */}
 
         {/* Status */}
         <SelectWithClear
@@ -543,7 +543,6 @@ export function Filtros({
           className="w-full cursor-pointer rounded-md tracking-widest font-extrabold text-lg select-none border p-3 shadow-md shadow-black transition-all hover:shadow-lg hover:shadow-black focus:ring-2 focus:ring-purple-600 focus:outline-none"
         />
       </div>
-      {/* ========== */}
     </div>
   );
 }

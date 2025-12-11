@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { firebirdQuery } from '../../../lib/firebird/firebird-client';
+import { firebirdExecute } from '../../../lib/firebird/firebird-client';
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       WHERE COD_OS = ?
     `;
 
-    await firebirdQuery(sql, [valcli, obscli, logvalcli, cod_os]);
+    await firebirdExecute(sql, [valcli, obscli, logvalcli, cod_os]);
 
     return NextResponse.json({
       success: true,
