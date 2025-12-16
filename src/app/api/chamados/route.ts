@@ -7,26 +7,17 @@ export interface Chamado {
   COD_CHAMADO: number;
   DATA_CHAMADO: Date;
   HORA_CHAMADO: string;
-  // SOLICITACAO_CHAMADO: string | null;
   CONCLUSAO_CHAMADO: Date | null;
   STATUS_CHAMADO: string;
   DTENVIO_CHAMADO: string | null;
-  // COD_RECURSO: number | null;
-  // CLIENTE_CHAMADO: string | null;
-  // CODTRF_CHAMADO: number | null;
-  // COD_CLIENTE: number | null;
-  // SOLICITACAO2_CHAMADO: string | null;
   ASSUNTO_CHAMADO: string | null;
   EMAIL_CHAMADO: string | null;
   PRIOR_CHAMADO: number;
   COD_CLASSIFICACAO: number;
-  // =====
   NOME_CLIENTE?: string | null;
   NOME_RECURSO?: string | null;
   NOME_CLASSIFICACAO?: string | null;
-  // =====
   TEM_OS?: boolean;
-  // =====
   TOTAL_HORAS_OS?: number;
 }
 
@@ -42,45 +33,20 @@ interface QueryParams {
 }
 
 // ==================== CONFIGURAÇÃO DE CAMPOS ====================
-/**
- * Configure aqui quais campos você quer buscar do banco.
- * Para ATIVAR um campo: remova o comentário da linha
- * Para DESATIVAR um campo: adicione // no início da linha
- * 
- * ⚠️ ATENÇÃO: Campos com * são OBRIGATÓRIOS para o funcionamento básico
- */
 const CAMPOS_CHAMADO = {
-  // Campos obrigatórios (não comentar)
   COD_CHAMADO: 'CHAMADO.COD_CHAMADO',
   DATA_CHAMADO: 'CHAMADO.DATA_CHAMADO',
   HORA_CHAMADO: 'CHAMADO.HORA_CHAMADO',
-  // SOLICITACAO_CHAMADO: 'CHAMADO.SOLICITACAO_CHAMADO',
   CONCLUSAO_CHAMADO: 'CHAMADO.CONCLUSAO_CHAMADO',
   STATUS_CHAMADO: 'CHAMADO.STATUS_CHAMADO',
   DTENVIO_CHAMADO: 'CHAMADO.DTENVIO_CHAMADO',
-  // COD_RECURSO: 'CHAMADO.COD_RECURSO',
-  // CLIENTE_CHAMADO: 'CHAMADO.CLIENTE_CHAMADO',
-  // CODTRF_CHAMADO: 'CHAMADO.CODTRF_CHAMADO',
-  // COD_CLIENTE: 'CHAMADO.COD_CLIENTE',
-  // SOLICITACAO2_CHAMADO: 'CHAMADO.SOLICITACAO2_CHAMADO',
   ASSUNTO_CHAMADO: 'CHAMADO.ASSUNTO_CHAMADO',
   EMAIL_CHAMADO: 'CHAMADO.EMAIL_CHAMADO',
   PRIOR_CHAMADO: 'CHAMADO.PRIOR_CHAMADO',
   COD_CLASSIFICACAO: 'CHAMADO.COD_CLASSIFICACAO',
-  // =====
   NOME_CLIENTE: 'CLIENTE.NOME_CLIENTE',
   NOME_RECURSO: 'RECURSO.NOME_RECURSO',
   NOME_CLASSIFICACAO: 'CLASSIFICACAO.NOME_CLASSIFICACAO',
-  // =====
-  TOTAL_HORAS_OS: `(SELECT SUM(
-    (CAST(SUBSTRING(OS.HRFIM_OS FROM 1 FOR 2) AS INTEGER) * 60 + 
-     CAST(SUBSTRING(OS.HRFIM_OS FROM 3 FOR 2) AS INTEGER) -
-     CAST(SUBSTRING(OS.HRINI_OS FROM 1 FOR 2) AS INTEGER) * 60 - 
-     CAST(SUBSTRING(OS.HRINI_OS FROM 3 FOR 2) AS INTEGER)) / 60.0
-  )
-  FROM OS 
-  WHERE OS.CHAMADO_OS = CAST(CHAMADO.COD_CHAMADO AS VARCHAR(20))
-  ) AS TOTAL_HORAS_OS`,
 };
 
 // ==================== VALIDAÇÕES ====================
@@ -141,9 +107,82 @@ function construirDatas(
   return { dataInicio, dataFim };
 }
 
-// ==================== CONSTRUÇÃO DE SQL ====================
-function construirSQLBase(): string {
+// ==================== BUSCAR CHAMADOS COM OS NO PERÍODO ====================
+async function buscarChamadosComOSNoPeriodo(
+  dataInicio: string,
+  dataFim: string,
+  params: QueryParams,
+): Promise<number[]> {
+  try {
+    let sql = `
+      SELECT DISTINCT CAST(OS.CHAMADO_OS AS INTEGER) AS COD_CHAMADO
+      FROM OS
+      WHERE OS.DTINI_OS >= ? 
+        AND OS.DTINI_OS < ?
+        AND OS.CHAMADO_OS IS NOT NULL
+        AND OS.CHAMADO_OS <> ''
+    `;
+
+    const sqlParams: any[] = [dataInicio, dataFim];
+
+    // Se tiver filtro de cliente, precisamos fazer join
+    if (!params.isAdmin && params.codCliente) {
+      sql = `
+        SELECT DISTINCT CAST(OS.CHAMADO_OS AS INTEGER) AS COD_CHAMADO
+        FROM OS
+        LEFT JOIN CHAMADO ON OS.CHAMADO_OS = CAST(CHAMADO.COD_CHAMADO AS VARCHAR(20))
+        WHERE OS.DTINI_OS >= ? 
+          AND OS.DTINI_OS < ?
+          AND OS.CHAMADO_OS IS NOT NULL
+          AND OS.CHAMADO_OS <> ''
+          AND CHAMADO.COD_CLIENTE = ?
+      `;
+      sqlParams.push(parseInt(params.codCliente));
+    } else if (params.codClienteFilter) {
+      sql = `
+        SELECT DISTINCT CAST(OS.CHAMADO_OS AS INTEGER) AS COD_CHAMADO
+        FROM OS
+        LEFT JOIN CHAMADO ON OS.CHAMADO_OS = CAST(CHAMADO.COD_CHAMADO AS VARCHAR(20))
+        WHERE OS.DTINI_OS >= ? 
+          AND OS.DTINI_OS < ?
+          AND OS.CHAMADO_OS IS NOT NULL
+          AND OS.CHAMADO_OS <> ''
+          AND CHAMADO.COD_CLIENTE = ?
+      `;
+      sqlParams.push(parseInt(params.codClienteFilter));
+    }
+
+    const resultado = await firebirdQuery<{ COD_CHAMADO: number }>(sql, sqlParams);
+    return resultado.map((r) => r.COD_CHAMADO);
+  } catch (error) {
+    console.error('[API CHAMADOS] Erro ao buscar chamados com OS no período:', error);
+    return [];
+  }
+}
+
+// ==================== CONSTRUÇÃO DE SQL COM UNIÃO ====================
+function construirSQLBase(
+  dataInicio: string,
+  dataFim: string,
+  codChamadosComOS: number[],
+): string {
   const campos = Object.values(CAMPOS_CHAMADO).join(',\n    ');
+  
+  // Se não há chamados com OS no período, usa query simples
+  if (codChamadosComOS.length === 0) {
+    return `
+  SELECT 
+    ${campos}
+  FROM CHAMADO
+  LEFT JOIN CLIENTE ON CHAMADO.COD_CLIENTE = CLIENTE.COD_CLIENTE
+  LEFT JOIN RECURSO ON CHAMADO.COD_RECURSO = RECURSO.COD_RECURSO
+  LEFT JOIN CLASSIFICACAO ON CHAMADO.COD_CLASSIFICACAO = CLASSIFICACAO.COD_CLASSIFICACAO
+  WHERE CHAMADO.DATA_CHAMADO >= ? AND CHAMADO.DATA_CHAMADO < ?
+`;
+  }
+
+  // Com chamados que têm OS no período, usa IN para incluí-los
+  const placeholders = codChamadosComOS.map(() => '?').join(',');
   
   return `
   SELECT 
@@ -152,7 +191,10 @@ function construirSQLBase(): string {
   LEFT JOIN CLIENTE ON CHAMADO.COD_CLIENTE = CLIENTE.COD_CLIENTE
   LEFT JOIN RECURSO ON CHAMADO.COD_RECURSO = RECURSO.COD_RECURSO
   LEFT JOIN CLASSIFICACAO ON CHAMADO.COD_CLASSIFICACAO = CLASSIFICACAO.COD_CLASSIFICACAO
-  WHERE CHAMADO.DATA_CHAMADO >= ? AND CHAMADO.DATA_CHAMADO < ?
+  WHERE (
+    (CHAMADO.DATA_CHAMADO >= ? AND CHAMADO.DATA_CHAMADO < ?)
+    OR CHAMADO.COD_CHAMADO IN (${placeholders})
+  )
 `;
 }
 
@@ -163,13 +205,11 @@ function aplicarFiltros(
 ): { sql: string; params: any[] } {
   let sql = sqlBase;
 
-  // Filtro obrigatório para não-admin
   if (!params.isAdmin && params.codCliente) {
     sql += ` AND CHAMADO.COD_CLIENTE = ?`;
     paramsArray.push(parseInt(params.codCliente));
   }
 
-  // Filtros opcionais
   if (params.codChamadoFilter) {
     sql += ` AND CHAMADO.COD_CHAMADO = ?`;
     paramsArray.push(parseInt(params.codChamadoFilter));
@@ -193,37 +233,72 @@ function aplicarFiltros(
   return { sql, params: paramsArray };
 }
 
+// ==================== BUSCAR HORAS DE OS POR CHAMADOS ====================
+async function buscarHorasPorChamados(
+  codChamados: number[],
+): Promise<Map<number, number>> {
+  if (codChamados.length === 0) {
+    return new Map();
+  }
+
+  try {
+    const placeholders = codChamados.map(() => '?').join(',');
+    
+    const sql = `
+      SELECT 
+        CAST(OS.CHAMADO_OS AS INTEGER) AS COD_CHAMADO,
+        SUM(
+          (CAST(SUBSTRING(OS.HRFIM_OS FROM 1 FOR 2) AS INTEGER) * 60 + 
+           CAST(SUBSTRING(OS.HRFIM_OS FROM 3 FOR 2) AS INTEGER) -
+           CAST(SUBSTRING(OS.HRINI_OS FROM 1 FOR 2) AS INTEGER) * 60 - 
+           CAST(SUBSTRING(OS.HRINI_OS FROM 3 FOR 2) AS INTEGER)) / 60.0
+        ) AS TOTAL_HORAS
+      FROM OS
+      WHERE OS.CHAMADO_OS IN (${placeholders})
+      GROUP BY OS.CHAMADO_OS
+    `;
+
+    const params = codChamados.map(String);
+    const resultado = await firebirdQuery<{ COD_CHAMADO: number; TOTAL_HORAS: number }>(
+      sql,
+      params,
+    );
+
+    const mapaHoras = new Map<number, number>();
+    resultado.forEach((item) => {
+      mapaHoras.set(item.COD_CHAMADO, item.TOTAL_HORAS || 0);
+    });
+
+    return mapaHoras;
+  } catch (error) {
+    console.error('[API CHAMADOS] Erro ao buscar horas por chamados:', error);
+    return new Map();
+  }
+}
+
 // ==================== PROCESSAMENTO DE DADOS ====================
-function processarChamados(chamados: any[]): Chamado[] {
-  return chamados.map((chamado) => ({
-    COD_CHAMADO: chamado.COD_CHAMADO,
-    DATA_CHAMADO: chamado.DATA_CHAMADO,
-    HORA_CHAMADO: chamado.HORA_CHAMADO ?? '',
-    // SOLICITACAO_CHAMADO:
-    //   (chamado.SOLICITACAO_CHAMADO &&
-    //     String(chamado.SOLICITACAO_CHAMADO).trim()) ||
-    //   null,
-    CONCLUSAO_CHAMADO: chamado.CONCLUSAO_CHAMADO || null,
-    STATUS_CHAMADO: chamado.STATUS_CHAMADO,
-    DTENVIO_CHAMADO: chamado.DTENVIO_CHAMADO || null,
-    // COD_RECURSO: chamado.COD_RECURSO || null,
-    // CLIENTE_CHAMADO: chamado.CLIENTE_CHAMADO || null,
-    // CODTRF_CHAMADO: chamado.CODTRF_CHAMADO || null,
-    // COD_CLIENTE: chamado.COD_CLIENTE || null,
-    // SOLICITACAO2_CHAMADO:
-    //   (chamado.SOLICITACAO2_CHAMADO &&
-    //     String(chamado.SOLICITACAO2_CHAMADO).trim()) ||
-    //   null,
-    ASSUNTO_CHAMADO: chamado.ASSUNTO_CHAMADO || null,
-    EMAIL_CHAMADO: chamado.EMAIL_CHAMADO || null,
-    PRIOR_CHAMADO: chamado.PRIOR_CHAMADO ?? 100,
-    COD_CLASSIFICACAO: chamado.COD_CLASSIFICACAO ?? 0,
-    NOME_CLIENTE: chamado.NOME_CLIENTE || null,
-    NOME_RECURSO: chamado.NOME_RECURSO || null,
-    NOME_CLASSIFICACAO: chamado.NOME_CLASSIFICACAO || null,
-    TEM_OS: (chamado.TOTAL_HORAS_OS || 0) > 0,
-    TOTAL_HORAS_OS: chamado.TOTAL_HORAS_OS || 0,
-  }));
+function processarChamados(chamados: any[], mapaHoras: Map<number, number>): Chamado[] {
+  return chamados.map((chamado) => {
+    const totalHoras = mapaHoras.get(chamado.COD_CHAMADO) || 0;
+    
+    return {
+      COD_CHAMADO: chamado.COD_CHAMADO,
+      DATA_CHAMADO: chamado.DATA_CHAMADO,
+      HORA_CHAMADO: chamado.HORA_CHAMADO ?? '',
+      CONCLUSAO_CHAMADO: chamado.CONCLUSAO_CHAMADO || null,
+      STATUS_CHAMADO: chamado.STATUS_CHAMADO,
+      DTENVIO_CHAMADO: chamado.DTENVIO_CHAMADO || null,
+      ASSUNTO_CHAMADO: chamado.ASSUNTO_CHAMADO || null,
+      EMAIL_CHAMADO: chamado.EMAIL_CHAMADO || null,
+      PRIOR_CHAMADO: chamado.PRIOR_CHAMADO ?? 100,
+      COD_CLASSIFICACAO: chamado.COD_CLASSIFICACAO ?? 0,
+      NOME_CLIENTE: chamado.NOME_CLIENTE || null,
+      NOME_RECURSO: chamado.NOME_RECURSO || null,
+      NOME_CLASSIFICACAO: chamado.NOME_CLASSIFICACAO || null,
+      TEM_OS: totalHoras > 0,
+      TOTAL_HORAS_OS: totalHoras,
+    };
+  });
 }
 
 // ==================== BUSCAR TOTAL DE OS's NO PERÍODO ====================
@@ -406,17 +481,34 @@ async function buscarStatusChamado(
   dataInicio: string,
   dataFim: string,
   params: QueryParams,
+  codChamadosComOS: number[],
 ): Promise<string | null> {
   try {
-    let sql = `
-      SELECT FIRST 1 CHAMADO.STATUS_CHAMADO 
-      FROM CHAMADO
-      WHERE CHAMADO.DATA_CHAMADO >= ? 
-        AND CHAMADO.DATA_CHAMADO < ?
-        AND UPPER(CHAMADO.STATUS_CHAMADO) LIKE UPPER(?)
-    `;
+    let sql = '';
+    let sqlParams: any[] = [];
 
-    const sqlParams: any[] = [dataInicio, dataFim, `%${statusFilter}%`];
+    if (codChamadosComOS.length === 0) {
+      sql = `
+        SELECT FIRST 1 CHAMADO.STATUS_CHAMADO 
+        FROM CHAMADO
+        WHERE CHAMADO.DATA_CHAMADO >= ? 
+          AND CHAMADO.DATA_CHAMADO < ?
+          AND UPPER(CHAMADO.STATUS_CHAMADO) LIKE UPPER(?)
+      `;
+      sqlParams = [dataInicio, dataFim, `%${statusFilter}%`];
+    } else {
+      const placeholders = codChamadosComOS.map(() => '?').join(',');
+      sql = `
+        SELECT FIRST 1 CHAMADO.STATUS_CHAMADO 
+        FROM CHAMADO
+        WHERE (
+          (CHAMADO.DATA_CHAMADO >= ? AND CHAMADO.DATA_CHAMADO < ?)
+          OR CHAMADO.COD_CHAMADO IN (${placeholders})
+        )
+        AND UPPER(CHAMADO.STATUS_CHAMADO) LIKE UPPER(?)
+      `;
+      sqlParams = [dataInicio, dataFim, ...codChamadosComOS, `%${statusFilter}%`];
+    }
 
     if (!params.isAdmin && params.codCliente) {
       sql += ` AND CHAMADO.COD_CLIENTE = ?`;
@@ -455,6 +547,10 @@ export async function GET(request: NextRequest) {
 
     const { dataInicio, dataFim } = construirDatas(params.mes, params.ano);
 
+    console.log('[API CHAMADOS] 🔍 Buscando chamados com OS no período...');
+    const codChamadosComOS = await buscarChamadosComOSNoPeriodo(dataInicio, dataFim, params);
+    console.log(`[API CHAMADOS] ✅ ${codChamadosComOS.length} chamados têm OS no período`);
+
     let nomeClienteFiltro: string | null = null;
     const codClienteAplicado =
       params.codClienteFilter ||
@@ -478,39 +574,76 @@ export async function GET(request: NextRequest) {
         dataInicio,
         dataFim,
         params,
+        codChamadosComOS,
       );
     }
 
-    const totalOS = await buscarTotalOS(dataInicio, dataFim, params);
-    const totalHorasOS = await buscarTotalHorasOS(dataInicio, dataFim, params);
-
-    const sqlBase = construirSQLBase();
-    const { sql, params: sqlParams } = aplicarFiltros(sqlBase, params, [
-      dataInicio,
-      dataFim,
+    // Buscar totais em paralelo
+    const [totalOS, totalHorasOS] = await Promise.all([
+      buscarTotalOS(dataInicio, dataFim, params),
+      buscarTotalHorasOS(dataInicio, dataFim, params),
     ]);
+
+    // Query principal com chamados que têm OS no período
+    const sqlBase = construirSQLBase(dataInicio, dataFim, codChamadosComOS);
+    
+    const paramsArray: any[] = [dataInicio, dataFim];
+    if (codChamadosComOS.length > 0) {
+      paramsArray.push(...codChamadosComOS.map(String));
+    }
+    
+    const { sql, params: sqlParams } = aplicarFiltros(sqlBase, params, paramsArray);
 
     const sqlFinal = `${sql} ORDER BY CHAMADO.DATA_CHAMADO DESC, CHAMADO.HORA_CHAMADO DESC`;
 
+    console.log('[API CHAMADOS] 🔍 Executando query principal...');
     const chamados = await firebirdQuery<any>(sqlFinal, sqlParams);
+    console.log(`[API CHAMADOS] ✅ ${chamados.length} chamados encontrados`);
 
-    const chamadosProcessados = processarChamados(chamados);
+    // Buscar horas de OS para todos os chamados
+    const codChamados = chamados.map((c) => c.COD_CHAMADO);
+    
+    if (codChamados.length > 0) {
+      console.log('[API CHAMADOS] 🔍 Buscando horas de OS...');
+      const mapaHoras = await buscarHorasPorChamados(codChamados);
+      console.log(`[API CHAMADOS] ✅ Horas carregadas para ${mapaHoras.size} chamados`);
 
-    return NextResponse.json(
-      {
-        success: true,
-        cliente: nomeClienteFiltro,
-        recurso: nomeRecursoFiltro,
-        status: statusFiltro,
-        totalChamados: chamadosProcessados.length,
-        totalOS: totalOS,
-        totalHorasOS: totalHorasOS,
-        mes: params.mes,
-        ano: params.ano,
-        data: chamadosProcessados,
-      },
-      { status: 200 },
-    );
+      // Processar chamados com as horas
+      const chamadosProcessados = processarChamados(chamados, mapaHoras);
+
+      return NextResponse.json(
+        {
+          success: true,
+          cliente: nomeClienteFiltro,
+          recurso: nomeRecursoFiltro,
+          status: statusFiltro,
+          totalChamados: chamadosProcessados.length,
+          totalOS: totalOS,
+          totalHorasOS: totalHorasOS,
+          mes: params.mes,
+          ano: params.ano,
+          data: chamadosProcessados,
+        },
+        { status: 200 },
+      );
+    } else {
+      // Sem chamados, retornar vazio
+      return NextResponse.json(
+        {
+          success: true,
+          cliente: nomeClienteFiltro,
+          recurso: nomeRecursoFiltro,
+          status: statusFiltro,
+          totalChamados: 0,
+          totalOS: totalOS,
+          totalHorasOS: totalHorasOS,
+          mes: params.mes,
+          ano: params.ano,
+          data: [],
+        },
+        { status: 200 },
+      );
+    }
   } catch (error) {
     console.error('[API CHAMADOS] ❌ Erro geral:', error);
     console.error(

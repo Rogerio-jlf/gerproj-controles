@@ -8,7 +8,7 @@ import {
   formatarPrioridade,
 } from '@/formatters/formatar-numeros';
 import { ColumnDef } from '@tanstack/react-table';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import React from 'react';
 import { corrigirTextoCorrompido } from '../../formatters/formatar-texto-corrompido';
 import { TooltipTabela } from '../utils/Tooltip';
@@ -88,7 +88,6 @@ const CellWithConditionalTooltip = ({
 
     checkTruncation();
 
-    // Adiciona listener para redimensionamento
     const resizeObserver = new ResizeObserver(checkTruncation);
     if (cellRef.current) {
       resizeObserver.observe(cellRef.current);
@@ -121,7 +120,7 @@ export const getColunasChamados = (
   columnWidths?: Record<string, number>,
 ): ColumnDef<ChamadoRowProps>[] => {
   const allColumns: ColumnDef<ChamadoRowProps>[] = [
-    // ✅ CÓDIGO DO CHAMADO COM ÍCONE DE EXPANSÃO INTEGRADO
+    // CÓDIGO DO CHAMADO COM ÍCONE
     {
       accessorKey: 'COD_CHAMADO',
       id: 'COD_CHAMADO',
@@ -131,37 +130,25 @@ export const getColunasChamados = (
         </div>
       ),
       cell: ({ getValue, row }) => {
-        const isExpanded = expandedRows.has(row.original.COD_CHAMADO);
         const temOS = row.original.TEM_OS ?? false;
         const value = getValue() as number;
 
         return (
           <div className="flex items-center gap-2">
-            {/* Ícone de Expansão */}
+            {/* Ícone indicando que há OS's */}
             <div className="flex items-center justify-center w-6 h-6 flex-shrink-0">
               {temOS ? (
-                isExpanded ? (
-                  <ChevronDown
-                    className="text-white transition-transform"
-                    size={24}
-                  />
-                ) : (
-                  <ChevronRight
-                    className="text-gray-800 transition-transform"
-                    size={24}
-                  />
-                )
+                <ChevronRight
+                  className="text-gray-800 transition-transform group-hover:scale-125"
+                  size={24}
+                />
               ) : (
-                <div className="w-6 h-6" /> // Espaço vazio quando não tem OS
+                <div className="w-6 h-6" />
               )}
             </div>
 
             {/* Número do Chamado */}
-            <div
-              className={`text-left font-semibold select-none tracking-widest text-sm flex-1 ${
-                isExpanded ? 'text-white' : 'text-gray-800'
-              }`}
-            >
+            <div className="text-left font-semibold select-none tracking-widest text-sm flex-1 text-gray-800">
               {formatarNumeros(value)}
             </div>
           </div>
@@ -179,13 +166,10 @@ export const getColunasChamados = (
         </div>
       ),
       cell: ({ row }) => {
-        const isExpanded = expandedRows.has(row.original.COD_CHAMADO);
         const data = row.original.DATA_CHAMADO;
         const hora = row.original.HORA_CHAMADO;
         return (
-          <div
-            className={`text-center font-semibold select-none tracking-widest text-sm ${isExpanded ? 'text-white' : 'text-gray-800'}`}
-          >
+          <div className="text-center font-semibold select-none tracking-widest text-sm text-gray-800">
             {formatarDataHoraChamado(data, hora)}
           </div>
         );
@@ -202,13 +186,10 @@ export const getColunasChamados = (
           PRIOR.
         </div>
       ),
-      cell: ({ getValue, row }) => {
-        const isExpanded = expandedRows.has(row.original.COD_CHAMADO);
+      cell: ({ getValue }) => {
         const value = getValue() as number;
         return (
-          <div
-            className={`text-center font-semibold select-none tracking-widest text-sm ${isExpanded ? 'text-white' : 'text-gray-800'}`}
-          >
+          <div className="text-center font-semibold select-none tracking-widest text-sm text-gray-800">
             {formatarPrioridade(value)}
           </div>
         );
@@ -225,15 +206,14 @@ export const getColunasChamados = (
           ASSUNTO
         </div>
       ),
-      cell: ({ getValue, row }) => {
-        const isExpanded = expandedRows.has(row.original.COD_CHAMADO);
+      cell: ({ getValue }) => {
         const value = getValue() as string | null;
         const textValue = corrigirTextoCorrompido(value);
 
         return (
           <CellWithConditionalTooltip
             content={textValue}
-            className={`font-semibold select-none tracking-widest text-sm overflow-hidden whitespace-nowrap truncate ${isExpanded ? 'text-white' : 'text-gray-800'}`}
+            className="font-semibold select-none tracking-widest text-sm overflow-hidden whitespace-nowrap truncate text-gray-800"
             maxWidth="400px"
           />
         );
@@ -250,8 +230,7 @@ export const getColunasChamados = (
           EMAIL
         </div>
       ),
-      cell: ({ getValue, row }) => {
-        const isExpanded = expandedRows.has(row.original.COD_CHAMADO);
+      cell: ({ getValue }) => {
         const value = (getValue() as string) ?? '---------------';
 
         const isSemEmailChamado = value === '---------------';
@@ -267,13 +246,14 @@ export const getColunasChamados = (
         return (
           <CellWithConditionalTooltip
             content={value}
-            className={`text-left font-semibold select-none tracking-widest text-sm overflow-hidden whitespace-nowrap truncate ${isExpanded ? 'text-white' : 'text-gray-800'}`}
+            className="text-left font-semibold select-none tracking-widest text-sm overflow-hidden whitespace-nowrap truncate text-gray-800"
             maxWidth="300px"
           />
         );
       },
       enableColumnFilter: true,
     },
+
     // Nome Classificação
     {
       accessorKey: 'NOME_CLASSIFICACAO',
@@ -283,21 +263,21 @@ export const getColunasChamados = (
           CLASSIFICAÇÃO
         </div>
       ),
-      cell: ({ getValue, row }) => {
-        const isExpanded = expandedRows.has(row.original.COD_CHAMADO);
+      cell: ({ getValue }) => {
         const value = getValue() as string | null;
         const textValue = corrigirTextoCorrompido(value);
 
         return (
           <CellWithConditionalTooltip
             content={textValue}
-            className={`text-left font-semibold select-none tracking-widest text-sm overflow-hidden whitespace-nowrap truncate ${isExpanded ? 'text-white' : 'text-gray-800'}`}
+            className="text-left font-semibold select-none tracking-widest text-sm overflow-hidden whitespace-nowrap truncate text-gray-800"
             maxWidth="300px"
           />
         );
       },
       enableColumnFilter: true,
     },
+
     // Data de Envio do Chamado
     {
       accessorKey: 'DTENVIO_CHAMADO',
@@ -307,8 +287,7 @@ export const getColunasChamados = (
           DATA/HORA ATRIBUIÇÃO
         </div>
       ),
-      cell: ({ getValue, row }) => {
-        const isExpanded = expandedRows.has(row.original.COD_CHAMADO);
+      cell: ({ getValue }) => {
         const value = (getValue() as string) ?? '---------------';
 
         const isSemDtEnvioChamado = value === '---------------';
@@ -322,9 +301,7 @@ export const getColunasChamados = (
         }
 
         return (
-          <div
-            className={`text-left font-semibold select-none tracking-widest text-sm ${isExpanded ? 'text-white' : 'text-gray-800'}`}
-          >
+          <div className="text-left font-semibold select-none tracking-widest text-sm text-gray-800">
             {value}
           </div>
         );
@@ -341,8 +318,7 @@ export const getColunasChamados = (
           CONSULTOR
         </div>
       ),
-      cell: ({ getValue, row }) => {
-        const isExpanded = expandedRows.has(row.original.COD_CHAMADO);
+      cell: ({ getValue }) => {
         const value = (getValue() as string) ?? '---------------';
 
         const isSemNomeRecursoChamado = value === '---------------';
@@ -363,7 +339,7 @@ export const getColunasChamados = (
         return (
           <CellWithConditionalTooltip
             content={textValue}
-            className={`font-semibold select-none tracking-widest text-sm overflow-hidden whitespace-nowrap truncate ${isExpanded ? 'text-white' : 'text-gray-800'}`}
+            className="font-semibold select-none tracking-widest text-sm overflow-hidden whitespace-nowrap truncate text-gray-800"
             maxWidth="250px"
           />
         );
@@ -412,8 +388,7 @@ export const getColunasChamados = (
           CONCLUSÃO CHAMADO
         </div>
       ),
-      cell: ({ getValue, row }) => {
-        const isExpanded = expandedRows.has(row.original.COD_CHAMADO);
+      cell: ({ getValue }) => {
         const value = (getValue() as string) ?? '---------------';
 
         const isSemConclusaoChamado = value === '---------------';
@@ -427,9 +402,7 @@ export const getColunasChamados = (
         }
 
         return (
-          <div
-            className={`text-center font-semibold select-none tracking-widest text-sm ${isExpanded ? 'text-white' : 'text-gray-800'}`}
-          >
+          <div className="text-center font-semibold select-none tracking-widest text-sm text-gray-800">
             {formatarDataParaBR(value)}
           </div>
         );
@@ -446,14 +419,11 @@ export const getColunasChamados = (
           QTD. HORAS
         </div>
       ),
-      cell: ({ getValue, row }) => {
-        const isExpanded = expandedRows.has(row.original.COD_CHAMADO);
+      cell: ({ getValue }) => {
         const value = getValue() as number | null;
 
         return (
-          <div
-            className={`text-center font-semibold select-none tracking-widest text-sm ${isExpanded ? 'text-white' : 'text-gray-800'}`}
-          >
+          <div className="text-center font-semibold select-none tracking-widest text-sm text-gray-800">
             {formatarHorasTotaisSufixo(value)}
           </div>
         );

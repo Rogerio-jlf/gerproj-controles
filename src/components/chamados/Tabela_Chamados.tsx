@@ -20,16 +20,13 @@ import { IsError } from '../utils/IsError';
 import { IsLoading } from '../utils/IsLoading';
 import { ExportaExcelChamadosButton } from './Button_Excel';
 import { ChamadoRowProps, getColunasChamados } from './Colunas_Tabela_Chamados';
-import {
-  getColumnWidthOS,
-  getColunasOS,
-  OSRowProps,
-} from './Colunas_Tabela_OS';
+import { OSRowProps } from './Colunas_Tabela_OS';
 import {
   FiltroHeaderChamados,
   useFiltrosChamados,
 } from './Filtro_Header_Tabela_Chamados';
 import { ModalOS } from './Modal_OS';
+import { ModalValidacaoOS } from './Modal_Validacao_OS';
 import { ResizeHandle } from './ResizeHandle';
 
 // ==================== INTERFACE ====================
@@ -39,17 +36,6 @@ interface ApiResponseChamados {
   totalOS: number;
   totalHorasOS: number;
   data: ChamadoRowProps[];
-}
-
-interface ApiResponseOS {
-  success: boolean;
-  codChamado: number;
-  totais: {
-    totalOS: number;
-    totalHoras: number;
-    totalValor: number;
-  };
-  data: OSRowProps[];
 }
 
 // ==================== UTILITÁRIOS ====================
@@ -62,7 +48,6 @@ const createAuthHeaders = () => ({
 });
 
 // ==================== FUNÇÕES DE FETCH ====================
-// Fetch de Chamados
 const fetchChamados = async ({
   ano,
   mes,
@@ -105,39 +90,6 @@ const fetchChamados = async ({
   return response.json();
 };
 
-// Fetch de OS por Chamado
-const fetchOSByChamado = async ({
-  codChamado,
-  isAdmin,
-  codCliente,
-}: {
-  codChamado: number;
-  isAdmin: boolean;
-  codCliente: string | null;
-}): Promise<ApiResponseOS> => {
-  const params = new URLSearchParams({
-    isAdmin: String(isAdmin),
-  });
-
-  if (!isAdmin && codCliente) {
-    params.append('codCliente', codCliente);
-  }
-
-  const response = await fetch(
-    `/api/chamados/${codChamado}/os?${params.toString()}`,
-    {
-      headers: createAuthHeaders(),
-    },
-  );
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || 'Erro ao carregar OS');
-  }
-
-  return response.json();
-};
-
 // ==================== COMPONENTE PRINCIPAL ====================
 export function TabelaChamados() {
   const { isAdmin, codCliente, isLoggedIn } = useAuth();
@@ -145,26 +97,26 @@ export function TabelaChamados() {
   const { ano, mes, cliente, recurso, status } = filters;
 
   // Estados
-  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalListaOSOpen, setIsModalListaOSOpen] = useState(false);
+  const [isModalOSOpen, setIsModalOSOpen] = useState(false);
+  const [selectedChamado, setSelectedChamado] = useState<number | null>(null);
   const [selectedOS, setSelectedOS] = useState<OSRowProps | null>(null);
 
   const { columnFilterFn } = useFiltrosChamados();
-  const hasExpandedRow = expandedRows.size > 0;
 
   const initialColumnWidths = {
-    COD_CHAMADO: 110, //ok
-    DATA_CHAMADO: 170, //ok
-    PRIOR_CHAMADO: 110, //ok
+    COD_CHAMADO: 110,
+    DATA_CHAMADO: 170,
+    PRIOR_CHAMADO: 110,
     ASSUNTO_CHAMADO: 280,
     EMAIL_CHAMADO: 220,
-    NOME_CLASSIFICACAO: 180, //ok
-    DTENVIO_CHAMADO: 170, //ok
-    NOME_RECURSO: 180, //ok
+    NOME_CLASSIFICACAO: 180,
+    DTENVIO_CHAMADO: 170,
+    NOME_RECURSO: 180,
     STATUS_CHAMADO: 220,
-    CONCLUSAO_CHAMADO: 150, //ok
-    TOTAL_HORAS_OS: 120, //ok
+    CONCLUSAO_CHAMADO: 150,
+    TOTAL_HORAS_OS: 120,
   };
 
   const { columnWidths, handleMouseDown, handleDoubleClick, resizingColumn } =
@@ -209,131 +161,53 @@ export function TabelaChamados() {
 
   const totalOS = useMemo(() => apiData?.totalOS ?? 0, [apiData?.totalOS]);
 
-  // Função para expandir/recolher linha
-  // Função para expandir/recolher linha com scroll melhorado
-  const toggleRow = useCallback((codChamado: number) => {
-    setExpandedRows((prev) => {
-      if (prev.size > 0 && !prev.has(codChamado)) {
-        return prev;
+  // Função para abrir modal de lista de OS's
+  const handleChamadoClick = useCallback(
+    (codChamado: number, temOS: boolean) => {
+      if (temOS) {
+        setSelectedChamado(codChamado);
+        setIsModalListaOSOpen(true);
       }
-
-      const newSet = new Set(prev);
-
-      if (newSet.has(codChamado)) {
-        newSet.delete(codChamado);
-      } else {
-        newSet.add(codChamado);
-
-        // Scroll automático após expandir - usa requestAnimationFrame para garantir que o DOM foi atualizado
-        requestAnimationFrame(() => {
-          setTimeout(() => {
-            const rowElement = document.querySelector(
-              `[data-chamado-id="${codChamado}"]`,
-            ) as HTMLElement;
-
-            if (rowElement) {
-              const container = rowElement.closest(
-                '.overflow-y-auto',
-              ) as HTMLElement;
-              const thead = document.querySelector('thead');
-
-              if (container && thead) {
-                // Aguarda a renderização da sub-tabela expandida
-                setTimeout(() => {
-                  const expandedRow =
-                    rowElement.nextElementSibling as HTMLElement;
-
-                  const containerRect = container.getBoundingClientRect();
-                  const rowRect = rowElement.getBoundingClientRect();
-
-                  // Pega apenas a primeira linha do thead (títulos das colunas)
-                  const theadFirstRow = thead.querySelector('tr:first-child');
-                  const theadFirstRowHeight = theadFirstRow
-                    ? theadFirstRow.getBoundingClientRect().height
-                    : 0;
-
-                  // Altura real da sub-tabela expandida (ou estimativa)
-                  const expandedHeight = expandedRow
-                    ? expandedRow.getBoundingClientRect().height
-                    : 400;
-
-                  // Posição atual da linha em relação ao scroll
-                  const rowTop =
-                    rowRect.top - containerRect.top + container.scrollTop;
-
-                  // Detecta se é uma das últimas linhas contando as linhas de chamado (não expandidas)
-                  const allChamadoRows = Array.from(
-                    container.querySelectorAll('tbody > tr[data-chamado-id]'),
-                  );
-                  const currentRowIndex = allChamadoRows.indexOf(rowElement);
-                  const isLastTwoRows =
-                    currentRowIndex >= allChamadoRows.length - 2;
-
-                  // Altura do container scrollável completo
-                  const scrollHeight = container.scrollHeight;
-
-                  // Posição do bottom da linha em relação ao conteúdo total
-                  const rowBottomAbsolute = rowTop + rowRect.height;
-
-                  // Espaço real disponível abaixo da linha considerando todo o scroll
-                  const spaceBelow = scrollHeight - rowBottomAbsolute;
-
-                  // Se é uma das duas últimas linhas OU não há espaço suficiente
-                  if (isLastTwoRows || spaceBelow < expandedHeight) {
-                    // SEMPRE posiciona logo abaixo do header
-                    const targetScroll = rowTop - theadFirstRowHeight - 10;
-
-                    container.scrollTo({
-                      top: Math.max(0, targetScroll),
-                      behavior: 'smooth',
-                    });
-                  } else {
-                    // Há espaço suficiente, posiciona normalmente
-                    const targetScroll = rowTop - theadFirstRowHeight;
-
-                    container.scrollTo({
-                      top: targetScroll,
-                      behavior: 'smooth',
-                    });
-                  }
-                }, 250); // Aumentado para 250ms
-              }
-            }
-          }, 50);
-        });
-      }
-      return newSet;
-    });
-  }, []);
-  // ====================
-
-  // Colunas dinâmicas
-  const columns = useMemo(
-    () => getColunasChamados(isAdmin, expandedRows, columnWidths), // ✅ ADICIONAR columnWidths
-    [isAdmin, expandedRows, columnWidths], // ✅ ADICIONAR na dependência
+    },
+    [],
   );
 
-  // ==================== CALLBACKS ====================
-  const clearAllFilters = useCallback(() => {
-    setColumnFilters([]);
+  // Função para abrir modal de detalhes da OS
+  const handleOSSelect = useCallback((os: OSRowProps) => {
+    setSelectedOS(os);
+    setIsModalOSOpen(true);
   }, []);
 
-  const openModal = useCallback((row: OSRowProps) => {
-    setSelectedOS(row);
-    setIsModalOpen(true);
+  // Função para fechar modal de lista de OS's
+  const handleCloseModalListaOS = useCallback(() => {
+    setIsModalListaOSOpen(false);
+    setSelectedChamado(null);
   }, []);
 
-  const closeModal = useCallback(() => {
-    setIsModalOpen(false);
+  // Função para fechar modal de detalhes da OS
+  const handleCloseModalOS = useCallback(() => {
+    setIsModalOSOpen(false);
     setSelectedOS(null);
   }, []);
 
+  // Função para salvar validação
   const handleSaveValidation = useCallback(
     (updatedRow: OSRowProps) => {
       refetch();
     },
     [refetch],
   );
+
+  // Colunas dinâmicas (sem expandedRows)
+  const columns = useMemo(
+    () => getColunasChamados(isAdmin, new Set(), columnWidths),
+    [isAdmin, columnWidths],
+  );
+
+  // ==================== CALLBACKS ====================
+  const clearAllFilters = useCallback(() => {
+    setColumnFilters([]);
+  }, []);
 
   // ==================== MEMORIZAÇÕES ====================
   const hasActiveFilters = useMemo(() => {
@@ -386,12 +260,10 @@ export function TabelaChamados() {
   );
 
   const totalHorasFiltradas = useMemo(() => {
-    // Se não há filtros ativos, retorna o total da API
     if (!hasActiveFilters) {
       return totalHorasOS;
     }
 
-    // Com filtros ativos, soma as horas dos chamados filtrados
     return dadosFiltrados.reduce((acc, chamado) => {
       return acc + (chamado.TOTAL_HORAS_OS || 0);
     }, 0);
@@ -406,7 +278,7 @@ export function TabelaChamados() {
     },
     onColumnFiltersChange: setColumnFilters,
     meta: {
-      toggleRow,
+      handleChamadoClick,
     },
   });
 
@@ -420,14 +292,10 @@ export function TabelaChamados() {
   }, [hasActiveFilters, totalChamadosFiltrados, totalChamados]);
 
   const totalOSFiltrados = useMemo(() => {
-    // Se não há filtros ativos, retorna o total da API
     if (!hasActiveFilters) {
       return totalOS;
     }
 
-    // Com filtros ativos, conta as OS's dos chamados filtrados
-    // Aqui assumimos que cada chamado com TOTAL_HORAS_OS > 0 tem pelo menos 1 OS
-    // Se você tiver o número exato de OS's por chamado, ajuste aqui
     return dadosFiltrados.reduce((acc, chamado) => {
       return acc + (chamado.TOTAL_HORAS_OS > 0 ? 1 : 0);
     }, 0);
@@ -470,37 +338,28 @@ export function TabelaChamados() {
     <>
       <div className="relative flex h-full flex-col overflow-hidden border bg-white shadow-md shadow-black w-full border-b-slate-500">
         <Header
-        isAdmin={isAdmin}
-        totalChamados={totalChamados}
-        totalChamadosFiltrados={chamadosExibidos}
-        totalOS={totalOS}
-        totalOSFiltrados={totalOSFiltrados}
-        totalHorasOS={totalHorasOS}
-        totalHorasFiltradas={totalHorasFiltradas}
-        hasActiveFilters={hasActiveFilters}
-        clearAllFilters={clearAllFilters}
-        filteredData={dadosFiltrados}
-        mes={String(mes)}
-        ano={String(ano)}
-        codCliente={codCliente} // ⭐ ADICIONAR ESTA LINHA
-        onRefresh={() => {
-          clearAllFilters();
-          setExpandedRows(new Set());
-          setTimeout(() => {
-            if (typeof window !== 'undefined') window.location.reload();
-          }, 100);
-        }}
-      />
+          isAdmin={isAdmin}
+          totalChamados={totalChamados}
+          totalChamadosFiltrados={chamadosExibidos}
+          totalOS={totalOS}
+          totalOSFiltrados={totalOSFiltrados}
+          totalHorasOS={totalHorasOS}
+          totalHorasFiltradas={totalHorasFiltradas}
+          hasActiveFilters={hasActiveFilters}
+          clearAllFilters={clearAllFilters}
+          filteredData={dadosFiltrados}
+          mes={String(mes)}
+          ano={String(ano)}
+          codCliente={codCliente}
+          onRefresh={() => {
+            clearAllFilters();
+            setTimeout(() => {
+              if (typeof window !== 'undefined') window.location.reload();
+            }, 100);
+          }}
+        />
 
         <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
-          {hasExpandedRow && (
-            <div
-              className="absolute inset-0 bg-black/30 backdrop-blur-xs z-20 animate-fadeIn cursor-pointer"
-              onClick={() => setExpandedRows(new Set())} // ✅ Fecha ao clicar no overlay
-              title="Clique para fechar"
-            />
-          )}
-
           <div
             className="flex-1 overflow-y-auto scrollbar-thin scrollbar-track-purple-100 scrollbar-thumb-purple-600 hover:scrollbar-thumb-purple-800"
             style={{ maxHeight: 'calc(100vh - 370px)' }}
@@ -514,17 +373,14 @@ export function TabelaChamados() {
                 isAdmin={isAdmin}
                 columnWidths={columnWidths}
                 handleMouseDown={handleMouseDown}
-                handleDoubleClick={handleDoubleClick} // ✅ ADICIONAR
+                handleDoubleClick={handleDoubleClick}
                 resizingColumn={resizingColumn}
               />
               <TableBody
                 table={table}
                 columns={columns}
-                expandedRows={expandedRows}
                 isAdmin={isAdmin}
-                codCliente={codCliente}
                 clearAllFilters={clearAllFilters}
-                openModal={openModal}
                 columnWidths={columnWidths}
               />
             </table>
@@ -532,11 +388,19 @@ export function TabelaChamados() {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Modal Lista de OS's */}
       <ModalOS
-        isOpen={isModalOpen}
+        isOpen={isModalListaOSOpen}
+        codChamado={selectedChamado}
+        onClose={handleCloseModalListaOS}
+        onSelectOS={handleOSSelect}
+      />
+
+      {/* Modal Detalhes da OS */}
+      <ModalValidacaoOS
+        isOpen={isModalOSOpen}
         selectedRow={selectedOS}
-        onClose={closeModal}
+        onClose={handleCloseModalOS}
         onSave={handleSaveValidation}
       />
     </>
@@ -548,7 +412,6 @@ export function TabelaChamados() {
 // ============================================================
 
 // ==================== HEADER ====================
-
 interface HeaderProps {
   isAdmin: boolean;
   totalChamados: number;
@@ -562,7 +425,7 @@ interface HeaderProps {
   filteredData: ChamadoRowProps[];
   mes: string;
   ano: string;
-  codCliente: string | null; // ⭐ ADICIONAR
+  codCliente: string | null;
   onRefresh: () => void;
 }
 
@@ -579,16 +442,14 @@ function Header({
   filteredData,
   mes,
   ano,
-  codCliente, // ⭐ ADICIONAR
+  codCliente,
   onRefresh,
 }: HeaderProps) {
   const { cliente, recurso, status } = useFilters().filters;
-  
+
   return (
     <header className="flex flex-col gap-10 bg-purple-900 p-6">
-      {/* Título / Botão Atualizar */}
       <div className="flex w-full items-center justify-between">
-        {/* Título */}
         <div className="flex items-center gap-6">
           <div className="flex h-16 w-16 items-center justify-center rounded-md bg-white border border-purple-300">
             <IoCall className="text-black" size={48} />
@@ -598,7 +459,6 @@ function Header({
           </h2>
         </div>
 
-        {/* Botão Atualizar */}
         <FiRefreshCw
           onClick={onRefresh}
           title="Atualizar Dados"
@@ -607,9 +467,7 @@ function Header({
         />
       </div>
 
-      {/* Badges Totalizadores / Botão Limpar Filtros / Badge Administrador */}
       <div className="flex w-full items-center justify-between gap-4">
-        {/* Badges Totalizadores */}
         <div className="flex items-center justify-start flex-1 gap-4 flex-wrap">
           <BadgeTotalizador
             label={totalChamadosFiltrados === 1 ? 'Chamado' : 'Chamados'}
@@ -637,9 +495,7 @@ function Header({
           />
         </div>
 
-        {/* Botões de Ação */}
         <div className="flex items-center justify-end gap-20">
-          {/* Botão Limpar Filtros */}
           {hasActiveFilters && (
             <button
               onClick={clearAllFilters}
@@ -653,11 +509,10 @@ function Header({
             </button>
           )}
 
-          {/* ⭐ Botão Exportar Excel ATUALIZADO */}
           <ExportaExcelChamadosButton
             data={filteredData}
-            isAdmin={isAdmin} // ⭐ ADICIONAR
-            codCliente={codCliente} // ⭐ ADICIONAR
+            isAdmin={isAdmin}
+            codCliente={codCliente}
             filtros={{
               ano,
               mes,
@@ -671,7 +526,6 @@ function Header({
             disabled={filteredData.length === 0}
           />
 
-          {/* Badge Administrador */}
           {isAdmin && (
             <div className="flex items-center gap-4 rounded-full bg-purple-900 px-6 py-2 ring-2 ring-emerald-600">
               <div className="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-600"></div>
@@ -685,7 +539,6 @@ function Header({
     </header>
   );
 }
-// ====================
 
 // ==================== BADGE TOTALIZADOR ====================
 interface BadgeTotalizadorProps {
@@ -718,7 +571,6 @@ function BadgeTotalizador({
     </div>
   );
 }
-// ====================
 
 // ==================== TABLE HEADER ====================
 function TableHeader({
@@ -726,14 +578,14 @@ function TableHeader({
   isAdmin,
   columnWidths,
   handleMouseDown,
-  handleDoubleClick, // ✅ ADICIONAR
+  handleDoubleClick,
   resizingColumn,
 }: {
   table: any;
   isAdmin: boolean;
   columnWidths: Record<string, number>;
   handleMouseDown: (e: React.MouseEvent, columnId: string) => void;
-  handleDoubleClick: (columnId: string) => void; // ✅ ADICIONAR
+  handleDoubleClick: (columnId: string) => void;
   resizingColumn: string | null;
 }) {
   return (
@@ -743,7 +595,7 @@ function TableHeader({
           {headerGroup.headers.map((header: any, idx: number) => (
             <th
               key={header.id}
-              className="bg-teal-700 py-6 pl-3.5 pr-4 relative border-r border-teal-900 border-b " // ✅ ADICIONAR border
+              className="bg-teal-700 py-6 pl-3.5 pr-4 relative border-r border-teal-900 border-b"
               style={{ width: `${columnWidths[header.id]}px` }}
             >
               {header.isPlaceholder
@@ -753,12 +605,11 @@ function TableHeader({
                     header.getContext(),
                   )}
 
-              {/* ✅ ADICIONAR ResizeHandle (exceto na última coluna) */}
               {idx < headerGroup.headers.length - 1 && (
                 <ResizeHandle
                   columnId={header.id}
                   onMouseDown={handleMouseDown}
-                  onDoubleClick={handleDoubleClick} // ✅ ADICIONAR
+                  onDoubleClick={handleDoubleClick}
                   isResizing={resizingColumn === header.id}
                 />
               )}
@@ -767,13 +618,12 @@ function TableHeader({
         </tr>
       ))}
 
-      {/* Linha de filtros */}
-      <tr className=" bg-teal-700">
+      <tr className="bg-teal-700">
         {table.getAllColumns().map((column: any, idx: number) => (
           <th
             key={column.id}
-            className="py-4 pl-4 pr-4 relative" // ✅ ADICIONAR relative
-            style={{ width: `${columnWidths[column.id]}px` }} // ✅ MODIFICAR
+            className="py-4 pl-4 pr-4 relative"
+            style={{ width: `${columnWidths[column.id]}px` }}
           >
             {column.id === 'TOTAL_HORAS_OS' ? (
               <div className="h-[42px]" />
@@ -785,12 +635,11 @@ function TableHeader({
               />
             )}
 
-            {/* ✅ ADICIONAR ResizeHandle (exceto na última coluna) */}
             {idx < table.getAllColumns().length - 1 && (
               <ResizeHandle
                 columnId={column.id}
                 onMouseDown={handleMouseDown}
-                onDoubleClick={handleDoubleClick} // ✅ ADICIONAR
+                onDoubleClick={handleDoubleClick}
                 isResizing={resizingColumn === column.id}
               />
             )}
@@ -800,31 +649,24 @@ function TableHeader({
     </thead>
   );
 }
-// ====================
 
 // ==================== TABLE BODY ====================
 interface TableBodyProps {
   table: any;
   columns: any;
-  expandedRows: Set<number>;
   isAdmin: boolean;
-  codCliente: string | null;
   clearAllFilters: () => void;
-  openModal: (row: OSRowProps) => void;
+  columnWidths: Record<string, number>;
 }
 
 function TableBody({
   table,
   columns,
-  expandedRows,
   isAdmin,
-  codCliente,
   clearAllFilters,
-  openModal,
-  columnWidths, // ✅ ADICIONAR
-}: TableBodyProps & { columnWidths: Record<string, number> }) {
+  columnWidths,
+}: TableBodyProps) {
   const rows = table.getRowModel().rows;
-  const hasExpandedRow = expandedRows.size > 0;
 
   if (rows.length === 0) {
     return (
@@ -841,70 +683,43 @@ function TableBody({
   return (
     <tbody className="relative">
       {rows.map((row: any, rowIndex: number) => {
-        const isExpanded = expandedRows.has(row.original.COD_CHAMADO);
-        const toggleRow = table.options.meta?.toggleRow;
+        const handleChamadoClick = table.options.meta?.handleChamadoClick;
         const temOS = row.original.TEM_OS ?? false;
 
         return (
-          <React.Fragment key={row.id}>
-            <tr
-              data-chamado-id={row.original.COD_CHAMADO}
-              onClick={() => {
-                if (temOS && toggleRow) {
-                  toggleRow(row.original.COD_CHAMADO);
-                }
-              }}
-              className={`group transition-all relative ${
-                temOS ? 'cursor-pointer' : 'cursor-not-allowed'
-              } ${
-                isExpanded
-                  ? 'bg-black z-30'
-                  : rowIndex % 2 === 0
-                    ? 'bg-white hover:bg-gray-300'
-                    : 'bg-white hover:bg-gray-300'
-              } ${
-                hasExpandedRow && !isExpanded ? 'z-10 pointer-events-none' : ''
-              } `}
-            >
-              {row.getVisibleCells().map((cell: any, cellIndex: number) => (
-                <td
-                  key={cell.id}
-                  style={{ width: `${columnWidths[cell.column.id]}px` }}
-                  className={`border-b border-r border-gray-500 p-3 transition-all ${
-                    cellIndex === 0 ? 'pl-3' : ''
-                  } ${cellIndex === row.getVisibleCells().length - 1 ? 'pr-4' : ''} ${
-                    isExpanded ? 'font-semibold' : ''
-                  }`}
-                >
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-
-            {isExpanded && temOS && (
-              <tr key={`${row.id}-expanded`} className="relative z-30">
-                <td
-                  colSpan={table.getAllColumns().length}
-                  className="px-6 pt-6 pb-12 bg-white rounded-b relative"
-                >
-                  <div className="relative z-10">
-                    <SubTabelaOS
-                      codChamado={row.original.COD_CHAMADO}
-                      isAdmin={isAdmin}
-                      codCliente={codCliente}
-                      openModal={openModal}
-                    />
-                  </div>
-                </td>
-              </tr>
-            )}
-          </React.Fragment>
+          <tr
+            key={row.id}
+            data-chamado-id={row.original.COD_CHAMADO}
+            onClick={() => {
+              if (temOS && handleChamadoClick) {
+                handleChamadoClick(row.original.COD_CHAMADO, temOS);
+              }
+            }}
+            className={`group transition-all relative ${
+              temOS ? 'cursor-pointer' : 'cursor-not-allowed'
+            } ${
+              rowIndex % 2 === 0
+                ? 'bg-white hover:bg-gray-300'
+                : 'bg-white hover:bg-gray-300'
+            }`}
+          >
+            {row.getVisibleCells().map((cell: any, cellIndex: number) => (
+              <td
+                key={cell.id}
+                style={{ width: `${columnWidths[cell.column.id]}px` }}
+                className={`border-b border-r border-gray-500 p-3 transition-all ${
+                  cellIndex === 0 ? 'pl-3' : ''
+                } ${cellIndex === row.getVisibleCells().length - 1 ? 'pr-4' : ''}`}
+              >
+                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              </td>
+            ))}
+          </tr>
         );
       })}
     </tbody>
   );
 }
-// ====================
 
 // ==================== EMPTY STATE ====================
 function EmptyState({ clearAllFilters }: { clearAllFilters: () => void }) {
@@ -923,132 +738,6 @@ function EmptyState({ clearAllFilters }: { clearAllFilters: () => void }) {
       >
         Limpar Filtros
       </button>
-    </div>
-  );
-}
-// ====================
-
-// ==================== SUB-TABELA DE OS's ====================
-interface SubTabelaOSProps {
-  codChamado: number;
-  isAdmin: boolean;
-  codCliente: string | null;
-  openModal: (row: OSRowProps) => void;
-}
-
-function SubTabelaOS({
-  codChamado,
-  isAdmin,
-  codCliente,
-  openModal,
-}: SubTabelaOSProps) {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['os', codChamado, isAdmin, codCliente],
-    queryFn: () => fetchOSByChamado({ codChamado, isAdmin, codCliente }),
-    staleTime: 1000 * 60 * 5,
-    retry: 2,
-  });
-
-  const osData = useMemo(() => data?.data ?? [], [data?.data]);
-  const columns = useMemo(() => getColunasOS(), []);
-
-  const table = useReactTable<OSRowProps>({
-    data: osData,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
-
-  if (isLoading) {
-    return (
-      <div className="p-8 text-center">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-slate-300 border-t-indigo-600"></div>
-        <p className="mt-4 text-sm text-slate-600 italic">Carregando OS's...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-8 text-center text-red-600">
-        <p className="font-bold">Erro ao carregar OS's</p>
-        <p className="text-sm italic">{(error as Error).message}</p>
-      </div>
-    );
-  }
-
-  if (osData.length === 0) {
-    return (
-      <div className="p-8 text-center text-slate-600 italic">
-        Nenhuma OS encontrada para este chamado
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-white">
-      {/* Header da Subtabela */}
-      <div className="mb-3 flex items-center gap-3">
-        <div className="h-2.5 w-2.5 rounded-full bg-teal-800 animate-pulse"></div>
-        <span className="text-base font-extrabold text-gray-800 tracking-widest select-none">
-          {osData.length > 1 ? 'ORDENS DE SERVIÇO' : 'ORDEM DE SERVIÇO'} -
-          CHAMADO #{codChamado}
-        </span>
-        <div className="h-px flex-1 bg-gray-800"></div>
-        <span className="text-base font-extrabold text-gray-800 select-none tracking-widest">
-          {osData.length} {osData.length === 1 ? 'OS' : "OS's"}
-        </span>
-      </div>
-
-      {/* Container com Scroll */}
-      <div
-        className="overflow-y-auto rounded-md shadow-xs shadow-black scrollbar-thin scrollbar-track-teal-100 scrollbar-thumb-teal-600 hover:scrollbar-thumb-teal-800"
-        style={{ maxHeight: '400px' }}
-      >
-        <table
-          className="w-full border-separate border-spacing-0"
-          style={{ tableLayout: 'fixed' }}
-        >
-          <thead className="sticky top-0 z-10">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="bg-teal-800 p-3 font-extrabold tracking-widest select-none text-base"
-                    style={{ width: getColumnWidthOS(header.id) }}
-                  >
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext(),
-                    )}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {table.getRowModel().rows.map((row, idx) => (
-              <tr
-                key={row.id}
-                onClick={() => openModal(row.original)}
-                className={`cursor-pointer ${
-                  idx % 2 === 0 ? 'bg-white' : 'bg-white'
-                } hover:bg-gray-300 transition-all`}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <td
-                    key={cell.id}
-                    className="p-3 border-b border-gray-400"
-                    style={{ width: getColumnWidthOS(cell.column.id) }}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }

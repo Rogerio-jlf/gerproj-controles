@@ -11,15 +11,18 @@ import { TooltipTabela } from '../utils/Tooltip';
 
 // ==================== INTERFACES ====================
 export interface OSRowProps {
-  // COD_OS: number;
+  COD_OS: number;
   NUM_OS: number;
   DTINI_OS: string;
   HRINI_OS: string;
   HRFIM_OS: string;
   TOTAL_HORAS_OS: number;
+  OBS: string | null;
   NOME_RECURSO: string | null;
   NOME_TAREFA: string | null;
   VALCLI_OS: string | null;
+  // ==================
+  NOME_CLIENTE?: string | null;
 }
 // ===============
 
@@ -27,26 +30,28 @@ export interface OSRowProps {
 
 const COLUMN_WIDTH_ADMIN: Record<string, string> = {
   // COD_OS: '8%',
-  NUM_OS: '10%',
-  DTINI_OS: '10%',
-  HRINI_OS: '10%',
-  HRFIM_OS: '10%',
+  NUM_OS: '8%',
+  DTINI_OS: '8%',
+  HRINI_OS: '8%',
+  HRFIM_OS: '8%',
   TOTAL_HORAS_OS: '10%',
-  NOME_RECURSO: '15%',
-  NOME_TAREFA: '15%',
-  VALCLI_OS: '12%',
+  OBS: '18%',
+  NOME_RECURSO: '14%',
+  NOME_TAREFA: '16%',
+  VALCLI_OS: '10%',
 };
 
 const COLUMN_WIDTH_CLIENT: Record<string, string> = {
   // COD_OS: '8%',
-  NUM_OS: '10%',
-  DTINI_OS: '10%',
-  HRINI_OS: '10%',
-  HRFIM_OS: '10%',
+  NUM_OS: '8%',
+  DTINI_OS: '8%',
+  HRINI_OS: '8%',
+  HRFIM_OS: '8%',
   TOTAL_HORAS_OS: '10%',
-  NOME_RECURSO: '15%',
-  NOME_TAREFA: '15%',
-  VALCLI_OS: '12%',
+  OBS: '18%',
+  NOME_RECURSO: '14%',
+  NOME_TAREFA: '16%',
+  VALCLI_OS: '10%',
 };
 // ===============
 
@@ -93,37 +98,17 @@ const ValidacaoBadge = ({ status }: { status?: string | null }) => {
 // ==================== COLUNAS ====================
 export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
   return [
-    // Código da OS
-    // {
-    //   accessorKey: 'COD_OS',
-    //   id: 'COD_OS',
-    //   header: () => (
-    //     <div className="text-center tracking-widest font-extrabold select-none text-white text-sm">
-    //       OS
-    //     </div>
-    //   ),
-    //   cell: ({ getValue }) => {
-    //     const value = getValue() as number;
-    //     return (
-    //       <div className="text-center font-semibold select-none tracking-widest text-sm text-gray-800">
-    //         {formatarNumeros(value)}
-    //       </div>
-    //     );
-    //   },
-    // },
-    // ===============
-
     //  Número da OS
     {
       accessorKey: 'NUM_OS',
       id: 'NUM_OS',
       header: () => (
         <div className="text-center tracking-widest font-extrabold select-none text-white text-sm">
-          NÚMERO OS
+          NÚM. OS
         </div>
       ),
       cell: ({ getValue }) => {
-        const value = getValue() as number;
+        const value = (getValue() as number) ?? '---------------';
         return (
           <div className="text-center font-semibold select-none tracking-widest text-sm text-gray-800">
             {formatarNumeros(value)}
@@ -133,7 +118,7 @@ export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
     },
     // ===============
 
-    // Data de Início
+    // Data de Início da OS
     {
       accessorKey: 'DTINI_OS',
       id: 'DTINI_OS',
@@ -143,18 +128,17 @@ export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
         </div>
       ),
       cell: ({ getValue }) => {
-        const dateString = getValue() as string;
-        const formattedDate = formatarDataParaBR(dateString);
+        const value = getValue() as string;
         return (
           <div className="text-center font-semibold select-none tracking-widest text-sm text-gray-800">
-            {formattedDate}
+            {formatarDataParaBR(value)}
           </div>
         );
       },
     },
     // ===============
 
-    // Hora de Início
+    // Hora de Início da OS
     {
       accessorKey: 'HRINI_OS',
       id: 'HRINI_OS',
@@ -174,7 +158,7 @@ export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
     },
     // ===============
 
-    // Hora do Fim
+    // Hora Fim da OS
     {
       accessorKey: 'HRFIM_OS',
       id: 'HRFIM_OS',
@@ -194,7 +178,7 @@ export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
     },
     // ===============
 
-    // Total de Horas Trabalhadas
+    // Total de Horas da OS
     {
       accessorKey: 'TOTAL_HORAS_OS',
       id: 'TOTAL_HORAS_OS',
@@ -214,7 +198,32 @@ export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
     },
     // ===============
 
-    // Consultor
+    // Observação da OS
+    {
+      accessorKey: 'OBS',
+      id: 'OBS',
+      header: () => (
+        <div className="text-center tracking-widest font-extrabold select-none text-white text-sm">
+          OBSERVAÇÃO
+        </div>
+      ),
+      cell: ({ getValue }) => {
+        const value = (getValue() as string) ?? '---------------';
+        const isSemObs = value === '---------------';
+        return (
+          <TooltipTabela content={value} maxWidth="400px">
+            <div
+              className={`font-semibold tracking-widest text-sm text-gray-800 select-none truncate overflow-hidden whitespace-nowrap ${isSemObs ? 'text-center' : 'text-left'}`}
+            >
+              {corrigirTextoCorrompido(value)}
+            </div>
+          </TooltipTabela>
+        );
+      },
+    },
+    // ===============
+
+    // Consultor da OS
     {
       accessorKey: 'NOME_RECURSO',
       id: 'NOME_RECURSO',
@@ -224,17 +233,15 @@ export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
         </div>
       ),
       cell: ({ getValue }) => {
-        const raw = (getValue() as string) ?? 'N/A';
-        const corrected = corrigirTextoCorrompido(raw);
+        const value = (getValue() as string) ?? '---------------';
+        const corrected = corrigirTextoCorrompido(value);
         const parts = corrected.trim().split(/\s+/).filter(Boolean);
         const display =
           parts.length <= 2 ? parts.join(' ') : parts.slice(0, 2).join(' ');
         return (
-          <TooltipTabela content={corrected} maxWidth="200px">
-            <div className="text-left font-semibold select-none tracking-widest text-sm text-gray-800 truncate">
-              {display}
-            </div>
-          </TooltipTabela>
+          <div className="text-center font-semibold select-none tracking-widest text-sm text-gray-800">
+            {display}
+          </div>
         );
       },
     },
@@ -250,11 +257,14 @@ export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
         </div>
       ),
       cell: ({ getValue }) => {
-        const raw = (getValue() as string) ?? 'N/A';
+        const value = (getValue() as string) ?? '---------------';
+        const isSemNomeTarefa = value === '---------------';
         return (
-          <TooltipTabela content={raw} maxWidth="200px">
-            <div className="text-left font-semibold select-none tracking-widest text-sm text-gray-800">
-              {corrigirTextoCorrompido(raw)}
+          <TooltipTabela content={value} maxWidth="400px">
+            <div
+              className={`font-semibold tracking-widest text-sm text-gray-800 select-none truncate overflow-hidden whitespace-nowrap ${isSemNomeTarefa ? 'text-center' : 'text-left'}`}
+            >
+              {corrigirTextoCorrompido(value)}
             </div>
           </TooltipTabela>
         );
@@ -262,7 +272,7 @@ export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
     },
     // ===============
 
-    // Validação
+    // Validação da OS
     {
       accessorKey: 'VALCLI_OS',
       id: 'VALCLI_OS',
@@ -271,11 +281,14 @@ export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
           VALIDAÇÃO
         </div>
       ),
-      cell: ({ getValue }) => (
-        <div className="flex justify-center w-full">
-          <ValidacaoBadge status={getValue() as string | null} />
-        </div>
-      ),
+      cell: ({ getValue }) => {
+        const value = (getValue() as string) ?? '---------------';
+        return (
+          <div className="flex justify-center w-full">
+            <ValidacaoBadge status={value} />
+          </div>
+        );
+      },
     },
     // ===============
   ];

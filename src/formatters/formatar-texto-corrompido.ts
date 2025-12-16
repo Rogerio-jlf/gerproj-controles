@@ -74,7 +74,8 @@ function corrigirManual(texto: string): string {
     'Tý': 'TÔ',
     'ýý': 'ÇÃ',  // ✅ EVOLUÇÃO
     'Dý': 'DÃ', 
-    'ý': 'Ç'    // ✅ Maiúsculo
+    'ý': 'Ç',
+    '�ÃO': 'ÇÃO'
   };
 
   let corrigido = texto;

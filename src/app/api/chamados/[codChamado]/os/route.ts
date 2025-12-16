@@ -9,27 +9,9 @@ export interface OrdemServico {
   DTINI_OS: Date;
   HRINI_OS: string;
   HRFIM_OS: string;
-  // OBS_OS: string | null;
-  // STATUS_OS: number;
-  // PRODUTIVO_OS: string;
-  // CODREC_OS: number;
-  // PRODUTIVO2_OS: string;
-  // RESPCLI_OS: string;
-  // REMDES_OS: string;
-  // ABONO_OS: string;
-  // DESLOC_OS: string | null;
-  // DTINC_OS: Date;
-  // FATURADO_OS: string;
-  // PERC_OS: number;
-  // COD_FATURAMENTO: number | null;
-  // COMP_OS: string | null;
-  // VALID_OS: string;
-  // VRHR_OS: number;
+  OBS: string | null;
   NUM_OS: string | null;
-  // CHAMADO_OS: string | null;
   VALCLI_OS: string | null;
-  // OBSCLI_OS: string | null;
-  // LOGVALCLI_OS: string | null;
   NOME_RECURSO?: string | null;
   NOME_TAREFA?: string | null;
   NOME_CLIENTE?: string | null;
@@ -42,41 +24,23 @@ interface RouteParams {
   };
 }
 
+interface QueryParams {
+  isAdmin: boolean;
+  codCliente?: number;
+  mes?: number;
+  ano?: number;
+}
+
 // ==================== CONFIGURAÇÃO DE CAMPOS ====================
-/**
- * Configure aqui quais campos você quer buscar do banco.
- * Para ATIVAR um campo: remova o comentário da linha
- * Para DESATIVAR um campo: adicione // no início da linha
- *
- * ⚠️ ATENÇÃO: Campos com * são OBRIGATÓRIOS para o funcionamento básico
- */
 const CAMPOS_OS = {
   COD_OS: 'OS.COD_OS',
   CODTRF_OS: 'OS.CODTRF_OS',
   DTINI_OS: 'OS.DTINI_OS',
   HRINI_OS: 'OS.HRINI_OS',
   HRFIM_OS: 'OS.HRFIM_OS',
-  // OBS_OS: 'OS.OBS_OS',
-  // STATUS_OS: 'OS.STATUS_OS',
-  // PRODUTIVO_OS: 'OS.PRODUTIVO_OS',
-  // CODREC_OS: 'OS.CODREC_OS',
-  // PRODUTIVO2_OS: 'OS.PRODUTIVO2_OS',
-  // RESPCLI_OS: 'OS.RESPCLI_OS',
-  // REMDES_OS: 'OS.REMDES_OS',
-  // ABONO_OS: 'OS.ABONO_OS',
-  // DESLOC_OS: 'OS.DESLOC_OS',
-  // DTINC_OS: 'OS.DTINC_OS',
-  // FATURADO_OS: 'OS.FATURADO_OS',
-  // PERC_OS: 'OS.PERC_OS',
-  // COD_FATURAMENTO: 'OS.COD_FATURAMENTO',
-  // COMP_OS: 'OS.COMP_OS',
-  // VRHR_OS: 'OS.VRHR_OS',
+  OBS: 'OS.OBS',
   NUM_OS: 'OS.NUM_OS',
-  // CHAMADO_OS: 'OS.CHAMADO_OS',
-  // VALID_OS: 'OS.VALID_OS',
   VALCLI_OS: 'OS.VALCLI_OS',
-  // OBSCLI_OS: 'OS.OBSCLI_OS',
-  // LOGVALCLI_OS: 'OS.LOGVALCLI_OS',
   NOME_RECURSO: 'RECURSO.NOME_RECURSO',
   NOME_TAREFA: 'TAREFA.NOME_TAREFA',
   NOME_CLIENTE: 'CLIENTE.NOME_CLIENTE',
@@ -99,9 +63,11 @@ function validarCodChamado(codChamado: string): number | NextResponse {
 function validarAutorizacao(
   searchParams: URLSearchParams,
   codChamado: number,
-): { isAdmin: boolean; codCliente?: number } | NextResponse {
+): QueryParams | NextResponse {
   const isAdmin = searchParams.get('isAdmin') === 'true';
   const codCliente = searchParams.get('codCliente')?.trim();
+  const mes = searchParams.get('mes');
+  const ano = searchParams.get('ano');
 
   if (!isAdmin && !codCliente) {
     return NextResponse.json(
@@ -110,10 +76,51 @@ function validarAutorizacao(
     );
   }
 
+  // Validar mes e ano se fornecidos
+  let mesNum: number | undefined = undefined;
+  let anoNum: number | undefined = undefined;
+
+  if (mes && ano) {
+    mesNum = Number(mes);
+    anoNum = Number(ano);
+
+    if (mesNum < 1 || mesNum > 12) {
+      return NextResponse.json(
+        { error: "Parâmetro 'mes' deve ser um número entre 1 e 12" },
+        { status: 400 },
+      );
+    }
+
+    if (anoNum < 2000 || anoNum > 3000) {
+      return NextResponse.json(
+        { error: "Parâmetro 'ano' deve ser um número válido" },
+        { status: 400 },
+      );
+    }
+  }
+
   return {
     isAdmin,
     codCliente: codCliente ? parseInt(codCliente) : undefined,
+    mes: mesNum,
+    ano: anoNum,
   };
+}
+
+// ==================== CONSTRUÇÃO DE DATAS ====================
+function construirDatas(
+  mes: number,
+  ano: number,
+): { dataInicio: string; dataFim: string } {
+  const mesFormatado = mes.toString().padStart(2, '0');
+  const dataInicio = `01.${mesFormatado}.${ano}`;
+
+  const dataFim =
+    mes === 12
+      ? `01.01.${ano + 1}`
+      : `01.${(mes + 1).toString().padStart(2, '0')}.${ano}`;
+
+  return { dataInicio, dataFim };
 }
 
 // ==================== VERIFICAR PERMISSÃO ====================
@@ -152,10 +159,13 @@ function calcularHorasTrabalhadas(hrIni: string, hrFim: string): number {
 }
 
 // ==================== CONSTRUÇÃO DE SQL ====================
-function construirSQLBase(): string {
+function construirSQLBase(
+  dataInicio?: string,
+  dataFim?: string,
+): { sql: string; temFiltroPeriodo: boolean } {
   const campos = Object.values(CAMPOS_OS).join(',\n    ');
 
-  return `
+  let sql = `
   SELECT 
     ${campos}
   FROM OS
@@ -163,9 +173,19 @@ function construirSQLBase(): string {
   LEFT JOIN TAREFA ON OS.CODTRF_OS = TAREFA.COD_TAREFA
   LEFT JOIN CHAMADO ON OS.CHAMADO_OS = CAST(CHAMADO.COD_CHAMADO AS VARCHAR(20))
   LEFT JOIN CLIENTE ON CHAMADO.COD_CLIENTE = CLIENTE.COD_CLIENTE
-  WHERE OS.CHAMADO_OS = ?
-  ORDER BY OS.DTINI_OS DESC, OS.HRINI_OS DESC
-`;
+  WHERE OS.CHAMADO_OS = ?`;
+
+  // Se tiver filtro de período, adicionar
+  if (dataInicio && dataFim) {
+    sql += `
+    AND OS.DTINI_OS >= ? 
+    AND OS.DTINI_OS < ?`;
+    return { sql: sql + `
+  ORDER BY OS.DTINI_OS DESC, OS.NUM_OS DESC`, temFiltroPeriodo: true };
+  }
+
+  return { sql: sql + `
+  ORDER BY OS.DTINI_OS DESC, OS.NUM_OS DESC`, temFiltroPeriodo: false };
 }
 
 // ==================== PROCESSAMENTO DE DADOS ====================
@@ -176,27 +196,9 @@ function processarOrdemServico(os: any[]): OrdemServico[] {
     DTINI_OS: item.DTINI_OS,
     HRINI_OS: item.HRINI_OS,
     HRFIM_OS: item.HRFIM_OS,
-    // OBS_OS: item.OBS_OS || null,
-    // STATUS_OS: item.STATUS_OS,
-    // PRODUTIVO_OS: item.PRODUTIVO_OS,
-    // CODREC_OS: item.CODREC_OS,
-    // PRODUTIVO2_OS: item.PRODUTIVO2_OS,
-    // RESPCLI_OS: item.RESPCLI_OS,
-    // REMDES_OS: item.REMDES_OS,
-    // ABONO_OS: item.ABONO_OS,
-    // DESLOC_OS: item.DESLOC_OS || null,
-    // DTINC_OS: item.DTINC_OS,
-    // FATURADO_OS: item.FATURADO_OS,
-    // PERC_OS: item.PERC_OS,
-    // COD_FATURAMENTO: item.COD_FATURAMENTO || null,
-    // COMP_OS: item.COMP_OS || null,
-    // VALID_OS: item.VALID_OS,
-    // VRHR_OS: item.VRHR_OS,
+    OBS: item.OBS || null,
     NUM_OS: item.NUM_OS || null,
-    // CHAMADO_OS: item.CHAMADO_OS || null,
     VALCLI_OS: item.VALCLI_OS || null,
-    // OBSCLI_OS: item.OBSCLI_OS || null,
-    // LOGVALCLI_OS: item.LOGVALCLI_OS || null,
     NOME_RECURSO: item.NOME_RECURSO || null,
     NOME_TAREFA: item.NOME_TAREFA || null,
     NOME_CLIENTE: item.NOME_CLIENTE || null,
@@ -233,11 +235,29 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    // Construir SQL dinamicamente
-    const sqlFinal = construirSQLBase();
+    // Construir SQL dinamicamente com ou sem filtro de período
+    let sqlParams: any[] = [codChamado];
+    let dataInicio: string | undefined;
+    let dataFim: string | undefined;
+
+    if (auth.mes && auth.ano) {
+      const datas = construirDatas(auth.mes, auth.ano);
+      dataInicio = datas.dataInicio;
+      dataFim = datas.dataFim;
+    }
+
+    const { sql: sqlFinal, temFiltroPeriodo } = construirSQLBase(
+      dataInicio,
+      dataFim,
+    );
+
+    // Se tem filtro de período, adicionar os parâmetros de data
+    if (temFiltroPeriodo && dataInicio && dataFim) {
+      sqlParams.push(dataInicio, dataFim);
+    }
 
     // Buscar OS's do chamado
-    const os = await firebirdQuery<any>(sqlFinal, [codChamado]);
+    const os = await firebirdQuery<any>(sqlFinal, sqlParams);
 
     // Processar dados
     const osProcessadas = processarOrdemServico(os);
@@ -255,6 +275,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       {
         success: true,
         codChamado: codChamadoValidado,
+        periodo: temFiltroPeriodo
+          ? { mes: auth.mes, ano: auth.ano }
+          : undefined,
         totais,
         data: osProcessadas,
       },

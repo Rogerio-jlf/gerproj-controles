@@ -1,589 +1,277 @@
-// src/components/chamados/Modal_OS.tsx
+// src/components/chamados/Modal_Lista_OS.tsx
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
-import { formatarDataParaBR } from '@/formatters/formatar-data';
-import {
-  formatarHora,
-  formatarHorasTotaisSufixo,
-} from '@/formatters/formatar-hora';
+import { useFilters } from '@/context/FiltersContext';
 import { formatarNumeros } from '@/formatters/formatar-numeros';
-import { corrigirTextoCorrompido } from '@/formatters/formatar-texto-corrompido';
-import { removerAcentos } from '@/formatters/remover-acentuacao';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { memo, useCallback, useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
-import { BsChatSquareTextFill } from 'react-icons/bs';
+import { useQuery } from '@tanstack/react-query';
 import {
-  FaCalendar,
-  FaClock,
-  FaExclamationTriangle,
-  FaHashtag,
-  FaUser,
-} from 'react-icons/fa';
-import {
-  FaFileWaveform,
-  FaRegCircleCheck,
-  FaRegCirclePause,
-  FaRegCirclePlay,
-  FaRegCircleRight,
-  FaRegCircleUser,
-  FaRegCircleXmark,
-} from 'react-icons/fa6';
-import { IoIosSave } from 'react-icons/io';
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
+import { useMemo } from 'react';
 import { IoClose } from 'react-icons/io5';
-import { TbAlertOctagonFilled } from 'react-icons/tb';
-import { LoadingButton } from '../utils/Loading_Button';
-import { OSRowProps } from './Colunas_Tabela_OS';
+import { TbFileInvoice } from 'react-icons/tb';
+import { IsError } from '../utils/IsError';
+import { IsLoading } from '../utils/IsLoading';
+import {
+  getColumnWidthOS,
+  getColunasOS,
+  OSRowProps,
+} from './Colunas_Tabela_OS';
 
-interface ModalDataProps {
-  concordaPagar: boolean;
-  observacao: string;
+// ==================== INTERFACES ====================
+interface ApiResponseOS {
+  success: boolean;
+  codChamado: number;
+  periodo?: {
+    mes: number;
+    ano: number;
+  };
+  totais: {
+    quantidade_OS: number;
+    total_horas_chamado: number;
+  };
+  data: OSRowProps[];
 }
 
 interface ModalOSProps {
   isOpen: boolean;
-  selectedRow: OSRowProps | null;
+  codChamado: number | null;
   onClose: () => void;
-  onSave: (updatedRow: OSRowProps) => void;
+  onSelectOS: (os: OSRowProps) => void;
 }
 
-const STATUS_CONFIG = {
-  finalizado: {
-    icon: FaRegCircleCheck,
-    color: 'text-emerald-700',
-    bg: 'bg-emerald-100',
-    border: 'border-emerald-500',
-  },
-  'aguardando validacao': {
-    icon: FaRegCirclePlay,
-    color: 'text-purple-700',
-    bg: 'bg-purple-100',
-    border: 'border-purple-500',
-  },
-  atribuido: {
-    icon: FaRegCircleRight,
-    color: 'text-pink-700',
-    bg: 'bg-pink-100',
-    border: 'border-pink-500',
-  },
-  standby: {
-    icon: FaRegCirclePause,
-    color: 'text-amber-700',
-    bg: 'bg-amber-100',
-    border: 'border-amber-500',
-  },
-  'em atendimento': {
-    icon: FaRegCircleUser,
-    color: 'text-blue-700',
-    bg: 'bg-blue-100',
-    border: 'border-blue-500',
-  },
-} as const;
-
-const DEFAULT_STATUS = {
-  icon: FaRegCircleXmark,
-  color: 'text-slate-700',
-  bg: 'bg-slate-100',
-  border: 'border-slate-500',
-};
-
-const getStatusIcon = (status: string) => {
-  const statusLower = status?.toLowerCase() || '';
-  const matchedStatus = Object.keys(STATUS_CONFIG).find(
-    (key) => statusLower.includes(key) || key.includes(statusLower),
-  );
-  return matchedStatus
-    ? STATUS_CONFIG[matchedStatus as keyof typeof STATUS_CONFIG]
-    : DEFAULT_STATUS;
-};
-
-const StatusBadge = memo(({ status }: { status: string }) => {
-  const { icon: Icon, color, bg, border } = getStatusIcon(status);
-
-  return (
-    <div
-      className={`inline-flex items-center rounded-md border px-3 py-1.5 text-sm font-bold tracking-widest select-none ${bg} ${color} ${border}`}
-    >
-      <Icon className="mr-2 h-4 w-4" />
-      {status}
-    </div>
-  );
+// ==================== FUNÇÕES DE FETCH ====================
+const createAuthHeaders = () => ({
+  'Content-Type': 'application/json',
+  'x-is-logged-in': localStorage.getItem('isLoggedIn') || 'false',
+  'x-is-admin': localStorage.getItem('isAdmin') || 'false',
+  'x-user-email': localStorage.getItem('userEmail') || '',
+  'x-cod-cliente': localStorage.getItem('codCliente') || '',
 });
 
-StatusBadge.displayName = 'StatusBadge';
-
-const InfoCard = memo(
-  ({
-    icon: Icon,
-    label,
-    value,
-    fullWidth = false,
-  }: {
-    icon: any;
-    label: string;
-    value: string;
-    fullWidth?: boolean;
-  }) => (
-    <div
-      className={`group rounded-md border bg-gradient-to-br from-slate-50 to-white p-4 transition-all shadow-xs shadow-black ${fullWidth ? 'col-span-full' : ''}`}
-    >
-      <div className="mb-2 flex items-center gap-2">
-        <Icon className="text-slate-800" size={16} />
-        <span className="text-xs font-bold text-slate-800 tracking-widest select-none">
-          {label}
-        </span>
-      </div>
-      <div className="text-base font-bold text-slate-800 tracking-widest select-none">
-        {value}
-      </div>
-    </div>
-  ),
-);
-
-InfoCard.displayName = 'InfoCard';
-
-// Função para salvar validação na API
-const saveValidationApi = async ({
-  cod_os,
-  concordaPagar,
-  observacao,
+const fetchOSByChamado = async ({
+  codChamado,
+  isAdmin,
+  codCliente,
+  mes,
+  ano,
 }: {
-  cod_os: string | number;
-  concordaPagar: boolean;
-  observacao: string | null;
-}) => {
-  const response = await fetch('/api/salvar-validacao', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      cod_os,
-      concordaPagar,
-      observacao: observacao ? removerAcentos(observacao) : null,
-    }),
+  codChamado: number;
+  isAdmin: boolean;
+  codCliente: string | null;
+  mes: number;
+  ano: number;
+}): Promise<ApiResponseOS> => {
+  const params = new URLSearchParams({
+    isAdmin: String(isAdmin),
+    mes: String(mes),
+    ano: String(ano),
   });
 
+  if (!isAdmin && codCliente) {
+    params.append('codCliente', codCliente);
+  }
+
+  const response = await fetch(
+    `/api/chamados/${codChamado}/os?${params.toString()}`,
+    {
+      headers: createAuthHeaders(),
+    },
+  );
+
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || 'Falha ao salvar validação');
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Erro ao carregar OS');
   }
 
   return response.json();
 };
 
+// ==================== COMPONENTE PRINCIPAL ====================
 export function ModalOS({
   isOpen,
-  selectedRow,
+  codChamado,
   onClose,
-  onSave,
+  onSelectOS,
 }: ModalOSProps) {
-  const { isAdmin } = useAuth();
-  const queryClient = useQueryClient(); // Adicione esta linha
+  const { isAdmin, codCliente } = useAuth();
+  const { filters } = useFilters();
+  const { mes, ano } = filters;
 
-  const [modalData, setModalData] = useState<ModalDataProps>({
-    concordaPagar: true,
-    observacao: '',
-  });
-  const [validationError, setValidationError] = useState('');
-
-  // Mutation para salvar validação
-  const saveValidationMutation = useMutation({
-    mutationFn: saveValidationApi,
-    onSuccess: async (data, variables) => {
-      if (selectedRow) {
-        // Atualiza a linha com o novo valor de validação
-        const updatedRow: OSRowProps = {
-          ...selectedRow,
-          VALCLI_OS: variables.concordaPagar ? 'SIM' : 'NAO',
-        };
-
-        // Invalida TODAS as queries de OS para forçar recarregamento
-        await queryClient.invalidateQueries({
-          queryKey: ['os'],
-          exact: false,
-        });
-
-        // Chama o callback para atualizar a tabela
-        onSave(updatedRow);
-      }
-
-      // Mostra toast de sucesso
-      toast.success('Validação salva com sucesso!');
-
-      // Aguarda 800ms para o usuário ver o toast e fecha o modal
-      setTimeout(() => {
-        setModalData({ concordaPagar: true, observacao: '' });
-        setValidationError('');
-        onClose();
-      }, 1000);
-    },
-    onError: (error: Error) => {
-      console.error('Erro ao processar validação:', error);
-      toast.error(`Erro ao salvar validação: ${error.message}`);
-    },
+  // Query de OS's
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['modal-os-lista', codChamado, isAdmin, codCliente, mes, ano],
+    queryFn: () =>
+      fetchOSByChamado({
+        codChamado: codChamado!,
+        isAdmin,
+        codCliente,
+        mes: mes ?? new Date().getMonth() + 1,
+        ano: ano ?? new Date().getFullYear(),
+      }),
+    enabled: isOpen && codChamado !== null && !!mes && !!ano,
+    staleTime: 1000 * 60 * 5,
+    retry: 2,
   });
 
-  const handleCheckboxChange = useCallback((checked: boolean) => {
-    setModalData((prev) => ({
-      ...prev,
-      concordaPagar: checked,
-    }));
-    if (checked) setValidationError('');
-  }, []);
+  const osData = useMemo(() => data?.data ?? [], [data?.data]);
+  const columns = useMemo(() => getColunasOS(), []);
 
-  const handleObservacaoChange = useCallback((value: string) => {
-    // Remove espaços extras no início
-    const trimmed = value.replace(/^\s+/, '');
+  const table = useReactTable<OSRowProps>({
+    data: osData,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
 
-    // Transforma apenas a primeira letra da primeira palavra em maiúscula
-    const formatted = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
-
-    setModalData((prev) => ({
-      ...prev,
-      observacao: formatted,
-    }));
-  }, []);
-
-  const validateForm = useCallback((): boolean => {
-    if (!modalData.concordaPagar && modalData.observacao.trim() === '') {
-      setValidationError('.');
-      return false;
-    }
-    setValidationError('');
-    return true;
-  }, [modalData.concordaPagar, modalData.observacao]);
-
-  const handleClose = useCallback(() => {
-    if (saveValidationMutation.isPending) return;
-
-    if (!modalData.concordaPagar && modalData.observacao.trim() === '') {
-      setValidationError(
-        'Para salvar a discordância e/ou fechar o formulário, você deve informar o motivo na observação, ou aprovar a OS.',
-      );
-      return;
-    }
-
-    setModalData({ concordaPagar: true, observacao: '' });
-    setValidationError('');
+  // Função para fechar modal
+  const handleClose = () => {
     onClose();
-  }, [
-    saveValidationMutation.isPending,
-    modalData.concordaPagar,
-    modalData.observacao,
-    onClose,
-  ]);
+  };
 
-  const isFormValid = useCallback(() => {
-    return modalData.concordaPagar || modalData.observacao.trim() !== '';
-  }, [modalData.concordaPagar, modalData.observacao]);
-
-  const saveModalData = useCallback(async () => {
-    if (!selectedRow || !validateForm()) return;
-
-    saveValidationMutation.mutate({
-      cod_os: selectedRow.COD_OS,
-      concordaPagar: modalData.concordaPagar,
-      observacao: modalData.observacao.trim() || null,
-    });
-  }, [
-    selectedRow,
-    validateForm,
-    modalData.concordaPagar,
-    modalData.observacao,
-    saveValidationMutation,
-  ]);
-
-  const handleBackdropClick = useCallback(
-    (e: React.MouseEvent) => {
-      if (e.target === e.currentTarget && !saveValidationMutation.isPending)
-        handleClose();
-    },
-    [saveValidationMutation.isPending, handleClose],
-  );
-
-  const handleSubmit = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      saveModalData();
-    },
-    [saveModalData],
-  );
-
-  useEffect(() => {
-    if (isOpen && selectedRow) {
-      setModalData({ concordaPagar: true, observacao: '' });
-      setValidationError('');
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      handleClose();
     }
-  }, [isOpen, selectedRow]);
+  };
 
-  if (!isOpen || !selectedRow) return null;
+  if (!isOpen || codChamado === null) return null;
 
   return (
-    <>
-      <div className="animate-in fade-in fixed inset-0 z-60 flex items-center justify-center p-4">
-        {/* ===== OVERLAY ===== */}
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-md" />
-        {/* ========== */}
+    <div
+      onClick={handleBackdropClick}
+      className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center p-4"
+    >
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-md" />
 
-        <div className="animate-in slide-in-from-bottom-4 relative z-10 max-h-[100vh] w-full max-w-2xl overflow-hidden rounded-2xl border border-teal-900 bg-white transition-all ease-out">
-          {/* ===== HEADER ===== */}
-          <header className="relative flex items-center justify-between bg-teal-700 p-6 shadow-xs shadow-black">
-            <div className="flex items-center justify-center gap-6">
-              <FaFileWaveform className="text-white" size={60} />
-              <div className="flex flex-col">
-                <h1 className="text-2xl font-extrabold tracking-widest text-gray-200 select-none">
-                  DETALHES DA OS
-                </h1>
-                <p className="text-lg font-extrabold tracking-widest text-gray-200 select-none">
-                  Revise e Valide a OS
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={handleClose}
-              disabled={saveValidationMutation.isPending}
-              className="group active:scale-95 cursor-pointer rounded-full bg-white/20 p-3 transition-all hover:scale-125 hover:rotate-180 hover:bg-red-500"
-            >
-              <IoClose className="text-white group-hover:scale-125" size={20} />
-            </button>
-          </header>
-          {/* ===== */}
-
-          {/* Conteúdo do modal */}
-          <div className="rounded-b-2xl bg-white p-4 shadow-2xl">
-            {/* Grid de informações */}
-            <div className="mb-6 grid grid-cols-2 gap-2">
-              <InfoCard
-                icon={FaHashtag}
-                label="Número da OS"
-                value={formatarNumeros(selectedRow.COD_OS)}
-              />
-              {/* ===== */}
-
-              {isAdmin && selectedRow.NOME_CLIENTE && (
-                <InfoCard
-                  icon={FaUser}
-                  label="Cliente"
-                  value={corrigirTextoCorrompido(selectedRow.NOME_CLIENTE)}
-                />
-              )}
-              {/* ===== */}
-
-              <InfoCard
-                icon={FaCalendar}
-                label="Data"
-                value={formatarDataParaBR(selectedRow.DTINI_OS)}
-              />
-              {/* ===== */}
-
-              <InfoCard
-                icon={FaClock}
-                label="Hora Início"
-                value={formatarHora(selectedRow.HRINI_OS)}
-              />
-              {/* ===== */}
-
-              <InfoCard
-                icon={FaClock}
-                label="Hora Fim"
-                value={formatarHora(selectedRow.HRFIM_OS)}
-              />
-              {/* ===== */}
-
-              <InfoCard
-                icon={FaClock}
-                label="Tempo Total"
-                value={formatarHorasTotaisSufixo(selectedRow.HORAS_TRABALHADAS)}
-              />
-              {/* ===== */}
-
-              <InfoCard
-                icon={FaUser}
-                label="Consultor"
-                value={corrigirTextoCorrompido(
-                  selectedRow.NOME_RECURSO ?? 'N/A',
-                )}
-              />
-              {/* ===== */}
-
-              <InfoCard
-                icon={FaCalendar}
-                label="Incluído em"
-                value={formatarDataParaBR(selectedRow.DTINC_OS ?? null)}
-              />
-              {/* ===== */}
-
-              <InfoCard
-                icon={BsChatSquareTextFill}
-                label="Observação da OS"
-                value={corrigirTextoCorrompido(
-                  selectedRow.OBS_OS || 'Sem observação',
-                )}
-                fullWidth
-              />
-            </div>
-
-            {/* Formulário */}
-            <div className="flex flex-col gap-4">
-              {/* Divisor */}
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-400"></div>
-                </div>
-                <div className="relative flex justify-center">
-                  <span className="bg-white px-4 font-extrabold text-slate-800 tracking-widest select-none text-base">
-                    Validação
-                  </span>
-                </div>
-              </div>
-
-              {/* Checkbox estilizado */}
-              <div
-                className={`group relative flex cursor-pointer items-center gap-6 border rounded-md shadow-xs shadow-black ${modalData.concordaPagar ? 'bg-blue-100 border-blue-500' : 'bg-red-100 border-red-500'} px-4 py-2 transition-all hover:shadow-lg hover:shadow-black`}
-              >
-                <div className="relative flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={modalData.concordaPagar}
-                    onChange={(e) => handleCheckboxChange(e.target.checked)}
-                    disabled={saveValidationMutation.isPending}
-                    className="h-5 w-5 rounded-md border bg-white transition-all disabled:cursor-not-allowed disabled:opacity-50 shadow-xs shadow-black active:scale-85 hover:shadow-lg hover:shadow-black"
-                  />
-                </div>
-                <div className="flex-1">
-                  <span
-                    className={`block text-lg font-bold select-none tracking-widest ${
-                      modalData.concordaPagar
-                        ? 'text-blue-600 font-extrabold'
-                        : 'text-red-600 font-extrabold'
-                    }`}
-                  >
-                    {modalData.concordaPagar
-                      ? 'OS Aprovada'
-                      : 'OS Não Aprovada'}
-                  </span>
-
-                  {modalData.concordaPagar && (
-                    <span className="text-xs text-slate-700 font-semibold tracking-widest select-none">
-                      Caso não concorde, desmarque e informe o motivo na
-                      observação abaixo
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Alerta de discordância */}
-              {!modalData.concordaPagar && (
-                <div className="animate-in fade-in slide-in-from-top-2 transition-all rounded-md border border-amber-500 bg-amber-100 px-4 py-2">
-                  <div className="flex items-center gap-6">
-                    <FaExclamationTriangle
-                      className="text-amber-700 animate-pulse"
-                      size={32}
-                    />
-                    <div className="flex-1">
-                      <p className="font-bold text-amber-800 tracking-widest select-none text-base">
-                        Atenção!
-                      </p>
-                      <p className="mt-1 text-sm text-amber-800 font-semibold tracking-widest select-none">
-                        Você deve informar o motivo da discordância no campo de
-                        observação
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {/* ===== */}
-
-              {/* Campo de observação */}
-              <div className="flex flex-col">
-                <label
-                  htmlFor="observacao"
-                  className="mb-1 block text-xs font-bold text-slate-800 tracking-widest select-none"
-                >
-                  {!modalData.concordaPagar ? (
-                    <>
-                      <div className="flex items-center gap-2">
-                        <div className="h-1.5 w-1.5 rounded-full bg-red-600"></div>
-                        Observação{' '}
-                      </div>
-                    </>
-                  ) : (
-                    <>Observação (Opcional)</>
-                  )}
-                </label>
-                <div className="relative">
-                  <textarea
-                    id="observacao"
-                    value={modalData.observacao}
-                    onChange={(e) => handleObservacaoChange(e.target.value)}
-                    rows={4}
-                    className={`w-full rounded-xl border bg-white px-4 py-2 text-slate-800 tracking-widest placeholder:text-sm placeholder:font-semibold select-none font-semibold transition-all focus:outline-none focus:ring-4 disabled:cursor-not-allowed disabled:opacity-50 shadow-xs shadow-black hover:shadow-lg hover:shadow-black placeholder:tracking-widest placeholder:text-slate-400 ${
-                      !modalData.concordaPagar
-                        ? 'focus:ring-red-600 focus:shadow-none focus:ring-2 focus:border-none border-red-500'
-                        : 'focus:ring-2 focus:ring-blue-600 focus:shadow-none'
-                    }`}
-                    placeholder={
-                      !modalData.concordaPagar
-                        ? 'Por favor, informe o motivo da Não Aprovação...'
-                        : 'Digite uma observação, se necessário...'
-                    }
-                    disabled={saveValidationMutation.isPending}
-                  />
-                </div>
-              </div>
-              {/* ===== */}
-
-              {/* Mensagem de erro */}
-              {validationError && (
-                <div className="animate-in fade-in slide-in-from-top-2 transition-all rounded-md border border-red-500 bg-red-100 px-4 py-2">
-                  <div className="flex items-center gap-4">
-                    <TbAlertOctagonFilled
-                      className="text-red-600 animate-pulse"
-                      size={28}
-                    />
-                    <p className="flex-1 text-sm tracking-widest select-none font-semibold text-red-800">
-                      {validationError}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Botões de ação */}
-              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end mt-10">
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  disabled={saveValidationMutation.isPending}
-                  className="w-[200px] cursor-pointer rounded-md border-none bg-gradient-to-r from-red-600 to-red-700 px-6 py-2 text-lg font-extrabold tracking-widest text-white shadow-xs shadow-black transition-all hover:shadow-lg hover:shadow-black active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Cancelar
-                </button>
-                {/* ===== */}
-
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  className="group relative overflow-hidden w-[200px] cursor-pointer rounded-md border-none bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-2 text-lg font-extrabold tracking-widest text-white shadow-xs shadow-black transition-all hover:shadow-lg hover:shadow-black active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={saveValidationMutation.isPending || !isFormValid()}
-                >
-                  {saveValidationMutation.isPending ? (
-                    <span className="flex items-center justify-center gap-3">
-                      <LoadingButton size={24} />
-                      Salvando...
-                    </span>
-                  ) : (
-                    <div className="flex items-center justify-center gap-3">
-                      <IoIosSave className="mr-2 inline-block" size={24} />
-                      <span>Salvar</span>
-                    </div>
-                  )}
-                </button>
-              </div>
-              {/* ===== */}
+      {/* Modal Container */}
+      <div className="animate-in slide-in-from-bottom-4 relative z-10 max-h-[95vh] w-full max-w-[2200px] overflow-hidden rounded-xl bg-white transition-all ease-out">
+        {/* Header */}
+        <header className="relative flex items-center justify-between bg-teal-700 p-6 shadow-md shadow-black">
+          <div className="flex items-center gap-6">
+            <TbFileInvoice className="text-white" size={60} />
+            <div className="flex flex-col">
+              <h1 className="text-2xl font-extrabold tracking-widest text-gray-200 select-none">
+                ORDENS DE SERVIÇO
+              </h1>
+              <p className="text-xl font-extrabold tracking-widest text-gray-200 select-none italic">
+                Chamado #{formatarNumeros(codChamado)} - {mes}/{ano}
+              </p>
             </div>
           </div>
+          <button
+            onClick={handleClose}
+            className="group cursor-pointer rounded-full bg-white/20 p-3 transition-all hover:scale-125 shadow-md shadow-black hover:bg-red-500 active:scale-95"
+          >
+            <IoClose
+              className="text-white group-hover:scale-125 group-active:scale-95"
+              size={20}
+            />
+          </button>
+        </header>
+
+        {/* Body */}
+        <div
+          className="overflow-y-auto p-6"
+          style={{ maxHeight: '100vh', minHeight: '500px' }}
+        >
+          {isLoading && (
+            <IsLoading
+              isLoading={isLoading}
+              title="Carregando OS's do chamado..."
+            />
+          )}
+
+          {error && (
+            <IsError
+              isError={!!error}
+              error={error as Error}
+              title="Erro ao Carregar OS's"
+            />
+          )}
+
+          {!isLoading && !error && osData.length === 0 && (
+            <div className="py-20 text-center">
+              <p className="text-xl font-bold text-slate-600 tracking-widest select-none">
+                Nenhuma OS encontrada para este chamado no período {mes}/{ano}
+              </p>
+            </div>
+          )}
+
+          {!isLoading && !error && osData.length > 0 && (
+            <>
+              {/* Badge com total */}
+              <div className="mb-6 flex items-center gap-4">
+                <div className="h-2.5 w-2.5 rounded-full bg-teal-800 animate-pulse"></div>
+                <span className="text-2xl font-extrabold text-gray-800 tracking-widest select-none">
+                  Total: {osData.length} {osData.length === 1 ? 'OS' : "OS's"} em {mes}/{ano}
+                </span>
+              </div>
+
+              {/* Tabela de OS's */}
+              <div className="overflow-hidden rounded-lg border border-teal-800 shadow-lg">
+                <div
+                  className="overflow-y-auto scrollbar-thin scrollbar-track-teal-100 scrollbar-thumb-teal-600 hover:scrollbar-thumb-teal-800"
+                  style={{ maxHeight: '55vh' }}
+                >
+                  <table
+                    className="w-full border-separate border-spacing-0"
+                    style={{ tableLayout: 'fixed' }}
+                  >
+                    <thead className="sticky top-0 z-10">
+                      {table.getHeaderGroups().map((headerGroup) => (
+                        <tr key={headerGroup.id}>
+                          {headerGroup.headers.map((header) => (
+                            <th
+                              key={header.id}
+                              className="bg-teal-800 p-4 font-extrabold tracking-widest select-none text-base text-white border-b border-teal-900"
+                              style={{ width: getColumnWidthOS(header.id) }}
+                            >
+                              {flexRender(
+                                header.column.columnDef.header,
+                                header.getContext(),
+                              )}
+                            </th>
+                          ))}
+                        </tr>
+                      ))}
+                    </thead>
+                    <tbody>
+                      {table.getRowModel().rows.map((row, idx) => (
+                        <tr
+                          key={row.id}
+                          onClick={() => onSelectOS(row.original)}
+                          className={`cursor-pointer transition-all ${
+                            idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                          } hover:bg-teal-100`}
+                        >
+                          {row.getVisibleCells().map((cell) => (
+                            <td
+                              key={cell.id}
+                              className="p-4 border-b border-gray-300"
+                              style={{
+                                width: getColumnWidthOS(cell.column.id),
+                              }}
+                            >
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext(),
+                              )}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
-    </>
+    </div>
   );
 }
