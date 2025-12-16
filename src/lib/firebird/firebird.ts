@@ -1,3 +1,4 @@
+import { corrigirTextoCorrompido } from '@/formatters/formatar-texto-corrompido';
 import Firebird from 'node-firebird';
 
 export const firebirdOptions: Firebird.Options = {
@@ -95,7 +96,10 @@ function readBlob(blobFunction: any, transaction: any): Promise<string | null> {
             // Extrai texto limpo do HTML
             const cleanText = extractTextFromHtml(text);
 
-            resolve(cleanText || null);
+            // Corrige encoding do texto final
+            const correctedText = corrigirTextoCorrompido(cleanText);
+
+            resolve(correctedText || null);
           } catch (error) {
             console.error('Erro ao processar buffer do BLOB:', error);
             resolve(null);
@@ -137,30 +141,7 @@ async function processRow(row: any, transaction: any): Promise<any> {
       });
       blobPromises.push(promise);
     }
-    // Se for string, verifica se precisa correção de encoding
-    else if (valueType === 'string' && value) {
-      // Detecta se contém caracteres problemáticos de encoding
-      const hasEncodingIssue =
-        /[�ý¿À-ÿ]{1}[a-z]/.test(value) || value.includes('�');
-
-      if (hasEncodingIssue) {
-        try {
-          // Converte de volta para bytes e reinterpreta como latin1/ISO-8859-1
-          const bytes = [];
-          for (let i = 0; i < value.length; i++) {
-            bytes.push(value.charCodeAt(i) & 0xff);
-          }
-          const correctedValue = Buffer.from(bytes).toString('latin1');
-          processedRow[key] = correctedValue;
-        } catch (error) {
-          console.error(`[ENCODING] Erro ao corrigir ${key}:`, error);
-          processedRow[key] = value;
-        }
-      } else {
-        processedRow[key] = value;
-      }
-    }
-    // Outros tipos, apenas copia o valor
+    // Outros tipos (incluindo strings), apenas copia o valor
     else {
       processedRow[key] = value;
     }
@@ -199,7 +180,7 @@ export function queryFirebird<T = any>(
           try {
             // Processa todas as linhas e lê os BLOBs ANTES de fechar
             const processedResults = await Promise.all(
-              result.map((row: any, index: number) => {
+              result.map((row: any) => {
                 return processRow(row, transaction);
               }),
             );

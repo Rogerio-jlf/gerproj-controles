@@ -4,7 +4,7 @@
 # ========================================
 
 ### Buscar todas as OS's com (admin)
-GET http://localhost:3000/api/ordens-servico?isAdmin=true&mes=11&ano=2025
+GET http://localhost:3000/api/ordens-servico?isAdmin=true&mes=12&ano=2025
 
 ### Buscar todas as OS's com (admin) e filtra por codCliente
 GET http://localhost:3000/api/ordens-servico?isAdmin=true&mes=11&ano=2025&codClienteFilter=120

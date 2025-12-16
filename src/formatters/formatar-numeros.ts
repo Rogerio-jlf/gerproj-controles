@@ -1,3 +1,4 @@
+// Formata números no padrão "1.234.567"
 export const formatarNumeros = (
   value: string | number | null | undefined,
 ): string => {
@@ -10,5 +11,11 @@ export const formatarNumeros = (
   if (!onlyDigits) return '';
 
   return new Intl.NumberFormat('de-DE').format(Number(onlyDigits));
+};
+// ====================================================================================================
+
+// Formata a prioridade no formato "P-{número}"
+export const formatarPrioridade = (prioridade: number): string => {
+  return `P-${prioridade}`;
 };
 // ====================================================================================================

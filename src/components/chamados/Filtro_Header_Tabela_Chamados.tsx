@@ -1,6 +1,7 @@
 'use client';
 
 import { useFilters } from '@/context/FiltersContext';
+import { formatarDataParaBR } from '@/formatters/formatar-data';
 import { useQuery } from '@tanstack/react-query';
 import { debounce } from 'lodash';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -14,7 +15,7 @@ import { IoClose } from 'react-icons/io5';
 interface DropdownFilterProps {
   value: string;
   onChange: (value: string) => void;
-  columnId: 'NOME_CLIENTE' | 'NOME_RECURSO' | 'STATUS_CHAMADO';
+  columnId: 'NOME_CLASSIFICACAO' | 'NOME_RECURSO' | 'STATUS_CHAMADO';
 }
 
 interface OptionItem {
@@ -33,36 +34,39 @@ const createAuthHeaders = () => ({
   'x-cod-cliente': localStorage.getItem('codCliente') || '',
 });
 
-async function fetchClientes(params: {
+// Função para buscar classificações
+async function fetchClassificacao(params: {
   ano: number;
   mes: number;
   isAdmin: boolean;
   codCliente?: string;
+  cliente?: string;
 }): Promise<OptionItem[]> {
   const queryParams = new URLSearchParams({
     ano: String(params.ano),
     mes: String(params.mes),
     isAdmin: String(params.isAdmin),
   });
-
   if (!params.isAdmin && params.codCliente) {
     queryParams.append('codCliente', params.codCliente);
   }
-
+  if (params.cliente) {
+    queryParams.append('cliente', params.cliente);
+  }
   const response = await fetch(
-    `/api/clientes/chamados?${queryParams.toString()}`,
+    `/api/classificacao/chamados?${queryParams.toString()}`,
     {
       headers: createAuthHeaders(),
     },
   );
-
   if (!response.ok) {
-    throw new Error('Erro ao carregar clientes');
+    throw new Error('Erro ao carregar classificações');
   }
-
   return response.json();
 }
+// ===============
 
+// Função para buscar recursos
 async function fetchRecursos(params: {
   ano: number;
   mes: number;
@@ -97,7 +101,9 @@ async function fetchRecursos(params: {
 
   return response.json();
 }
+// ===============
 
+// Função para buscar status
 async function fetchStatus(params: {
   ano: number;
   mes: number;
@@ -132,6 +138,7 @@ async function fetchStatus(params: {
 
   return response.json();
 }
+// ===============
 
 // ================================================================================
 // FUNÇÕES AUXILIARES
@@ -163,8 +170,8 @@ const DropdownWithFilter = memo(
     // Query para buscar dados APENAS DO PERÍODO FILTRADO
     const { data: options = [], isLoading } = useQuery({
       queryKey: [
-        columnId === 'NOME_CLIENTE'
-          ? 'clientes-periodo'
+        columnId === 'NOME_CLASSIFICACAO'
+          ? 'classificacao-periodo'
           : columnId === 'NOME_RECURSO'
             ? 'recursos-periodo'
             : 'status-periodo',
@@ -172,18 +179,19 @@ const DropdownWithFilter = memo(
         mes,
         isAdmin,
         codCliente,
-        columnId === 'NOME_RECURSO' || columnId === 'STATUS_CHAMADO'
+        columnId === 'NOME_RECURSO' ||
+        columnId === 'STATUS_CHAMADO' ||
+        columnId === 'NOME_CLASSIFICACAO'
           ? cliente
           : undefined,
       ],
       queryFn: () => {
-        // Só busca se tiver ano e mês definidos
         if (!ano || !mes) {
           return [];
         }
 
-        if (columnId === 'NOME_CLIENTE') {
-          return fetchClientes({
+        if (columnId === 'NOME_CLASSIFICACAO') {
+          return fetchClassificacao({
             ano,
             mes,
             isAdmin,
@@ -207,10 +215,30 @@ const DropdownWithFilter = memo(
           });
         }
       },
-      enabled: !!ano && !!mes, // Só busca quando tem período definido
+      enabled: !!ano && !!mes,
       staleTime: 1000 * 60 * 5,
-      refetchOnMount: true, // Recarrega ao montar se dados estiverem stale
+      refetchOnMount: true,
     });
+
+    // ✅ NOVA FUNÇÃO: Formata nome para exibir apenas dois primeiros nomes
+    const formatDisplayName = useCallback(
+      (fullName: string) => {
+        // Se for status ou classificação, retorna o nome completo
+        if (
+          columnId === 'NOME_CLASSIFICACAO' ||
+          columnId === 'STATUS_CHAMADO'
+        ) {
+          return fullName;
+        }
+
+        // Para cliente e recurso, pega apenas os dois primeiros nomes
+        const parts = fullName.trim().split(/\s+/).filter(Boolean);
+        return parts.length <= 2
+          ? parts.join(' ')
+          : parts.slice(0, 2).join(' ');
+      },
+      [columnId],
+    );
 
     // Filtrar opções baseado no termo de busca
     const filteredOptions = useMemo(() => {
@@ -228,6 +256,12 @@ const DropdownWithFilter = memo(
     const selectedOption = useMemo(() => {
       return options.find((opt) => opt.nome === value);
     }, [options, value]);
+
+    // ✅ MODIFICAÇÃO: Nome exibido formatado
+    const displayedName = useMemo(() => {
+      if (!selectedOption) return null;
+      return formatDisplayName(selectedOption.nome);
+    }, [selectedOption, formatDisplayName]);
 
     // Fechar dropdown ao clicar fora
     useEffect(() => {
@@ -282,14 +316,15 @@ const DropdownWithFilter = memo(
     }, [isOpen]);
 
     const placeholder =
-      columnId === 'NOME_CLIENTE'
-        ? 'Todos'
+      columnId === 'NOME_CLASSIFICACAO'
+        ? 'Todas'
         : columnId === 'NOME_RECURSO'
           ? 'Todos'
           : 'Todos';
+
     const emptyMessage =
-      columnId === 'NOME_CLIENTE'
-        ? 'Nenhum cliente encontrado'
+      columnId === 'NOME_CLASSIFICACAO'
+        ? 'Nenhuma classificação encontrada'
         : columnId === 'NOME_RECURSO'
           ? 'Nenhum recurso encontrado'
           : 'Nenhum status encontrado';
@@ -299,35 +334,32 @@ const DropdownWithFilter = memo(
         <button
           onClick={handleToggle}
           disabled={isLoading}
-          className={`group relative flex w-full cursor-pointer items-center justify-between rounded-md py-2 pr-3 pl-3 text-sm font-bold tracking-widest italic shadow-sm shadow-black transition-all hover:shadow-lg hover:shadow-black focus:ring-2 focus:ring-pink-600 focus:outline-none active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
+          className={`group relative flex w-full cursor-pointer items-center justify-between rounded-md py-2 pr-3 pl-3 text-sm font-bold tracking-widest transition-all hover:shadow-lg hover:shadow-black focus:ring-2 focus:ring-pink-600 focus:outline-none active:scale-95 ${
             value
               ? 'bg-white text-black ring-2 ring-pink-600'
               : 'border border-teal-950 bg-teal-900 text-white'
           }`}
         >
-          <span className={`truncate ${!value ? 'opacity-50' : ''}`}>
-            {isLoading ? 'Carregando...' : selectedOption?.nome || placeholder}
+          {/* ✅ MODIFICAÇÃO: Usa displayedName ao invés de selectedOption.nome */}
+          <span className={`truncate ${!value ? 'italic text-gray-400' : ''}`}>
+            {isLoading ? 'Carregando...' : displayedName || placeholder}
           </span>
 
           <div className="flex items-center gap-1 ml-2">
             {value && !isLoading && (
-              <span
-                onClick={handleClear}
-                className="bg-slate-300 p-0.5 rounded-full hover:bg-red-500 cursor-pointer shadow-sm shadow-black"
-                title="Limpar Filtro"
-              >
+              <span onClick={handleClear} title="Limpar Filtro">
                 <IoClose
-                  size={16}
-                  className="text-black group-hover:text-white group-hover:rotate-180 transition-all"
+                  size={20}
+                  className="text-red-600 hover:scale-125 active:scale-95 transition-all"
                 />
               </span>
             )}
             <span
               className={`transition-all ${isOpen ? 'rotate-180' : ''} ${
-                value ? 'text-black' : 'text-white'
+                value ? 'text-gray-800' : 'text-gray-400'
               }`}
             >
-              <IoIosArrowDown size={18} />
+              <IoIosArrowDown size={20} />
             </span>
           </div>
         </button>
@@ -347,7 +379,7 @@ const DropdownWithFilter = memo(
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Buscar..."
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
                 />
               </div>
             </div>
@@ -376,20 +408,25 @@ const DropdownWithFilter = memo(
                   {searchTerm ? 'Nenhum resultado encontrado' : emptyMessage}
                 </div>
               ) : (
-                filteredOptions.map((option) => (
-                  <button
-                    key={option.cod}
-                    onClick={() => handleSelect(option.nome)}
-                    className={`w-full px-3 py-2 text-left text-sm font-semibold tracking-widest italic transition-all ${
-                      value === option.nome
-                        ? 'bg-blue-600 text-white'
-                        : 'text-black hover:bg-black hover:text-white'
-                    }`}
-                    title={option.nome}
-                  >
-                    <div className="truncate">{option.nome}</div>
-                  </button>
-                ))
+                filteredOptions.map((option) => {
+                  // ✅ MODIFICAÇÃO: Formata o nome exibido nas opções também
+                  const optionDisplayName = formatDisplayName(option.nome);
+
+                  return (
+                    <button
+                      key={option.cod}
+                      onClick={() => handleSelect(option.nome)}
+                      className={`w-full px-3 py-2 text-left text-sm font-semibold tracking-widest italic transition-all ${
+                        value === option.nome
+                          ? 'bg-blue-600 text-white'
+                          : 'text-black hover:bg-black hover:text-white'
+                      }`}
+                      title={option.nome} // ✅ Tooltip mostra o nome completo
+                    >
+                      <div className="truncate">{optionDisplayName}</div>
+                    </button>
+                  );
+                })
               )}
             </div>
           </div>
@@ -412,16 +449,375 @@ interface InputFilterProps {
 
 // Constante fora do componente para evitar recriação
 const COLUMN_MAX_LENGTH: Record<string, number> = {
-  COD_CHAMADO: 6,
+  COD_CHAMADO: 5,
   DATA_CHAMADO: 10,
-  HORA_CHAMADO: 5,
-  NOME_CLIENTE: 15,
-  STATUS_CHAMADO: 15,
-  NOME_RECURSO: 15,
-  ASSUNTO_CHAMADO: 30,
-  SOLICITACAO_CHAMADO: 40,
+  PRIOR_CHAMADO: 3,
+  ASSUNTO_CHAMADO: 15,
+  EMAIL_CHAMADO: 15,
+  DTENVIO_CHAMADO: 10,
+  CONCLUSAO_CHAMADO: 10,
 };
 
+// Função para aplicar máscara de data dd/mm/yyyy
+function aplicarMascaraData(value: string): string {
+  // Remove tudo que não é número
+  const numbers = value.replace(/\D/g, '');
+
+  // Aplica a máscara progressivamente
+  if (numbers.length <= 2) {
+    return numbers; // DD
+  } else if (numbers.length <= 4) {
+    return `${numbers.slice(0, 2)}/${numbers.slice(2)}`; // DD/MM
+  } else {
+    return `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}/${numbers.slice(4, 8)}`; // DD/MM/YYYY
+  }
+}
+// ===============
+
+// Input com máscara de data e debounce
+const InputFilterDate = memo(
+  ({
+    value,
+    onChange,
+  }: {
+    value: string;
+    onChange: (value: string) => void;
+  }) => {
+    const [localValue, setLocalValue] = useState(value);
+    const isUserTyping = useRef(false);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+      if (!isUserTyping.current && value !== localValue) {
+        setLocalValue(value);
+      }
+    }, [value, localValue]);
+
+    const debouncedOnChange = useMemo(
+      () =>
+        debounce((newValue: string) => {
+          onChange(newValue);
+          isUserTyping.current = false;
+        }, 600),
+      [onChange],
+    );
+
+    useEffect(() => {
+      return () => {
+        debouncedOnChange.cancel();
+      };
+    }, [debouncedOnChange]);
+
+    const handleChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        isUserTyping.current = true;
+        let inputValue = e.target.value;
+
+        // Aplica a máscara de data
+        const maskedValue = aplicarMascaraData(inputValue);
+
+        // Limita a 10 caracteres (DD/MM/YYYY)
+        const finalValue = maskedValue.slice(0, 10);
+
+        setLocalValue(finalValue);
+        debouncedOnChange(finalValue);
+      },
+      [debouncedOnChange],
+    );
+
+    const handleClear = useCallback(() => {
+      isUserTyping.current = false;
+      setLocalValue('');
+      onChange('');
+      debouncedOnChange.cancel();
+
+      requestAnimationFrame(() => {
+        inputRef.current?.focus();
+      });
+    }, [onChange, debouncedOnChange]);
+
+    const handleKeyDown = useCallback(
+      (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          handleClear();
+        } else if (e.key === 'Enter') {
+          debouncedOnChange.flush();
+        }
+      },
+      [handleClear, debouncedOnChange],
+    );
+
+    return (
+      <div className="group relative w-full">
+        <input
+          ref={inputRef}
+          type="text"
+          value={localValue}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          placeholder="Filtrar..."
+          className={`w-full rounded-md px-3 py-2 text-sm font-bold hover:shadow-lg hover:shadow-black transition-all select-none focus:ring-2 focus:ring-pink-600 focus:outline-none active:scale-95 placeholder:text-gray-400 placeholder:italic ${
+            localValue
+              ? 'bg-white text-black ring-2 ring-pink-600'
+              : 'border border-teal-950 bg-teal-900 text-white'
+          }`}
+        />
+
+        {localValue && (
+          <button
+            onClick={handleClear}
+            aria-label="Limpar filtro"
+            title="Limpar Filtro"
+            type="button"
+            className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer transition-all"
+          >
+            <IoClose
+              size={20}
+              className="text-red-600 hover:scale-125 active:scale-95 transition-all"
+            />
+          </button>
+        )}
+      </div>
+    );
+  },
+);
+
+InputFilterDate.displayName = 'InputFilterDate';
+// ===============================
+
+// Funções para formatação de números com milhares
+const InputFilterNumber = memo(
+  ({
+    value,
+    onChange,
+  }: {
+    value: string;
+    onChange: (value: string) => void;
+  }) => {
+    const [localValue, setLocalValue] = useState(value);
+    const isUserTyping = useRef(false);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+      if (!isUserTyping.current && value !== localValue) {
+        const formattedValue = value ? formatarNumeroMilhar(value) : '';
+        setLocalValue(formattedValue);
+      }
+    }, [value, localValue]);
+
+    const debouncedOnChange = useMemo(
+      () =>
+        debounce((newValue: string) => {
+          onChange(newValue);
+          isUserTyping.current = false;
+        }, 600),
+      [onChange],
+    );
+
+    useEffect(() => {
+      return () => {
+        debouncedOnChange.cancel();
+      };
+    }, [debouncedOnChange]);
+
+    const handleChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        isUserTyping.current = true;
+        let inputValue = e.target.value;
+
+        const numbersOnly = removerFormatacaoMilhar(inputValue);
+
+        if (numbersOnly.length > 5) return;
+
+        const formattedValue = formatarNumeroMilhar(numbersOnly);
+
+        setLocalValue(formattedValue);
+
+        debouncedOnChange(numbersOnly);
+      },
+      [debouncedOnChange],
+    );
+
+    const handleClear = useCallback(() => {
+      isUserTyping.current = false;
+      setLocalValue('');
+      onChange('');
+      debouncedOnChange.cancel();
+
+      requestAnimationFrame(() => {
+        inputRef.current?.focus();
+      });
+    }, [onChange, debouncedOnChange]);
+
+    const handleKeyDown = useCallback(
+      (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          handleClear();
+        } else if (e.key === 'Enter') {
+          debouncedOnChange.flush();
+        }
+      },
+      [handleClear, debouncedOnChange],
+    );
+
+    return (
+      <div className="group relative w-full">
+        <input
+          ref={inputRef}
+          type="text"
+          value={localValue}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          placeholder="Filtrar..."
+          className={`w-full rounded-md px-3 py-2 text-sm font-bold hover:shadow-lg hover:shadow-black transition-all select-none focus:ring-2 focus:ring-pink-600 focus:outline-none active:scale-95 placeholder:text-gray-400 placeholder:italic ${
+            localValue
+              ? 'bg-white text-black ring-2 ring-pink-600'
+              : 'border border-teal-950 bg-teal-900 text-white'
+          }`}
+        />
+
+        {localValue && (
+          <button
+            onClick={handleClear}
+            aria-label="Limpar filtro"
+            title="Limpar Filtro"
+            type="button"
+            className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer transition-all"
+          >
+            <IoClose
+              size={20}
+              className="text-red-600 hover:scale-125 active:scale-95 transition-all"
+            />
+          </button>
+        )}
+      </div>
+    );
+  },
+);
+
+InputFilterNumber.displayName = 'InputFilterNumber';
+// ==============================
+
+// Component input para prioridade com formatação P-XXX
+const InputFilterPriority = memo(
+  ({
+    value,
+    onChange,
+  }: {
+    value: string;
+    onChange: (value: string) => void;
+  }) => {
+    const [localValue, setLocalValue] = useState(value);
+    const isUserTyping = useRef(false);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+      if (!isUserTyping.current && value !== localValue) {
+        const formattedValue = value ? formatarPrioridade(value) : '';
+        setLocalValue(formattedValue);
+      }
+    }, [value, localValue]);
+
+    const debouncedOnChange = useMemo(
+      () =>
+        debounce((newValue: string) => {
+          onChange(newValue);
+          isUserTyping.current = false;
+        }, 600),
+      [onChange],
+    );
+
+    useEffect(() => {
+      return () => {
+        debouncedOnChange.cancel();
+      };
+    }, [debouncedOnChange]);
+
+    const handleChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        isUserTyping.current = true;
+        let inputValue = e.target.value;
+
+        const numbersOnly = removerFormatacaoPrioridade(inputValue);
+
+        if (numbersOnly.length > 3) return;
+
+        const numValue = parseInt(numbersOnly);
+        if (numbersOnly && (numValue < 1 || numValue > 100)) return;
+
+        const formattedValue = formatarPrioridade(numbersOnly);
+
+        setLocalValue(formattedValue);
+
+        debouncedOnChange(numbersOnly);
+      },
+      [debouncedOnChange],
+    );
+
+    const handleClear = useCallback(() => {
+      isUserTyping.current = false;
+      setLocalValue('');
+      onChange('');
+      debouncedOnChange.cancel();
+
+      requestAnimationFrame(() => {
+        inputRef.current?.focus();
+      });
+    }, [onChange, debouncedOnChange]);
+
+    const handleKeyDown = useCallback(
+      (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          handleClear();
+        } else if (e.key === 'Enter') {
+          debouncedOnChange.flush();
+        }
+      },
+      [handleClear, debouncedOnChange],
+    );
+
+    return (
+      <div className="group relative w-full">
+        <input
+          ref={inputRef}
+          type="text"
+          value={localValue}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          placeholder="Filtrar..."
+          className={`w-full rounded-md px-3 py-2 text-sm font-bold hover:shadow-lg hover:shadow-black transition-all select-none focus:ring-2 focus:ring-pink-600 focus:outline-none active:scale-95 placeholder:text-gray-400 placeholder:italic ${
+            localValue
+              ? 'bg-white text-black ring-2 ring-pink-600'
+              : 'border border-teal-950 bg-teal-900 text-white'
+          }`}
+        />
+
+        {localValue && (
+          <button
+            onClick={handleClear}
+            aria-label="Limpar filtro"
+            title="Limpar Filtro"
+            type="button"
+            className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer transition-all"
+          >
+            <IoClose
+              size={20}
+              className="text-red-600 hover:scale-125 active:scale-95 transition-all"
+            />
+          </button>
+        )}
+      </div>
+    );
+  },
+);
+
+InputFilterPriority.displayName = 'InputFilterPriority';
+// ==============================
+
+// Memorizador com debounce para inputs genéricos
 const InputFilterWithDebounce = memo(
   ({ value, onChange, columnId }: InputFilterProps) => {
     const [localValue, setLocalValue] = useState(value);
@@ -501,10 +897,10 @@ const InputFilterWithDebounce = memo(
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           placeholder="Filtrar..."
-          className={`hover:bg-opacity-90 w-full rounded-md px-3 py-2 text-sm font-bold shadow-sm shadow-black transition-all select-none focus:ring-2 focus:ring-indigo-500 focus:outline-none active:scale-95 ${
+          className={`w-full rounded-md px-3 py-2 text-sm font-bold hover:shadow-lg hover:shadow-black transition-all select-none focus:ring-2 focus:ring-pink-600 focus:outline-none active:scale-95 placeholder:text-gray-400 placeholder:italic ${
             localValue
-              ? 'bg-white text-black ring-2 ring-indigo-500'
-              : 'border border-teal-950 bg-teal-900 text-white placeholder-white/50 hover:shadow-lg hover:shadow-black'
+              ? 'bg-white text-black ring-2 ring-pink-600'
+              : 'border border-teal-950 bg-teal-900 text-white'
           }`}
         />
 
@@ -513,12 +909,12 @@ const InputFilterWithDebounce = memo(
             onClick={handleClear}
             aria-label="Limpar filtro"
             title="Limpar Filtro"
-            className="absolute top-1/2 right-3 -translate-y-1/2 bg-slate-300 p-0.5 rounded-full hover:bg-red-500 cursor-pointer shadow-sm shadow-black transition-all"
             type="button"
+            className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer transition-all"
           >
             <IoClose
-              size={16}
-              className="text-black group-hover:text-white group-hover:rotate-180 transition-all"
+              size={20}
+              className="text-red-600 hover:scale-125 active:scale-95 transition-all"
             />
           </button>
         )}
@@ -531,21 +927,44 @@ InputFilterWithDebounce.displayName = 'InputFilterWithDebounce';
 
 export const FiltroHeaderChamados = memo(
   ({ value, onChange, columnId }: InputFilterProps) => {
-    // Status, Cliente e Recurso usam dropdown com busca e API
+    // Status, Cliente, Recurso e Classificação usam dropdown com busca e API
     if (
-      columnId === 'STATUS_CHAMADO' ||
-      columnId === 'NOME_CLIENTE' ||
-      columnId === 'NOME_RECURSO'
+      columnId === 'NOME_CLASSIFICACAO' ||
+      columnId === 'NOME_RECURSO' ||
+      columnId === 'STATUS_CHAMADO'
     ) {
       return (
         <DropdownWithFilter
           value={value}
           onChange={onChange}
           columnId={
-            columnId as 'NOME_CLIENTE' | 'NOME_RECURSO' | 'STATUS_CHAMADO'
+            columnId as 'NOME_CLASSIFICACAO' | 'NOME_RECURSO' | 'STATUS_CHAMADO'
           }
         />
       );
+    }
+
+    // ✅ COD_CHAMADO usa input com separador de milhares
+    if (columnId === 'COD_CHAMADO') {
+      return <InputFilterNumber value={value} onChange={onChange} />;
+    }
+
+    // ✅ PRIOR_CHAMADO usa input com formatação P-
+    if (columnId === 'PRIOR_CHAMADO') {
+      return <InputFilterPriority value={value} onChange={onChange} />;
+    }
+
+    // DATA_CHAMADO usa input com máscara de data
+    if (columnId === 'DATA_CHAMADO') {
+      return <InputFilterDate value={value} onChange={onChange} />;
+    }
+
+    if (columnId === 'DTENVIO_CHAMADO') {
+      return <InputFilterDate value={value} onChange={onChange} />;
+    }
+
+    if (columnId === 'CONCLUSAO_CHAMADO') {
+      return <InputFilterDate value={value} onChange={onChange} />;
     }
 
     // Outros campos usam input com debounce
@@ -566,10 +985,19 @@ FiltroHeaderChamados.displayName = 'FiltroHeaderChamados';
 // ================================================================================
 
 // Constantes fora do hook para evitar recriação
-const DATE_COLUMNS = new Set(['DATA_CHAMADO']);
-const NUMERIC_COLUMNS = new Set(['COD_CHAMADO']);
-const TIME_COLUMNS = new Set(['HORA_CHAMADO']);
+const DATE_COLUMNS = new Set([
+  'DATA_CHAMADO',
+  'DTENVIO_CHAMADO',
+  'CONCLUSAO_CHAMADO',
+]);
+const NUMERIC_COLUMNS = new Set([
+  'COD_CHAMADO',
+  'PRIOR_CHAMADO',
+  'CLASSIFICACAO_CHAMADO',
+]);
+// ===============
 
+// Função para normalizar texto (remover acentos, minúsculas, etc.)
 function normalizeTextForFilter(text: string): string {
   return text
     .toLowerCase()
@@ -577,7 +1005,47 @@ function normalizeTextForFilter(text: string): string {
     .replace(/[\u0300-\u036f]/g, '')
     .trim();
 }
+// ===============
 
+// Função para formatar número com separador de milhar
+function formatarNumeroMilhar(value: string): string {
+  const numbers = value.replace(/\D/g, '');
+
+  if (!numbers) return '';
+
+  return Number(numbers).toLocaleString('pt-BR');
+}
+// =====
+
+// Função para remover formatação de milhar
+function removerFormatacaoMilhar(value: string): string {
+  return value.replace(/\D/g, '');
+}
+// ====================
+
+//  Função para formatar prioridade como P-XXX
+function formatarPrioridade(value: string): string {
+  const numbers = value.replace(/\D/g, '');
+
+  if (!numbers) return '';
+
+  const limitedNumbers = numbers.slice(0, 3);
+  const numValue = parseInt(limitedNumbers);
+
+  if (numValue > 100) return 'P-100';
+  if (numValue < 1) return '';
+
+  return `P-${numValue}`;
+}
+// =====
+
+// ✅ Função para remover formatação de prioridade
+function removerFormatacaoPrioridade(value: string): string {
+  return value.replace(/\D/g, '');
+}
+// ====================
+
+// Hook personalizado para filtros de chamados
 export const useFiltrosChamados = () => {
   const columnFilterFn = useCallback(
     (row: any, columnId: string, filterValue: string) => {
@@ -601,12 +1069,32 @@ export const useFiltrosChamados = () => {
         return cellUpper === filterUpper;
       }
 
-      // Tratamento especial para Cliente e Recurso (match exato)
-      if (columnId === 'NOME_CLIENTE' || columnId === 'NOME_RECURSO') {
+      // Tratamento especial para Cliente, Recurso e Classificação (match exato)
+      if (columnId === 'NOME_CLASSIFICACAO' || columnId === 'NOME_RECURSO') {
         return cellString === filterTrimmed;
       }
 
-      // Tratamento especial para campos de data
+      // Tratamento especial para DATA_CHAMADO
+      if (columnId === 'DATA_CHAMADO') {
+        const dataFormatada = formatarDataParaBR(cellString);
+        const normalizedCell = dataFormatada.replace(/\D/g, '');
+        const normalizedFilter = filterTrimmed.replace(/\D/g, '');
+        return normalizedCell.includes(normalizedFilter);
+      }
+
+      // Tratamento especial para CONCLUSAO_CHAMADO
+      if (columnId === 'CONCLUSAO_CHAMADO') {
+        // Se o valor já estiver formatado (DD/MM/YYYY), usa direto
+        // Se não, formata primeiro
+        const dataFormatada = cellString.includes('/')
+          ? cellString
+          : formatarDataParaBR(cellString);
+        const normalizedCell = dataFormatada.replace(/\D/g, '');
+        const normalizedFilter = filterTrimmed.replace(/\D/g, '');
+        return normalizedCell.includes(normalizedFilter);
+      }
+
+      // Tratamento para campos de data genéricos (outras colunas de data)
       if (DATE_COLUMNS.has(columnId)) {
         const normalizedCell = cellString.replace(/\D/g, '');
         const normalizedFilter = filterTrimmed.replace(/\D/g, '');
@@ -617,14 +1105,14 @@ export const useFiltrosChamados = () => {
       if (NUMERIC_COLUMNS.has(columnId)) {
         const cellNumbers = cellString.replace(/\D/g, '');
         const filterNumbers = filterTrimmed.replace(/\D/g, '');
-        return cellNumbers.includes(filterNumbers);
-      }
 
-      // Tratamento para campos de hora
-      if (TIME_COLUMNS.has(columnId)) {
-        const cellTime = cellString.replace(/:/g, '');
-        const filterTime = filterTrimmed.replace(/:/g, '');
-        return cellTime.includes(filterTime);
+        // Para PRIOR_CHAMADO, usa match exato
+        if (columnId === 'PRIOR_CHAMADO') {
+          return cellNumbers === filterNumbers;
+        }
+
+        // Para outros campos numéricos, usa includes (comportamento parcial)
+        return cellNumbers.includes(filterNumbers);
       }
 
       // Tratamento padrão para texto

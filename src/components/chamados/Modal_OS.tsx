@@ -320,12 +320,12 @@ export function ModalOS({
 
   return (
     <>
-      <div className="animate-in fade-in fixed inset-0 z-60 flex items-center justify-center p-4 duration-300">
+      <div className="animate-in fade-in fixed inset-0 z-60 flex items-center justify-center p-4">
         {/* ===== OVERLAY ===== */}
         <div className="absolute inset-0 bg-black/60 backdrop-blur-md" />
         {/* ========== */}
 
-        <div className="animate-in slide-in-from-bottom-4 relative z-10 max-h-[100vh] w-full max-w-2xl overflow-hidden rounded-2xl border border-teal-900 bg-white transition-all duration-500 ease-out">
+        <div className="animate-in slide-in-from-bottom-4 relative z-10 max-h-[100vh] w-full max-w-2xl overflow-hidden rounded-2xl border border-teal-900 bg-white transition-all ease-out">
           {/* ===== HEADER ===== */}
           <header className="relative flex items-center justify-between bg-teal-700 p-6 shadow-xs shadow-black">
             <div className="flex items-center justify-center gap-6">
@@ -335,7 +335,7 @@ export function ModalOS({
                   DETALHES DA OS
                 </h1>
                 <p className="text-lg font-extrabold tracking-widest text-gray-200 select-none">
-                  Revise e valide a OS
+                  Revise e Valide a OS
                 </p>
               </div>
             </div>

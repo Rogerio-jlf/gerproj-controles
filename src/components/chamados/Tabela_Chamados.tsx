@@ -3,6 +3,8 @@
 
 import { useAuth } from '@/context/AuthContext';
 import { useFilters } from '@/context/FiltersContext';
+import { formatarHorasTotaisSufixo } from '@/formatters/formatar-hora';
+import { useColumnResize } from '@/hooks/useColumnResize';
 import { useQuery } from '@tanstack/react-query';
 import {
   ColumnFiltersState,
@@ -16,11 +18,8 @@ import { FiRefreshCw } from 'react-icons/fi';
 import { IoCall } from 'react-icons/io5';
 import { IsError } from '../utils/IsError';
 import { IsLoading } from '../utils/IsLoading';
-import {
-  ChamadoRowProps,
-  getColumnWidth,
-  getColunasChamados,
-} from './Colunas_Tabela_Chamados';
+import { ExportaExcelChamadosButton } from './Button_Excel';
+import { ChamadoRowProps, getColunasChamados } from './Colunas_Tabela_Chamados';
 import {
   getColumnWidthOS,
   getColunasOS,
@@ -31,11 +30,14 @@ import {
   useFiltrosChamados,
 } from './Filtro_Header_Tabela_Chamados';
 import { ModalOS } from './Modal_OS';
+import { ResizeHandle } from './ResizeHandle';
 
 // ==================== INTERFACE ====================
 interface ApiResponseChamados {
   success: boolean;
-  total: number;
+  totalChamados: number;
+  totalOS: number;
+  totalHorasOS: number;
   data: ChamadoRowProps[];
 }
 
@@ -151,6 +153,23 @@ export function TabelaChamados() {
   const { columnFilterFn } = useFiltrosChamados();
   const hasExpandedRow = expandedRows.size > 0;
 
+  const initialColumnWidths = {
+    COD_CHAMADO: 110, //ok
+    DATA_CHAMADO: 170, //ok
+    PRIOR_CHAMADO: 110, //ok
+    ASSUNTO_CHAMADO: 280,
+    EMAIL_CHAMADO: 220,
+    NOME_CLASSIFICACAO: 180, //ok
+    DTENVIO_CHAMADO: 170, //ok
+    NOME_RECURSO: 180, //ok
+    STATUS_CHAMADO: 220,
+    CONCLUSAO_CHAMADO: 150, //ok
+    TOTAL_HORAS_OS: 120, //ok
+  };
+
+  const { columnWidths, handleMouseDown, handleDoubleClick, resizingColumn } =
+    useColumnResize(initialColumnWidths);
+
   // Query de Chamados
   const {
     data: apiData,
@@ -188,7 +207,10 @@ export function TabelaChamados() {
     return chamados;
   }, [apiData?.data]);
 
-// Função para expandir/recolher linha
+  const totalOS = useMemo(() => apiData?.totalOS ?? 0, [apiData?.totalOS]);
+
+  // Função para expandir/recolher linha
+  // Função para expandir/recolher linha com scroll melhorado
   const toggleRow = useCallback((codChamado: number) => {
     setExpandedRows((prev) => {
       if (prev.size > 0 && !prev.has(codChamado)) {
@@ -196,46 +218,99 @@ export function TabelaChamados() {
       }
 
       const newSet = new Set(prev);
-      const isExpanding = !newSet.has(codChamado);
-      
+
       if (newSet.has(codChamado)) {
         newSet.delete(codChamado);
       } else {
         newSet.add(codChamado);
-        
-        // Scroll automático após expandir
-        setTimeout(() => {
-          const rowElement = document.querySelector(`[data-chamado-id="${codChamado}"]`) as HTMLElement;
-          if (rowElement) {
-            const container = rowElement.closest('.overflow-y-auto') as HTMLElement;
-            const thead = document.querySelector('thead');
-            
-            if (container && thead) {
-              const theadHeight = thead.getBoundingClientRect().height;
-              const containerRect = container.getBoundingClientRect();
-              const rowRect = rowElement.getBoundingClientRect();
-              
-              // Calcula a posição relativa da linha dentro do container
-              const rowRelativeTop = rowRect.top - containerRect.top;
-              const currentScroll = container.scrollTop;
-              
-              // Scroll suave para posicionar a linha logo abaixo do header
-              container.scrollTo({
-                top: currentScroll + rowRelativeTop - 80, // 10px de margem
-                behavior: 'smooth'
-              });
+
+        // Scroll automático após expandir - usa requestAnimationFrame para garantir que o DOM foi atualizado
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            const rowElement = document.querySelector(
+              `[data-chamado-id="${codChamado}"]`,
+            ) as HTMLElement;
+
+            if (rowElement) {
+              const container = rowElement.closest(
+                '.overflow-y-auto',
+              ) as HTMLElement;
+              const thead = document.querySelector('thead');
+
+              if (container && thead) {
+                // Aguarda a renderização da sub-tabela expandida
+                setTimeout(() => {
+                  const expandedRow =
+                    rowElement.nextElementSibling as HTMLElement;
+
+                  const containerRect = container.getBoundingClientRect();
+                  const rowRect = rowElement.getBoundingClientRect();
+
+                  // Pega apenas a primeira linha do thead (títulos das colunas)
+                  const theadFirstRow = thead.querySelector('tr:first-child');
+                  const theadFirstRowHeight = theadFirstRow
+                    ? theadFirstRow.getBoundingClientRect().height
+                    : 0;
+
+                  // Altura real da sub-tabela expandida (ou estimativa)
+                  const expandedHeight = expandedRow
+                    ? expandedRow.getBoundingClientRect().height
+                    : 400;
+
+                  // Posição atual da linha em relação ao scroll
+                  const rowTop =
+                    rowRect.top - containerRect.top + container.scrollTop;
+
+                  // Detecta se é uma das últimas linhas contando as linhas de chamado (não expandidas)
+                  const allChamadoRows = Array.from(
+                    container.querySelectorAll('tbody > tr[data-chamado-id]'),
+                  );
+                  const currentRowIndex = allChamadoRows.indexOf(rowElement);
+                  const isLastTwoRows =
+                    currentRowIndex >= allChamadoRows.length - 2;
+
+                  // Altura do container scrollável completo
+                  const scrollHeight = container.scrollHeight;
+
+                  // Posição do bottom da linha em relação ao conteúdo total
+                  const rowBottomAbsolute = rowTop + rowRect.height;
+
+                  // Espaço real disponível abaixo da linha considerando todo o scroll
+                  const spaceBelow = scrollHeight - rowBottomAbsolute;
+
+                  // Se é uma das duas últimas linhas OU não há espaço suficiente
+                  if (isLastTwoRows || spaceBelow < expandedHeight) {
+                    // SEMPRE posiciona logo abaixo do header
+                    const targetScroll = rowTop - theadFirstRowHeight - 10;
+
+                    container.scrollTo({
+                      top: Math.max(0, targetScroll),
+                      behavior: 'smooth',
+                    });
+                  } else {
+                    // Há espaço suficiente, posiciona normalmente
+                    const targetScroll = rowTop - theadFirstRowHeight;
+
+                    container.scrollTo({
+                      top: targetScroll,
+                      behavior: 'smooth',
+                    });
+                  }
+                }, 250); // Aumentado para 250ms
+              }
             }
-          }
-        }, 100); // Pequeno delay para garantir que o DOM foi atualizado
+          }, 50);
+        });
       }
       return newSet;
     });
   }, []);
+  // ====================
 
   // Colunas dinâmicas
   const columns = useMemo(
-    () => getColunasChamados(isAdmin, expandedRows),
-    [isAdmin, expandedRows],
+    () => getColunasChamados(isAdmin, expandedRows, columnWidths), // ✅ ADICIONAR columnWidths
+    [isAdmin, expandedRows, columnWidths], // ✅ ADICIONAR na dependência
   );
 
   // ==================== CALLBACKS ====================
@@ -305,6 +380,23 @@ export function TabelaChamados() {
     });
   }, [data, columnFilters, hasActiveFilters, columnFilterFn]);
 
+  const totalHorasOS = useMemo(
+    () => apiData?.totalHorasOS ?? 0,
+    [apiData?.totalHorasOS],
+  );
+
+  const totalHorasFiltradas = useMemo(() => {
+    // Se não há filtros ativos, retorna o total da API
+    if (!hasActiveFilters) {
+      return totalHorasOS;
+    }
+
+    // Com filtros ativos, soma as horas dos chamados filtrados
+    return dadosFiltrados.reduce((acc, chamado) => {
+      return acc + (chamado.TOTAL_HORAS_OS || 0);
+    }, 0);
+  }, [dadosFiltrados, hasActiveFilters, totalHorasOS]);
+
   const table = useReactTable<ChamadoRowProps>({
     data: dadosFiltrados,
     columns,
@@ -327,6 +419,20 @@ export function TabelaChamados() {
     return hasActiveFilters ? totalChamadosFiltrados : totalChamados;
   }, [hasActiveFilters, totalChamadosFiltrados, totalChamados]);
 
+  const totalOSFiltrados = useMemo(() => {
+    // Se não há filtros ativos, retorna o total da API
+    if (!hasActiveFilters) {
+      return totalOS;
+    }
+
+    // Com filtros ativos, conta as OS's dos chamados filtrados
+    // Aqui assumimos que cada chamado com TOTAL_HORAS_OS > 0 tem pelo menos 1 OS
+    // Se você tiver o número exato de OS's por chamado, ajuste aqui
+    return dadosFiltrados.reduce((acc, chamado) => {
+      return acc + (chamado.TOTAL_HORAS_OS > 0 ? 1 : 0);
+    }, 0);
+  }, [dadosFiltrados, hasActiveFilters, totalOS]);
+
   // ==================== RENDERIZAÇÃO CONDICIONAL ====================
   if (!isLoggedIn) {
     return (
@@ -344,7 +450,7 @@ export function TabelaChamados() {
     return (
       <IsLoading
         isLoading={isLoading}
-        title="Aguarde, buscando dados no servidor"
+        title="Aguarde, buscando dados do servidor"
       />
     );
   }
@@ -363,37 +469,54 @@ export function TabelaChamados() {
   return (
     <>
       <div className="relative flex h-full flex-col overflow-hidden border bg-white shadow-md shadow-black w-full border-b-slate-500">
-        <HeaderSection
-          isAdmin={isAdmin}
-          totalChamados={totalChamados}
-          totalChamadosFiltrados={chamadosExibidos}
-          hasActiveFilters={hasActiveFilters}
-          clearAllFilters={clearAllFilters}
-          mes={String(mes)}
-          ano={String(ano)}
-          onRefresh={() => {
-            clearAllFilters();
-            setExpandedRows(new Set());
-            setTimeout(() => {
-              if (typeof window !== 'undefined') window.location.reload();
-            }, 100);
-          }}
-        />
+        <Header
+        isAdmin={isAdmin}
+        totalChamados={totalChamados}
+        totalChamadosFiltrados={chamadosExibidos}
+        totalOS={totalOS}
+        totalOSFiltrados={totalOSFiltrados}
+        totalHorasOS={totalHorasOS}
+        totalHorasFiltradas={totalHorasFiltradas}
+        hasActiveFilters={hasActiveFilters}
+        clearAllFilters={clearAllFilters}
+        filteredData={dadosFiltrados}
+        mes={String(mes)}
+        ano={String(ano)}
+        codCliente={codCliente} // ⭐ ADICIONAR ESTA LINHA
+        onRefresh={() => {
+          clearAllFilters();
+          setExpandedRows(new Set());
+          setTimeout(() => {
+            if (typeof window !== 'undefined') window.location.reload();
+          }, 100);
+        }}
+      />
 
         <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
           {hasExpandedRow && (
-            <div className="absolute inset-0 bg-black/30 backdrop-blur-xs z-20 animate-fadeIn pointer-events-none" />
+            <div
+              className="absolute inset-0 bg-black/30 backdrop-blur-xs z-20 animate-fadeIn cursor-pointer"
+              onClick={() => setExpandedRows(new Set())} // ✅ Fecha ao clicar no overlay
+              title="Clique para fechar"
+            />
           )}
 
           <div
-            className="flex-1 overflow-y-auto scrollbar-thin scrollbar-track-white/5 scrollbar-thumb-indigo-500/30 hover:scrollbar-thumb-indigo-500/50"
+            className="flex-1 overflow-y-auto scrollbar-thin scrollbar-track-purple-100 scrollbar-thumb-purple-600 hover:scrollbar-thumb-purple-800"
             style={{ maxHeight: 'calc(100vh - 370px)' }}
           >
             <table
               className="w-full border-separate border-spacing-0"
               style={{ tableLayout: 'fixed' }}
             >
-              <TableHeader table={table} isAdmin={isAdmin} />
+              <TableHeader
+                table={table}
+                isAdmin={isAdmin}
+                columnWidths={columnWidths}
+                handleMouseDown={handleMouseDown}
+                handleDoubleClick={handleDoubleClick} // ✅ ADICIONAR
+                resizingColumn={resizingColumn}
+              />
               <TableBody
                 table={table}
                 columns={columns}
@@ -402,6 +525,7 @@ export function TabelaChamados() {
                 codCliente={codCliente}
                 clearAllFilters={clearAllFilters}
                 openModal={openModal}
+                columnWidths={columnWidths}
               />
             </table>
           </div>
@@ -419,40 +543,62 @@ export function TabelaChamados() {
   );
 }
 
-// ==================== SUBCOMPONENTES ====================
-interface HeaderSectionProps {
+// ============================================================
+// ========== SUB-COMPONENTES =================================
+// ============================================================
+
+// ==================== HEADER ====================
+
+interface HeaderProps {
   isAdmin: boolean;
   totalChamados: number;
   totalChamadosFiltrados: number;
+  totalOS: number;
+  totalOSFiltrados: number;
+  totalHorasOS: number;
+  totalHorasFiltradas: number;
   hasActiveFilters: boolean;
   clearAllFilters: () => void;
+  filteredData: ChamadoRowProps[];
   mes: string;
   ano: string;
+  codCliente: string | null; // ⭐ ADICIONAR
   onRefresh: () => void;
 }
 
-function HeaderSection({
+function Header({
   isAdmin,
   totalChamados,
   totalChamadosFiltrados,
+  totalOS,
+  totalOSFiltrados,
+  totalHorasOS,
+  totalHorasFiltradas,
   hasActiveFilters,
   clearAllFilters,
+  filteredData,
   mes,
   ano,
+  codCliente, // ⭐ ADICIONAR
   onRefresh,
-}: HeaderSectionProps) {
+}: HeaderProps) {
+  const { cliente, recurso, status } = useFilters().filters;
+  
   return (
-    <header className="flex flex-col gap-10 bg-indigo-900 p-6">
+    <header className="flex flex-col gap-10 bg-purple-900 p-6">
+      {/* Título / Botão Atualizar */}
       <div className="flex w-full items-center justify-between">
+        {/* Título */}
         <div className="flex items-center gap-6">
-          <div className="flex h-16 w-16 items-center justify-center rounded-md bg-white/30 shadow-md shadow-black">
-            <IoCall className="text-white animate-pulse" size={48} />
+          <div className="flex h-16 w-16 items-center justify-center rounded-md bg-white border border-purple-300">
+            <IoCall className="text-black" size={48} />
           </div>
           <h2 className="text-4xl tracking-widest select-none font-bold text-white">
-            TABELA DE CHAMADOS - {mes}/{ano}
+            RELATÓRIO CHAMADOS - {mes}/{ano}
           </h2>
         </div>
 
+        {/* Botão Atualizar */}
         <FiRefreshCw
           onClick={onRefresh}
           title="Atualizar Dados"
@@ -461,32 +607,74 @@ function HeaderSection({
         />
       </div>
 
+      {/* Badges Totalizadores / Botão Limpar Filtros / Badge Administrador */}
       <div className="flex w-full items-center justify-between gap-4">
-        <div className="flex items-center justify-start flex-1 gap-4">
+        {/* Badges Totalizadores */}
+        <div className="flex items-center justify-start flex-1 gap-4 flex-wrap">
           <BadgeTotalizador
             label={totalChamadosFiltrados === 1 ? 'Chamado' : 'Chamados'}
             valor={totalChamadosFiltrados}
             valorTotal={hasActiveFilters ? totalChamados : undefined}
+            width="w-[280px]"
+          />
+
+          <BadgeTotalizador
+            label={totalOSFiltrados === 1 ? 'OS' : "OS's"}
+            valor={totalOSFiltrados}
+            valorTotal={hasActiveFilters ? totalOS : undefined}
+            width="w-[230px]"
+          />
+
+          <BadgeTotalizador
+            label="Horas Trabalhadas"
+            valor={formatarHorasTotaisSufixo(totalHorasFiltradas)}
+            valorTotal={
+              hasActiveFilters
+                ? formatarHorasTotaisSufixo(totalHorasOS)
+                : undefined
+            }
+            width="w-[590px]"
           />
         </div>
 
+        {/* Botões de Ação */}
         <div className="flex items-center justify-end gap-20">
+          {/* Botão Limpar Filtros */}
           {hasActiveFilters && (
             <button
               onClick={clearAllFilters}
               title="Limpar Filtros"
-              className="group cursor-pointer rounded-full border-none bg-gradient-to-br from-red-600 to-red-700 px-6 py-4 text-lg font-extrabold tracking-widest text-white shadow-md shadow-black transition-all hover:scale-110 active:scale-95"
+              className="group cursor-pointer rounded-full border border-purple-300 bg-white p-4 text-lg font-extrabold tracking-widest text-white transition-all hover:scale-115 active:scale-95"
             >
               <FaEraser
                 size={20}
-                className="text-white group-hover:scale-110"
+                className="text-black group-hover:scale-115 transition-all"
               />
             </button>
           )}
 
+          {/* ⭐ Botão Exportar Excel ATUALIZADO */}
+          <ExportaExcelChamadosButton
+            data={filteredData}
+            isAdmin={isAdmin} // ⭐ ADICIONAR
+            codCliente={codCliente} // ⭐ ADICIONAR
+            filtros={{
+              ano,
+              mes,
+              cliente,
+              recurso,
+              status,
+              totalChamados: totalChamadosFiltrados,
+              totalOS: totalOSFiltrados,
+              totalHorasOS: totalHorasFiltradas,
+            }}
+            disabled={filteredData.length === 0}
+          />
+
+          {/* Badge Administrador */}
           {isAdmin && (
-            <div className="flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500/20 to-teal-500/20 px-6 py-2 ring-2 ring-emerald-400/80 shadow-md shadow-black">
-              <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-300"></div>
+            <div className="flex items-center gap-4 rounded-full bg-purple-900 px-6 py-2 ring-2 ring-emerald-600">
+              <div className="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-600"></div>
               <span className="text-base font-bold text-emerald-300 tracking-widest select-none italic">
                 Administrador
               </span>
@@ -497,20 +685,30 @@ function HeaderSection({
     </header>
   );
 }
+// ====================
 
+// ==================== BADGE TOTALIZADOR ====================
 interface BadgeTotalizadorProps {
   label: string;
   valor: string | number;
-  valorTotal?: number;
+  valorTotal?: string | number;
+  width?: string;
 }
 
-function BadgeTotalizador({ label, valor, valorTotal }: BadgeTotalizadorProps) {
+function BadgeTotalizador({
+  label,
+  valor,
+  valorTotal,
+  width,
+}: BadgeTotalizadorProps) {
   return (
-    <div className="group flex items-center gap-2 rounded-md bg-white px-6 py-2 transition-all shadow-md shadow-black w-[300px]">
-      <div className="h-2 w-2 animate-pulse rounded-full bg-indigo-500"></div>
-      <span className="text-lg tracking-widest font-bold select-none text-black">
+    <div
+      className={`group flex items-center gap-4 rounded bg-white px-6 py-2 border border-purple-300 flex-shrink-0 ${width}`}
+    >
+      <div className="h-2.5 w-2.5 animate-pulse rounded-full bg-purple-900"></div>
+      <span className="text-lg tracking-widest font-extrabold select-none text-gray-800">
         {label}:{' '}
-        <span className="text-lg tracking-widest font-bold select-none text-indigo-500">
+        <span className="text-lg tracking-widest font-extrabold select-none text-purple-600 italic">
           {valor}
           {valorTotal !== undefined && (
             <span className="ml-1">/{valorTotal}</span>
@@ -520,17 +718,33 @@ function BadgeTotalizador({ label, valor, valorTotal }: BadgeTotalizadorProps) {
     </div>
   );
 }
+// ====================
 
-function TableHeader({ table, isAdmin }: { table: any; isAdmin: boolean }) {
+// ==================== TABLE HEADER ====================
+function TableHeader({
+  table,
+  isAdmin,
+  columnWidths,
+  handleMouseDown,
+  handleDoubleClick, // ✅ ADICIONAR
+  resizingColumn,
+}: {
+  table: any;
+  isAdmin: boolean;
+  columnWidths: Record<string, number>;
+  handleMouseDown: (e: React.MouseEvent, columnId: string) => void;
+  handleDoubleClick: (columnId: string) => void; // ✅ ADICIONAR
+  resizingColumn: string | null;
+}) {
   return (
     <thead className="sticky top-0 z-20">
       {table.getHeaderGroups().map((headerGroup: any) => (
         <tr key={headerGroup.id}>
-          {headerGroup.headers.map((header: any) => (
+          {headerGroup.headers.map((header: any, idx: number) => (
             <th
               key={header.id}
-              className="bg-teal-700 py-6 pl-2 pr-4.5"
-              style={{ width: getColumnWidth(header.id, isAdmin) }}
+              className="bg-teal-700 py-6 pl-3.5 pr-4 relative border-r border-teal-900 border-b " // ✅ ADICIONAR border
+              style={{ width: `${columnWidths[header.id]}px` }}
             >
               {header.isPlaceholder
                 ? null
@@ -538,19 +752,30 @@ function TableHeader({ table, isAdmin }: { table: any; isAdmin: boolean }) {
                     header.column.columnDef.header,
                     header.getContext(),
                   )}
+
+              {/* ✅ ADICIONAR ResizeHandle (exceto na última coluna) */}
+              {idx < headerGroup.headers.length - 1 && (
+                <ResizeHandle
+                  columnId={header.id}
+                  onMouseDown={handleMouseDown}
+                  onDoubleClick={handleDoubleClick} // ✅ ADICIONAR
+                  isResizing={resizingColumn === header.id}
+                />
+              )}
             </th>
           ))}
         </tr>
       ))}
 
-      <tr className="shadow-sm shadow-black bg-teal-700">
-        {table.getAllColumns().map((column: any) => (
+      {/* Linha de filtros */}
+      <tr className=" bg-teal-700">
+        {table.getAllColumns().map((column: any, idx: number) => (
           <th
             key={column.id}
-            className="py-4 pl-2 pr-4"
-            style={{ width: getColumnWidth(column.id, isAdmin) }}
+            className="py-4 pl-4 pr-4 relative" // ✅ ADICIONAR relative
+            style={{ width: `${columnWidths[column.id]}px` }} // ✅ MODIFICAR
           >
-            {column.id === 'expander' ? (
+            {column.id === 'TOTAL_HORAS_OS' ? (
               <div className="h-[42px]" />
             ) : (
               <FiltroHeaderChamados
@@ -559,13 +784,25 @@ function TableHeader({ table, isAdmin }: { table: any; isAdmin: boolean }) {
                 columnId={column.id}
               />
             )}
+
+            {/* ✅ ADICIONAR ResizeHandle (exceto na última coluna) */}
+            {idx < table.getAllColumns().length - 1 && (
+              <ResizeHandle
+                columnId={column.id}
+                onMouseDown={handleMouseDown}
+                onDoubleClick={handleDoubleClick} // ✅ ADICIONAR
+                isResizing={resizingColumn === column.id}
+              />
+            )}
           </th>
         ))}
       </tr>
     </thead>
   );
 }
+// ====================
 
+// ==================== TABLE BODY ====================
 interface TableBodyProps {
   table: any;
   columns: any;
@@ -584,7 +821,8 @@ function TableBody({
   codCliente,
   clearAllFilters,
   openModal,
-}: TableBodyProps) {
+  columnWidths, // ✅ ADICIONAR
+}: TableBodyProps & { columnWidths: Record<string, number> }) {
   const rows = table.getRowModel().rows;
   const hasExpandedRow = expandedRows.size > 0;
 
@@ -616,25 +854,25 @@ function TableBody({
                   toggleRow(row.original.COD_CHAMADO);
                 }
               }}
-              className={`group transition-all duration-300 relative ${
+              className={`group transition-all relative ${
                 temOS ? 'cursor-pointer' : 'cursor-not-allowed'
               } ${
                 isExpanded
                   ? 'bg-black z-30'
                   : rowIndex % 2 === 0
-                    ? 'bg-gray-100 hover:bg-orange-200'
-                    : 'bg-gray-100 hover:bg-orange-200'
+                    ? 'bg-white hover:bg-gray-300'
+                    : 'bg-white hover:bg-gray-300'
               } ${
                 hasExpandedRow && !isExpanded ? 'z-10 pointer-events-none' : ''
-              } ${temOS ? 'hover:shadow-lg hover:shadow-indigo-500/20' : ''}`}
+              } `}
             >
               {row.getVisibleCells().map((cell: any, cellIndex: number) => (
                 <td
                   key={cell.id}
-                  style={{ width: getColumnWidth(cell.column.id, isAdmin) }}
-                  className={`border-b border-gray-300 p-3 transition-all ${
-                    cellIndex === 0 ? 'pl-6' : ''
-                  } ${cellIndex === row.getVisibleCells().length - 1 ? 'pr-6' : ''} ${
+                  style={{ width: `${columnWidths[cell.column.id]}px` }}
+                  className={`border-b border-r border-gray-500 p-3 transition-all ${
+                    cellIndex === 0 ? 'pl-3' : ''
+                  } ${cellIndex === row.getVisibleCells().length - 1 ? 'pr-4' : ''} ${
                     isExpanded ? 'font-semibold' : ''
                   }`}
                 >
@@ -647,7 +885,7 @@ function TableBody({
               <tr key={`${row.id}-expanded`} className="relative z-30">
                 <td
                   colSpan={table.getAllColumns().length}
-                  className="px-6 pt-6 pb-12 bg-white rounded-b-lg relative border-b border-gray-800"
+                  className="px-6 pt-6 pb-12 bg-white rounded-b relative"
                 >
                   <div className="relative z-10">
                     <SubTabelaOS
@@ -666,7 +904,9 @@ function TableBody({
     </tbody>
   );
 }
+// ====================
 
+// ==================== EMPTY STATE ====================
 function EmptyState({ clearAllFilters }: { clearAllFilters: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center gap-4">
@@ -686,6 +926,7 @@ function EmptyState({ clearAllFilters }: { clearAllFilters: () => void }) {
     </div>
   );
 }
+// ====================
 
 // ==================== SUB-TABELA DE OS's ====================
 interface SubTabelaOSProps {
@@ -744,11 +985,13 @@ function SubTabelaOS({
   }
 
   return (
-    <div className="p-6 bg-white rounded-md shadow-lg shadow-black border-t border-gray-300">
+    <div className="bg-white">
+      {/* Header da Subtabela */}
       <div className="mb-3 flex items-center gap-3">
-        <div className="h-3 w-3 rounded-full bg-green-500 animate-pulse"></div>
+        <div className="h-2.5 w-2.5 rounded-full bg-teal-800 animate-pulse"></div>
         <span className="text-base font-extrabold text-gray-800 tracking-widest select-none">
-          {osData.length > 1 ? 'ORDENS DE SERVIÇO' : 'ORDEM DE SERVIÇO'} - CHAMADO #{codChamado}
+          {osData.length > 1 ? 'ORDENS DE SERVIÇO' : 'ORDEM DE SERVIÇO'} -
+          CHAMADO #{codChamado}
         </span>
         <div className="h-px flex-1 bg-gray-800"></div>
         <span className="text-base font-extrabold text-gray-800 select-none tracking-widest">
@@ -756,18 +999,22 @@ function SubTabelaOS({
         </span>
       </div>
 
-      <div className="overflow-x-auto rounded-lg shadow-md shadow-black">
+      {/* Container com Scroll */}
+      <div
+        className="overflow-y-auto rounded-md shadow-xs shadow-black scrollbar-thin scrollbar-track-teal-100 scrollbar-thumb-teal-600 hover:scrollbar-thumb-teal-800"
+        style={{ maxHeight: '400px' }}
+      >
         <table
           className="w-full border-separate border-spacing-0"
           style={{ tableLayout: 'fixed' }}
         >
-          <thead>
+          <thead className="sticky top-0 z-10">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="bg-purple-600 p-5 text-black font-extrabold tracking-widest select-none text-base"
+                    className="bg-teal-800 p-3 font-extrabold tracking-widest select-none text-base"
                     style={{ width: getColumnWidthOS(header.id) }}
                   >
                     {flexRender(
@@ -785,13 +1032,13 @@ function SubTabelaOS({
                 key={row.id}
                 onClick={() => openModal(row.original)}
                 className={`cursor-pointer ${
-                  idx % 2 === 0 ? 'bg-gray-100' : 'bg-gray-100'
-                } hover:bg-orange-200 transition-all`}
+                  idx % 2 === 0 ? 'bg-white' : 'bg-white'
+                } hover:bg-gray-300 transition-all`}
               >
                 {row.getVisibleCells().map((cell) => (
                   <td
                     key={cell.id}
-                    className="p-3 border-b border-gray-300"
+                    className="p-3 border-b border-gray-400"
                     style={{ width: getColumnWidthOS(cell.column.id) }}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

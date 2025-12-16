@@ -1,26 +1,10 @@
-// export function corrigirTextoCorrompido(texto: string | null | undefined): string {
-//   if (!texto) return '';
-
-//   try {
-//     // Converte texto que está com codificação errada (UTF-8 como Latin1)
-//     return decodeURIComponent(escape(texto));
-//   } catch {
-//     return texto;
-//   }
-// }
-
-
-/**
- * Corrige textos corrompidos por encoding (UTF-8 lido como ISO-8859-1 / WIN1252)
- * Detecta automaticamente se o texto parece corrompido.
- *
- * Exemplo: "DivergÃªncia no estoque" → "Divergência no estoque"
- */
-export function corrigirTextoCorrompido(texto: string | null | undefined): string {
+export function corrigirTextoCorrompido(
+  texto: string | null | undefined,
+): string {
   if (!texto) return '';
 
   // Se o texto não tiver caracteres suspeitos, retorna como está
-  const suspeitos = /[ÃãÂâÊêÔôÛûÇç©§�]/;
+  const suspeitos = /[ÃãÂâÊêÔôÛûÇç©§�ýÝ]/;
   if (!suspeitos.test(texto)) return texto;
 
   try {
@@ -28,7 +12,7 @@ export function corrigirTextoCorrompido(texto: string | null | undefined): strin
     const corrigido = decodeURIComponent(escape(texto));
 
     // Se após correção ainda tiver caracteres estranhos, faz substituições manuais
-    if (/�/.test(corrigido) || /Ã|Â|Ê|Ô|Û/.test(corrigido)) {
+    if (/�|ý/.test(corrigido) || /Ã|Â|Ê|Ô|Û/.test(corrigido)) {
       return corrigirManual(corrigido);
     }
 
@@ -45,6 +29,7 @@ export function corrigirTextoCorrompido(texto: string | null | undefined): strin
  */
 function corrigirManual(texto: string): string {
   const mapa: Record<string, string> = {
+    // Acentos minúsculos
     'Ã¡': 'á',
     'Ã ': 'à',
     'Ã¢': 'â',
@@ -57,29 +42,44 @@ function corrigirManual(texto: string): string {
     'Ã´': 'ô',
     'Ãº': 'ú',
     'Ã¼': 'ü',
-    'Ã“': 'Ó',
+    'Ã­': 'í',
+    
+    // Acentos maiúsculos
+    'Ã"': 'Ó',
     'Ã‰': 'É',
     'Ã€': 'À',
     'ÃŠ': 'Ê',
     'Ã‡': 'Ç',
     'Ã': 'Á',
-    'â€“': '–',
-    'â€”': '—',
+    
+    // Pontuação
+    'â€"': '–',
     'â€œ': '"',
     'â€�': '"',
     'â€˜': "'",
     'â€™': "'",
     'â€¢': '•',
     'â€¦': '…',
+    
+    // Símbolos
     'Âº': 'º',
     'Âª': 'ª',
     'Â°': '°',
     'Â': '',
-    '�O': 'ÃO', // remove replacement character
-    '�A': 'ÇA', // remove replacement character
+    
+    // Casos específicos
+    '�O': 'ÃO',
+    '�A': 'ÇA',
+    '�NIO': 'ÔNIO',
+    'Tý': 'TÔ',
+    'ýý': 'ÇÃ',  // ✅ EVOLUÇÃO
+    'Dý': 'DÃ', 
+    'ý': 'Ç'    // ✅ Maiúsculo
   };
 
   let corrigido = texto;
+  
+  // Aplica as substituições do mapa (ordem importa!)
   for (const [errado, certo] of Object.entries(mapa)) {
     corrigido = corrigido.replaceAll(errado, certo);
   }

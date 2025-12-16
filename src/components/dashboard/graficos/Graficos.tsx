@@ -198,7 +198,7 @@ export function Graficos({ filters }: FilterProps) {
 
           <div className="flex flex-col items-center justify-center gap-4">
             <h1 className="text-3xl font-extrabold tracking-widest text-black select-none">
-              Aguarde, buscando dados no servidor...
+              Aguarde, buscando dados do servidor...
             </h1>
 
             <div className="flex items-center justify-center gap-1">

@@ -11,15 +11,14 @@ import { TooltipTabela } from '../utils/Tooltip';
 
 // ==================== INTERFACES ====================
 export interface OSRowProps {
-  COD_OS: number;
-  NOME_CLIENTE: string | null;
+  // COD_OS: number;
+  NUM_OS: number;
   DTINI_OS: string;
   HRINI_OS: string;
   HRFIM_OS: string;
-  HORAS_TRABALHADAS: number;
+  TOTAL_HORAS_OS: number;
   NOME_RECURSO: string | null;
-  DTINC_OS: string | null;
-  OBS_OS: string | null;
+  NOME_TAREFA: string | null;
   VALCLI_OS: string | null;
 }
 // ===============
@@ -27,28 +26,27 @@ export interface OSRowProps {
 // ==================== LARGURAS DAS COLUNAS ====================
 
 const COLUMN_WIDTH_ADMIN: Record<string, string> = {
-  COD_OS: '5%',
-  NOME_CLIENTE: '12%',
-  DTINI_OS: '8%',
-  HRINI_OS: '8%',
-  HRFIM_OS: '8%',
-  HORAS_TRABALHADAS: '8%',
-  NOME_RECURSO: '12%',
-  DTINC_OS: '10%',
-  OBS_OS: '19%',
-  VALCLI_OS: '10%',
+  // COD_OS: '8%',
+  NUM_OS: '10%',
+  DTINI_OS: '10%',
+  HRINI_OS: '10%',
+  HRFIM_OS: '10%',
+  TOTAL_HORAS_OS: '10%',
+  NOME_RECURSO: '15%',
+  NOME_TAREFA: '15%',
+  VALCLI_OS: '12%',
 };
 
 const COLUMN_WIDTH_CLIENT: Record<string, string> = {
-  COD_OS: '5%',
-  DTINI_OS: '8%',
-  HRINI_OS: '8%',
-  HRFIM_OS: '8%',
-  HORAS_TRABALHADAS: '10%',
-  NOME_RECURSO: '13%',
-  DTINC_OS: '9%',
-  OBS_OS: '14%',
-  VALCLI_OS: '10%',
+  // COD_OS: '8%',
+  NUM_OS: '10%',
+  DTINI_OS: '10%',
+  HRINI_OS: '10%',
+  HRFIM_OS: '10%',
+  TOTAL_HORAS_OS: '10%',
+  NOME_RECURSO: '15%',
+  NOME_TAREFA: '15%',
+  VALCLI_OS: '12%',
 };
 // ===============
 
@@ -68,7 +66,7 @@ const ValidacaoBadge = ({ status }: { status?: string | null }) => {
 
   if (statusNormalized === 'SIM') {
     return (
-      <div className="inline-flex items-center gap-2 rounded bg-emerald-200 px-3 py-1.5 text-sm font-extrabold text-emerald-800 tracking-widest select-none italic">
+      <div className="inline-flex items-center gap-2 rounded bg-emerald-300 px-3 py-1.5 text-sm font-extrabold text-emerald-700 tracking-widest select-none italic border border-emerald-400">
         <FaCheckCircle className="text-emerald-700" size={16} />
         Aprovado
       </div>
@@ -77,7 +75,7 @@ const ValidacaoBadge = ({ status }: { status?: string | null }) => {
 
   if (statusNormalized === 'NAO') {
     return (
-      <div className="inline-flex items-center gap-2 rounded bg-red-200 px-3 py-1.5 text-sm font-extrabold text-red-800 tracking-widest select-none italic">
+      <div className="inline-flex items-center gap-2 rounded bg-red-300 px-3 py-1.5 text-sm font-extrabold text-red-700 tracking-widest select-none italic border border-red-400">
         <FaTimesCircle className="text-red-700" size={16} />
         Recusado
       </div>
@@ -85,7 +83,7 @@ const ValidacaoBadge = ({ status }: { status?: string | null }) => {
   }
 
   return (
-    <div className="inline-flex items-center gap-2 rounded bg-slate-200 px-3 py-1.5 text-sm font-extrabold text-slate-800 tracking-widest select-none italic">
+    <div className="inline-flex items-center gap-2 rounded bg-gray-300 px-3 py-1.5 text-sm font-extrabold text-gray-800 tracking-widest select-none italic border border-gray-400">
       {status ?? '---------------'}
     </div>
   );
@@ -96,43 +94,40 @@ const ValidacaoBadge = ({ status }: { status?: string | null }) => {
 export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
   return [
     // Código da OS
-    {
-      accessorKey: 'COD_OS',
-      id: 'COD_OS',
-      header: () => (
-        <div className="text-center tracking-widest font-extrabold select-none text-white text-sm">
-          OS
-        </div>
-      ),
-      cell: ({ getValue }) => (
-        <div className="text-center font-semibold select-none tracking-widest text-gray-800 text-sm">
-          {formatarNumeros(getValue() as number)}
-        </div>
-      ),
-    },
+    // {
+    //   accessorKey: 'COD_OS',
+    //   id: 'COD_OS',
+    //   header: () => (
+    //     <div className="text-center tracking-widest font-extrabold select-none text-white text-sm">
+    //       OS
+    //     </div>
+    //   ),
+    //   cell: ({ getValue }) => {
+    //     const value = getValue() as number;
+    //     return (
+    //       <div className="text-center font-semibold select-none tracking-widest text-sm text-gray-800">
+    //         {formatarNumeros(value)}
+    //       </div>
+    //     );
+    //   },
+    // },
     // ===============
 
-    // Nome do cliente
+    //  Número da OS
     {
-      accessorKey: 'NOME_CLIENTE',
-      id: 'NOME_CLIENTE',
+      accessorKey: 'NUM_OS',
+      id: 'NUM_OS',
       header: () => (
         <div className="text-center tracking-widest font-extrabold select-none text-white text-sm">
-          CLIENTE
+          NÚMERO OS
         </div>
       ),
       cell: ({ getValue }) => {
-        const raw = (getValue() as string) ?? 'N/A';
-        const corrected = corrigirTextoCorrompido(raw);
-        const parts = corrected.trim().split(/\s+/).filter(Boolean);
-        const display =
-          parts.length <= 2 ? parts.join(' ') : parts.slice(0, 2).join(' ');
+        const value = getValue() as number;
         return (
-          <TooltipTabela content={corrected} maxWidth="200px">
-            <div className="text-left tracking-widest select-none font-semibold text-gray-800 text-sm truncate">
-              {display}
-            </div>
-          </TooltipTabela>
+          <div className="text-center font-semibold select-none tracking-widest text-sm text-gray-800">
+            {formatarNumeros(value)}
+          </div>
         );
       },
     },
@@ -151,7 +146,7 @@ export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
         const dateString = getValue() as string;
         const formattedDate = formatarDataParaBR(dateString);
         return (
-          <div className="text-center font-semibold select-none tracking-widest text-gray-800 text-sm">
+          <div className="text-center font-semibold select-none tracking-widest text-sm text-gray-800">
             {formattedDate}
           </div>
         );
@@ -171,7 +166,7 @@ export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
       cell: ({ getValue }) => {
         const value = getValue() as string;
         return (
-          <div className="text-center font-semibold select-none tracking-widest text-gray-800 text-sm">
+          <div className="text-center font-semibold select-none tracking-widest text-sm text-gray-800">
             {formatarHora(value)}
           </div>
         );
@@ -191,7 +186,7 @@ export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
       cell: ({ getValue }) => {
         const value = getValue() as string;
         return (
-          <div className="text-center font-semibold select-none tracking-widest text-gray-800 text-sm">
+          <div className="text-center font-semibold select-none tracking-widest text-sm text-gray-800">
             {formatarHora(value)}
           </div>
         );
@@ -201,8 +196,8 @@ export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
 
     // Total de Horas Trabalhadas
     {
-      accessorKey: 'HORAS_TRABALHADAS',
-      id: 'total_horas',
+      accessorKey: 'TOTAL_HORAS_OS',
+      id: 'TOTAL_HORAS_OS',
       header: () => (
         <div className="text-center tracking-widest font-extrabold select-none text-white text-sm">
           TOTAL HORAS
@@ -211,7 +206,7 @@ export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
       cell: ({ getValue }) => {
         const value = getValue() as number;
         return (
-          <div className="text-center font-semibold select-none tracking-widest text-gray-800 text-sm">
+          <div className="text-center font-semibold select-none tracking-widest text-sm text-gray-800">
             {formatarHorasTotaisSufixo(value)}
           </div>
         );
@@ -236,7 +231,7 @@ export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
           parts.length <= 2 ? parts.join(' ') : parts.slice(0, 2).join(' ');
         return (
           <TooltipTabela content={corrected} maxWidth="200px">
-            <div className="text-left tracking-widest select-none font-semibold text-gray-800 text-sm truncate">
+            <div className="text-left font-semibold select-none tracking-widest text-sm text-gray-800 truncate">
               {display}
             </div>
           </TooltipTabela>
@@ -245,54 +240,21 @@ export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
     },
     // ===============
 
-    // Data de Inclusão
+    // Nome da Tarefa
     {
-      accessorKey: 'DTINC_OS',
-      id: 'DTINC_OS',
+      accessorKey: 'NOME_TAREFA',
+      id: 'NOME_TAREFA',
       header: () => (
         <div className="text-center tracking-widest font-extrabold select-none text-white text-sm">
-          INCLUÍDO EM
+          ENTREGÁVEL
         </div>
       ),
       cell: ({ getValue }) => {
-        const dateString = getValue() as string | null;
-        const dataHoraFormatada = formatarDataParaBR(dateString, true);
-
+        const raw = (getValue() as string) ?? 'N/A';
         return (
-          <div className="text-center font-semibold tracking-widest text-gray-800 text-sm">
-            {dataHoraFormatada}
-          </div>
-        );
-      },
-    },
-    // ===============
-
-    // Observação
-    {
-      accessorKey: 'OBS_OS',
-      id: 'OBS_OS',
-      header: () => (
-        <div className="text-center tracking-widest font-extrabold select-none text-white text-sm">
-          OBSERVAÇÃO
-        </div>
-      ),
-      cell: ({ getValue }) => {
-        const value = getValue() as string | null;
-        const textoCorrigido = value
-          ? corrigirTextoCorrompido(value)
-          : '------------------------------';
-        const isNoObservation = textoCorrigido === '------------------------------';
-        const colorClass = isNoObservation
-          ? 'text-red-500 italic'
-          : 'text-slate-800';
-        const alignClass = isNoObservation ? 'text-center' : 'text-left';
-
-        return (
-          <TooltipTabela content={textoCorrigido} maxWidth="300px">
-            <div
-              className={`truncate tracking-widest select-none font-extrabold text-sm w-full ${alignClass} ${colorClass}`}
-            >
-              {textoCorrigido}
+          <TooltipTabela content={raw} maxWidth="200px">
+            <div className="text-left font-semibold select-none tracking-widest text-sm text-gray-800">
+              {corrigirTextoCorrompido(raw)}
             </div>
           </TooltipTabela>
         );

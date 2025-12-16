@@ -415,7 +415,7 @@ export function TabelaOS() {
     return (
       <IsLoading
         isLoading={isLoading}
-        title="Aguarde, buscando dados no servidor"
+        title="Aguarde, buscando dados do servidor"
       />
     );
   }
