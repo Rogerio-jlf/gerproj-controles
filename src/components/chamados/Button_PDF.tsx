@@ -352,8 +352,14 @@ export function ExportaPDFChamadosButton({
         yPos = (doc as any).lastAutoTable.finalY + 10;
       };
 
-      addChamadosSection("CHAMADOS SEM OS's", chamadosSemOS);
-      addChamadosSection("CHAMADOS COM OS's", chamadosComOS);
+      if (isAdmin && chamadosSemOS.length > 0) {
+        addChamadosSection("CHAMADOS SEM OS's", chamadosSemOS);
+      }
+
+      // Sempre adiciona seção com OS (se houver)
+      if (chamadosComOS.length > 0) {
+        addChamadosSection("CHAMADOS COM OS's", chamadosComOS);
+      }
 
       // ====== PÁGINA 2: ORDENS DE SERVIÇO ======
       if (chamadosComOS.length > 0 && osData.size > 0) {

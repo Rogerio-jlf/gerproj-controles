@@ -103,14 +103,12 @@ function aplicarFiltros(
 }
 
 // ==================== PROCESSAMENTO ====================
-function processarStatus(resultados: any[]): Status[] {
+function processarStatus(resultados: any[]): string[] {
+  // ✅ Mudar de Status[] para string[]
   return resultados
-    .map((item, index) => ({
-      cod: String(index + 1), // Código sequencial já que não há COD_STATUS na tabela
-      nome: item.STATUS_CHAMADO.trim()
-    }))
-    .filter((status) => status.nome && status.nome !== '')
-    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }));
+    .map((item) => item.STATUS_CHAMADO.trim()) // ✅ Retornar apenas o nome
+    .filter((status) => status && status !== '')
+    .sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
 }
 
 // ==================== HANDLER PRINCIPAL ====================

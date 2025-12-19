@@ -176,11 +176,24 @@ function construirSQLBase(
   dataInicio: string,
   dataFim: string,
   codChamadosComOS: number[],
+  isAdmin: boolean, // ✅ ADICIONAR parâmetro
 ): string {
   const campos = Object.values(CAMPOS_CHAMADO).join(',\n    ');
 
-  // Se não há chamados com OS no período, usa query simples
+  // Se não há chamados com OS no período
   if (codChamadosComOS.length === 0) {
+    // ✅ Se não for admin e não há chamados com OS, retornar query vazia
+    if (!isAdmin) {
+      return `
+  SELECT 
+    ${campos}
+  FROM CHAMADO
+  LEFT JOIN CLIENTE ON CHAMADO.COD_CLIENTE = CLIENTE.COD_CLIENTE
+  LEFT JOIN RECURSO ON CHAMADO.COD_RECURSO = RECURSO.COD_RECURSO
+  LEFT JOIN CLASSIFICACAO ON CHAMADO.COD_CLASSIFICACAO = CLASSIFICACAO.COD_CLASSIFICACAO
+  WHERE 1 = 0`; // Query que não retorna nada
+    }
+
     return `
   SELECT 
     ${campos}
@@ -192,9 +205,23 @@ function construirSQLBase(
 `;
   }
 
-  // Com chamados que têm OS no período, usa IN para incluí-los
+  // Com chamados que têm OS no período
   const placeholders = codChamadosComOS.map(() => '?').join(',');
 
+  // ✅ Se não for admin, retornar APENAS chamados que têm OS
+  if (!isAdmin) {
+    return `
+  SELECT 
+    ${campos}
+  FROM CHAMADO
+  LEFT JOIN CLIENTE ON CHAMADO.COD_CLIENTE = CLIENTE.COD_CLIENTE
+  LEFT JOIN RECURSO ON CHAMADO.COD_RECURSO = RECURSO.COD_RECURSO
+  LEFT JOIN CLASSIFICACAO ON CHAMADO.COD_CLASSIFICACAO = CLASSIFICACAO.COD_CLASSIFICACAO
+  WHERE CHAMADO.COD_CHAMADO IN (${placeholders})
+`;
+  }
+
+  // ✅ Se for admin, retornar chamados do período OU com OS
   return `
   SELECT 
     ${campos}
@@ -355,6 +382,8 @@ async function buscarTotalOS(
       WHERE OS.DTINI_OS >= ? 
         AND OS.DTINI_OS < ?
         AND TAREFA.EXIBECHAM_TAREFA = 1
+        AND OS.CHAMADO_OS IS NOT NULL     
+        AND OS.CHAMADO_OS <> ''           
     `;
 
     const sqlParams: any[] = [dataInicio, dataFim];
@@ -427,6 +456,8 @@ async function buscarTotalHorasOS(
       WHERE OS.DTINI_OS >= ? 
         AND OS.DTINI_OS < ?
         AND TAREFA.EXIBECHAM_TAREFA = 1
+        AND OS.CHAMADO_OS IS NOT NULL     
+        AND OS.CHAMADO_OS <> ''            
     `;
 
     const sqlParams: any[] = [dataInicio, dataFim];
@@ -612,11 +643,27 @@ export async function GET(request: NextRequest) {
     ]);
 
     // Query principal com chamados que têm OS no período
-    const sqlBase = construirSQLBase(dataInicio, dataFim, codChamadosComOS);
+    const sqlBase = construirSQLBase(
+      dataInicio,
+      dataFim,
+      codChamadosComOS,
+      params.isAdmin, // ✅ PASSAR isAdmin
+    );
 
-    const paramsArray: any[] = [dataInicio, dataFim];
-    if (codChamadosComOS.length > 0) {
-      paramsArray.push(...codChamadosComOS.map(String));
+    const paramsArray: any[] = [];
+
+    if (params.isAdmin) {
+      // Admin: inclui período + chamados com OS
+      if (codChamadosComOS.length > 0) {
+        paramsArray.push(dataInicio, dataFim, ...codChamadosComOS.map(String));
+      } else {
+        paramsArray.push(dataInicio, dataFim);
+      }
+    } else {
+      // Não-admin: apenas chamados com OS
+      if (codChamadosComOS.length > 0) {
+        paramsArray.push(...codChamadosComOS.map(String));
+      }
     }
 
     const { sql, params: sqlParams } = aplicarFiltros(

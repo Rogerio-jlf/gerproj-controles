@@ -22,10 +22,12 @@ interface Recurso {
   cod: string;
   nome: string;
 }
+
 // ==================== FUNÇÕES AUXILIARES ====================
 // Limita o nome a um número máximo de palavras
 function limitarNome(nome: string, maxPalavras: number = 2): string {
-  if (!nome) return nome;
+  // ✅ ADICIONAR: Verificar se nome é uma string válida
+  if (!nome || typeof nome !== 'string') return '';
 
   const palavras = nome.trim().split(/\s+/);
   return palavras.slice(0, maxPalavras).join(' ');
@@ -34,6 +36,9 @@ function limitarNome(nome: string, maxPalavras: number = 2): string {
 
 // Processa o nome corrigindo texto corrompido e limitando palavras
 function processarNome(nome: string, maxPalavras: number = 2): string {
+  // ✅ ADICIONAR: Verificar se nome é uma string válida
+  if (!nome || typeof nome !== 'string') return '';
+
   const nomeCorrigido = corrigirTextoCorrompido(nome);
   return limitarNome(nomeCorrigido, maxPalavras);
 }
@@ -61,7 +66,7 @@ const fetchClientes = async ({
     params.append('codCliente', codCliente);
   }
 
-  const response = await fetch(`/api/clientes?${params.toString()}`);
+  const response = await fetch(`/api/clientes/chamados?${params.toString()}`);
 
   if (!response.ok) {
     throw new Error('Erro ao carregar clientes');
@@ -98,7 +103,7 @@ const fetchRecursos = async ({
     params.append('cliente', clienteSelecionado);
   }
 
-  const response = await fetch(`/api/recursos?${params.toString()}`);
+  const response = await fetch(`/api/recursos/chamados?${params.toString()}`);
 
   if (!response.ok) {
     throw new Error('Erro ao carregar recursos');
@@ -141,7 +146,7 @@ const fetchStatus = async ({
     params.append('recurso', recursoSelecionado);
   }
 
-  const response = await fetch(`/api/status?${params.toString()}`);
+  const response = await fetch(`/api/status/chamados?${params.toString()}`);
 
   if (!response.ok) {
     throw new Error('Erro ao carregar status');
@@ -240,7 +245,8 @@ export function Filtros({ showRefreshButton = false }: FiltersProps) {
         clienteSelecionado: debouncedClienteSelecionado,
         recursoSelecionado: debouncedRecursoSelecionado,
       }),
-    enabled: !!(mes && ano && (isAdmin || codCliente) && isInitialized),
+    // ✅ CORRIGIR: Remover a dependência de codCliente para admin
+    enabled: !!(mes && ano && isInitialized && (isAdmin || codCliente)),
     staleTime: 1000 * 60 * 5,
     retry: 2,
   });
@@ -413,16 +419,27 @@ export function Filtros({ showRefreshButton = false }: FiltersProps) {
           >
             {placeholder}
           </option>
-          {options.map((opt) => (
-            <option
-              key={`option-${opt.value}`}
-              value={opt.value}
-              className="tracking-widest font-semibold select-none"
-              title={opt.label}
-            >
-              {processarNome(opt.label, 2)}
-            </option>
-          ))}
+          {options.map((opt, index) => {
+            // ✅ ADICIONAR: Garantir que value é string/número
+            const optValue =
+              typeof opt.value === 'object'
+                ? JSON.stringify(opt.value)
+                : String(opt.value);
+
+            const optLabel =
+              typeof opt.label === 'string' ? opt.label : String(opt.label);
+
+            return (
+              <option
+                key={`option-${optValue}-${index}`} // ✅ Adicionar index como fallback
+                value={optValue}
+                className="tracking-widest font-semibold select-none"
+                title={optLabel}
+              >
+                {processarNome(optLabel, 2)}
+              </option>
+            );
+          })}
         </select>
 
         {showClear && hasValue && !disabled && (

@@ -104,7 +104,7 @@ async function fetchRecursos(params: {
 }
 // ===============
 
-// Função para buscar status
+// ✅ Função para buscar status - ATUALIZADA para lidar com strings ou objetos
 async function fetchStatus(params: {
   ano: number;
   mes: number;
@@ -137,7 +137,21 @@ async function fetchStatus(params: {
     throw new Error('Erro ao carregar status');
   }
 
-  return response.json();
+  const data = await response.json();
+
+  // ✅ Normalizar o retorno: se vier array de strings, converter para objetos
+  if (Array.isArray(data) && data.length > 0) {
+    if (typeof data[0] === 'string') {
+      // Se for array de strings, converter para objetos
+      return data.map((status: string) => ({
+        cod: status,
+        nome: status,
+      }));
+    }
+  }
+
+  // Se já vier como objetos, retornar direto
+  return data;
 }
 // ===============
 
@@ -362,7 +376,6 @@ const DropdownWithFilter = memo(
               : 'border border-teal-950 bg-teal-900 text-white'
           }`}
         >
-          {/* ✅ MODIFICAÇÃO: Usa displayedName ao invés de selectedOption.nome */}
           <span className={`truncate ${!value ? 'italic text-gray-400' : ''}`}>
             {isLoading ? 'Carregando...' : displayedName || placeholder}
           </span>
@@ -431,7 +444,7 @@ const DropdownWithFilter = memo(
                 </div>
               ) : (
                 filteredOptions.map((option) => {
-                  // ✅ MODIFICAÇÃO: Formata o nome exibido e corrige texto
+                  // ✅ Formata o nome exibido e corrige texto
                   const optionDisplayName = formatDisplayName(option.nome);
                   const tituloCorrigido = corrigirTextoCorrompido(option.nome);
 
@@ -444,7 +457,7 @@ const DropdownWithFilter = memo(
                           ? 'bg-blue-600 text-white'
                           : 'text-black hover:bg-black hover:text-white'
                       }`}
-                      title={tituloCorrigido} // ✅ Tooltip mostra o nome completo corrigido
+                      title={tituloCorrigido}
                     >
                       <div className="truncate">{optionDisplayName}</div>
                     </button>

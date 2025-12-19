@@ -123,3 +123,12 @@ GET http://localhost:3000//api/chamados/13230/os?isAdmin=true&mes=12&ano=2025
 
 
 
+
+
+###
+GET http://localhost:3000/api/diagnostico-os?mes=12&ano=2025&isAdmin=true
+
+
+
+
+
