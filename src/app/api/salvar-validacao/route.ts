@@ -10,21 +10,21 @@ export async function POST(request: NextRequest) {
     if (!cod_os) {
       return NextResponse.json(
         { error: 'Número da OS é obrigatório' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!concordaPagar && !observacao?.trim()) {
       return NextResponse.json(
         { error: 'Observação é obrigatória quando não concorda em pagar' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Prepara os valores
     const valcli = concordaPagar ? 'SIM' : 'NAO';
     const obscli = observacao?.trim() || null;
-    
+
     // Data e hora atual no formato DD/MM/YYYY HH:MM:SS
     const now = new Date();
     const logvalcli = now.toLocaleString('pt-BR', {
@@ -60,11 +60,11 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Erro ao salvar validação:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Erro ao salvar validação no banco de dados',
-        details: error instanceof Error ? error.message : 'Erro desconhecido'
+        details: error instanceof Error ? error.message : 'Erro desconhecido',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

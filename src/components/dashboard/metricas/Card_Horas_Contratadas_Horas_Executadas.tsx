@@ -41,7 +41,7 @@ export function CardHorasContratadasHorasExecutadas({ filters }: FiltersProps) {
     if (filters.status) params.append('status', filters.status);
 
     const response = await fetch(
-      `/api/hrs-contratadas-hrs-executadas?${params.toString()}`,
+      `/api/cards-metricas/hrs-contratadas-hrs-executadas?${params.toString()}`,
       {
         method: 'GET',
         headers: {

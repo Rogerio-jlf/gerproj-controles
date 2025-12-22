@@ -47,7 +47,7 @@ export function CardTotalChamadosOS({ filters }: FilterProps) {
     });
 
     const response = await fetch(
-      `/api/total-chamados-os?${params.toString()}`,
+      `/api/cards-metricas/total-chamados-os?${params.toString()}`,
       {
         method: 'GET',
         headers: {

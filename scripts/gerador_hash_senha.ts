@@ -1,3 +1,4 @@
+// scripts/gerador_hash_senha.ts
 import bcrypt from 'bcryptjs';
 
 // Lê a senha da linha de comando

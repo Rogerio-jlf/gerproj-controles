@@ -1,3 +1,4 @@
+// scripts/gerenciador_usuario.ts
 import bcrypt from 'bcryptjs';
 import fs from 'fs';
 import path from 'path';

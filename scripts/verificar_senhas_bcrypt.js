@@ -1,3 +1,4 @@
+// scripts/verificar_senhas_bcrypt.js
 import bcrypt from 'bcryptjs';
 
 async function test() {

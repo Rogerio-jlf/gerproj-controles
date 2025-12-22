@@ -1,3 +1,4 @@
+rem scripts/gerenciador_usuario.bat
 @echo off
 title Gerenciador de Usuarios (via ts-node)
 

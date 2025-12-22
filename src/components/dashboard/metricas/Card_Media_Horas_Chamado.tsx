@@ -50,7 +50,7 @@ export function CardMediaHorasChamado({ filters }: FilterProps) {
     });
 
     const response = await fetch(
-      `/api/media-hrs-chamado?${params.toString()}`,
+      `/api/cards-metricas/media-hrs-chamado-tarefa?${params.toString()}`,
       {
         method: 'GET',
         headers: {

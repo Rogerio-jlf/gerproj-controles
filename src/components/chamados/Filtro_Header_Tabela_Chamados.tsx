@@ -55,7 +55,7 @@ async function fetchClassificacoes(params: {
     queryParams.append('cliente', params.cliente);
   }
   const response = await fetch(
-    `/api/classificacao/chamados?${queryParams.toString()}`,
+    `/api/filtros/classificacoes?${queryParams.toString()}`,
     {
       headers: createAuthHeaders(),
     },
@@ -90,7 +90,7 @@ async function fetchRecursos(params: {
   }
 
   const response = await fetch(
-    `/api/recursos/chamados?${queryParams.toString()}`,
+    `/api/filtros/recursos?${queryParams.toString()}`,
     {
       headers: createAuthHeaders(),
     },
@@ -127,7 +127,7 @@ async function fetchStatus(params: {
   }
 
   const response = await fetch(
-    `/api/status/chamados?${queryParams.toString()}`,
+    `/api/filtros/status?${queryParams.toString()}`,
     {
       headers: createAuthHeaders(),
     },

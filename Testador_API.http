@@ -1,56 +1,15 @@
-
-# ========================================
-# API - ORDENS-SERVIÇO
-# ========================================
-
-### Buscar todas as OS's - ADMIN
-GET http://localhost:3000/api/ordens-servico?isAdmin=true&mes=12&ano=2025
-
-### Buscar todas as OS's com (admin) e filtra por codCliente
-GET http://localhost:3000/api/ordens-servico?isAdmin=true&mes=12&ano=2025&codClienteFilter=120
-
-### Buscar todas as OS's com (admin) e filtra por codCliente e codRecurso
-GET http://localhost:3000/api/ordens-servico?isAdmin=true&mes=12&ano=2025&codClienteFilter=120&codRecursoFilter=122
-
-### Buscar todas as OS's com (admin) e filtra por codCliente, codRecurso e status
-GET http://localhost:3000/api/ordens-servico?isAdmin=true&mes=12&ano=2025&codClienteFilter=120&codRecursoFilter=122&statusFilter=finalizado
-
-# ===============================================================================================================================================
-
-
-
-
-
 # ========================================
 # API - HRS-CONTRATADAS-HRS x-EXECUTADAS
 # ========================================
 
 ### Buscar todas as OS's - ADMIN
-GET http://localhost:3000/api/hrs-contratadas-hrs-executadas?isAdmin=true&mes=12&ano=2025
+GET http://localhost:3000/api/cards-metricas/hrs-contratadas-hrs-executadas?isAdmin=true&mes=12&ano=2025
 
 ### Buscar todas as OS's com (admin) e filtra por codCliente
-GET http://localhost:3000/api/hrs-contratadas-hrs-executadas?isAdmin=true&mes=12&ano=2025&codClienteFilter=120
+GET http://localhost:3000/api/cards-metricas/hrs-contratadas-hrs-executadas?isAdmin=true&mes=12&ano=2025&codClienteFilter=120
 
 ### Buscar todas as OS's com (admin) e filtra por codCliente e codRecurso
-GET http://localhost:3000/api/hrs-contratadas-hrs-executadas?isAdmin=true&mes=12&ano=2025&codClienteFilter=120&codRecursoFilter=122
-
-# ===============================================================================================================================================
-
-
-
-
-
-# ========================================
-# API - TABELA
-# ========================================
-### Buscar todos os dados da tabela com (admin)
-GET http://localhost:3000/api/tabela?isAdmin=true&mes=12&ano=2025
-
-### Buscar todos os dados da tabela com (admin) e filtra por codCliente
-GET http://localhost:3000/api/tabela?isAdmin=true&mes=11&ano=2025&codClienteFilter=156
-
-### Buscar todos os dados da tabela com (admin) e filtra por codCliente e codRecurso
-GET http://localhost:3000/api/tabela?isAdmin=true&mes=11&ano=2025&codClienteFilter=156&codRecursoFilter=122
+GET http://localhost:3000/api/cards-metricas/hrs-contratadas-hrs-executadas?isAdmin=true&mes=12&ano=2025&codClienteFilter=120&codRecursoFilter=122
 
 # ===============================================================================================================================================
 
@@ -62,7 +21,7 @@ GET http://localhost:3000/api/tabela?isAdmin=true&mes=11&ano=2025&codClienteFilt
 # API - CLIENTES
 # ========================================
 ### Buscar todos os clientes com (admin)
-GET http://localhost:3000/api/clientes?isAdmin=true&mes=11&ano=2025
+GET http://localhost:3000/api/filtros/clientes?isAdmin=true&mes=11&ano=2025
 
 # ===============================================================================================================================================
 
@@ -74,7 +33,7 @@ GET http://localhost:3000/api/clientes?isAdmin=true&mes=11&ano=2025
 # API - RECURSOS
 # ========================================
 ### Buscar todos os recursos com (admin)
-GET http://localhost:3000/api/recursos?isAdmin=true&mes=11&ano=2025
+GET http://localhost:3000/api/filtros/recursos?isAdmin=true&mes=11&ano=2025
 
 # ===============================================================================================================================================
 
@@ -86,7 +45,7 @@ GET http://localhost:3000/api/recursos?isAdmin=true&mes=11&ano=2025
 # API - STATUS
 # ========================================
 ### Buscar todos os status com (admin)
-GET http://localhost:3000/api/status?isAdmin=true&mes=11&ano=2025
+GET http://localhost:3000/api/filtros/status?isAdmin=true&mes=11&ano=2025
 
 # ===============================================================================================================================================
 
@@ -118,17 +77,3 @@ GET http://localhost:3000/api/chamados?mes=12&ano=2025&isAdmin=true&statusFilter
 
 ### Buscar todas as OS's vinculadas a um CHAMADO específico - ADMIN
 GET http://localhost:3000//api/chamados/13230/os?isAdmin=true&mes=12&ano=2025
-
-
-
-
-
-
-
-###
-GET http://localhost:3000/api/diagnostico-os?mes=12&ano=2025&isAdmin=true
-
-
-
-
-

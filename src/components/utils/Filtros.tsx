@@ -66,7 +66,7 @@ const fetchClientes = async ({
     params.append('codCliente', codCliente);
   }
 
-  const response = await fetch(`/api/clientes/chamados?${params.toString()}`);
+  const response = await fetch(`/api/filtros/clientes?${params.toString()}`);
 
   if (!response.ok) {
     throw new Error('Erro ao carregar clientes');
@@ -103,7 +103,7 @@ const fetchRecursos = async ({
     params.append('cliente', clienteSelecionado);
   }
 
-  const response = await fetch(`/api/recursos/chamados?${params.toString()}`);
+  const response = await fetch(`/api/filtros/recursos?${params.toString()}`);
 
   if (!response.ok) {
     throw new Error('Erro ao carregar recursos');
@@ -146,7 +146,7 @@ const fetchStatus = async ({
     params.append('recurso', recursoSelecionado);
   }
 
-  const response = await fetch(`/api/status/chamados?${params.toString()}`);
+  const response = await fetch(`/api/filtros/status?${params.toString()}`);
 
   if (!response.ok) {
     throw new Error('Erro ao carregar status');

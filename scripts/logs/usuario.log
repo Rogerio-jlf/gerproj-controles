@@ -1,3 +1,5 @@
+scripts/logs/usuario.log
+
 [16/06/2025, 13:45:23] Usuario adicionado: daniel@tirolplantas.com.br (admin: false, cod_cliente: 142)
 [16/06/2025, 14:20:56] Usuario adicionado: tirol@email.com.br (admin: false, cod_cliente: 142)
 [16/06/2025, 14:33:22] Usuario adicionado: tirol@email.com.br (admin: false, cod_cliente: 142)

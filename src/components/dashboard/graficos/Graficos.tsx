@@ -156,7 +156,7 @@ const fetchOrdensServico = async (
     params.append('status', filters.status);
   }
 
-  const response = await fetch(`/api/graficos?${params.toString()}`);
+  const response = await fetch(`/api/cards-metricas/graficos?${params.toString()}`);
 
   if (!response.ok) {
     throw new Error(`Erro HTTP: ${response.status}`);

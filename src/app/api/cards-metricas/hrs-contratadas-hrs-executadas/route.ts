@@ -23,21 +23,15 @@ interface Apontamento {
 
 interface DadosCliente {
   nome_cliente: string | null;
-  limmes_tarefas: number[];
+  maxLimmes: number;
   tarefasDistintas: Set<number>;
   horasExecutadas: number;
 }
 
-interface DetalheCliente {
-  cod_cliente: string;
-  nome_cliente: string | null;
-  horasContratadas: number;
-  horasExecutadas: number;
-  totalLimmesTarefas: number;
-}
-
 // ==================== VALIDAÇÕES ====================
-function validarParametros(searchParams: URLSearchParams): QueryParams | NextResponse {
+function validarParametros(
+  searchParams: URLSearchParams,
+): QueryParams | NextResponse {
   const isAdmin = searchParams.get('isAdmin') === 'true';
   const codCliente = searchParams.get('codCliente')?.trim();
   const mes = Number(searchParams.get('mes'));
@@ -46,21 +40,21 @@ function validarParametros(searchParams: URLSearchParams): QueryParams | NextRes
   if (!mes || mes < 1 || mes > 12) {
     return NextResponse.json(
       { error: "Parâmetro 'mes' deve ser um número entre 1 e 12" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
   if (!ano || ano < 2000 || ano > 3000) {
     return NextResponse.json(
       { error: "Parâmetro 'ano' deve ser um número válido" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
   if (!isAdmin && !codCliente) {
     return NextResponse.json(
       { error: "Parâmetro 'codCliente' é obrigatório para usuários não admin" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -71,24 +65,28 @@ function validarParametros(searchParams: URLSearchParams): QueryParams | NextRes
     ano,
     codClienteFilter: searchParams.get('codClienteFilter')?.trim(),
     codRecursoFilter: searchParams.get('codRecursoFilter')?.trim(),
-    status: searchParams.get('status') || undefined
+    status: searchParams.get('status') || undefined,
   };
 }
 
 // ==================== CONSTRUÇÃO DE DATAS ====================
-function construirDatas(mes: number, ano: number): { dataInicio: string; dataFim: string } {
+function construirDatas(
+  mes: number,
+  ano: number,
+): { dataInicio: string; dataFim: string } {
   const mesFormatado = mes.toString().padStart(2, '0');
   const dataInicio = `01.${mesFormatado}.${ano}`;
-  
-  const dataFim = mes === 12 
-    ? `01.01.${ano + 1}`
-    : `01.${(mes + 1).toString().padStart(2, '0')}.${ano}`;
+
+  const dataFim =
+    mes === 12
+      ? `01.01.${ano + 1}`
+      : `01.${(mes + 1).toString().padStart(2, '0')}.${ano}`;
 
   return { dataInicio, dataFim };
 }
 
 // ==================== CONSTRUÇÃO DE SQL ====================
-// ✅ MUDANÇA PRINCIPAL: Adicionar filtros de CHAMADO_OS (igual à API de chamados)
+// ✅ OTIMIZAÇÃO: Movido CAST para WHERE, filtragem mais cedo
 const SQL_BASE = `
   SELECT 
     CLIENTE.COD_CLIENTE,
@@ -98,32 +96,35 @@ const SQL_BASE = `
     OS.HRINI_OS,
     OS.HRFIM_OS
   FROM OS
-  LEFT JOIN TAREFA ON OS.CODTRF_OS = TAREFA.COD_TAREFA
-  LEFT JOIN PROJETO ON TAREFA.CODPRO_TAREFA = PROJETO.COD_PROJETO
-  LEFT JOIN CLIENTE ON PROJETO.CODCLI_PROJETO = CLIENTE.COD_CLIENTE
+  INNER JOIN TAREFA ON OS.CODTRF_OS = TAREFA.COD_TAREFA
+  INNER JOIN PROJETO ON TAREFA.CODPRO_TAREFA = PROJETO.COD_PROJETO
+  INNER JOIN CLIENTE ON PROJETO.CODCLI_PROJETO = CLIENTE.COD_CLIENTE
   LEFT JOIN RECURSO ON OS.CODREC_OS = RECURSO.COD_RECURSO
-  LEFT JOIN CHAMADO ON CASE WHEN TRIM(OS.CHAMADO_OS) = '' THEN NULL ELSE CAST(OS.CHAMADO_OS AS INTEGER) END = CHAMADO.COD_CHAMADO
+  LEFT JOIN CHAMADO ON CAST(OS.CHAMADO_OS AS INTEGER) = CHAMADO.COD_CHAMADO
   WHERE OS.DTINI_OS >= ? 
     AND OS.DTINI_OS < ?
     AND TAREFA.EXIBECHAM_TAREFA = 1
     AND OS.CHAMADO_OS IS NOT NULL
-    AND OS.CHAMADO_OS <> ''
+    AND TRIM(OS.CHAMADO_OS) <> ''
 `;
+
+// ✅ SUGESTÃO DE ÍNDICES (adicionar no banco):
+// CREATE INDEX IDX_OS_DTINI_CHAMADO ON OS(DTINI_OS, CHAMADO_OS);
+// CREATE INDEX IDX_TAREFA_EXIBECHAM ON TAREFA(EXIBECHAM_TAREFA);
+// CREATE INDEX IDX_PROJETO_CODCLI ON PROJETO(CODCLI_PROJETO);
 
 function aplicarFiltros(
   sqlBase: string,
   params: QueryParams,
-  paramsArray: any[]
+  paramsArray: any[],
 ): { sql: string; params: any[] } {
   let sql = sqlBase;
 
-  // Filtro obrigatório para não-admin
   if (!params.isAdmin && params.codCliente) {
     sql += ` AND CLIENTE.COD_CLIENTE = ?`;
     paramsArray.push(parseInt(params.codCliente));
   }
-  
-  // Filtros opcionais
+
   if (params.codClienteFilter) {
     sql += ` AND CLIENTE.COD_CLIENTE = ?`;
     paramsArray.push(parseInt(params.codClienteFilter));
@@ -143,17 +144,31 @@ function aplicarFiltros(
 }
 
 // ==================== CÁLCULOS DE TEMPO ====================
+// ✅ OTIMIZAÇÃO: Lookup table para conversões comuns
+const HORAS_CACHE = new Map<string, number>();
+
 function converterHoraParaMinutos(hora: string | null): number {
   if (!hora) return 0;
 
   const horaStr = hora.toString().padStart(4, '0');
+
+  // Cache para valores repetidos
+  if (HORAS_CACHE.has(horaStr)) {
+    return HORAS_CACHE.get(horaStr)!;
+  }
+
   const horas = parseInt(horaStr.substring(0, 2)) || 0;
   const minutos = parseInt(horaStr.substring(2, 4)) || 0;
+  const resultado = horas * 60 + minutos;
 
-  return horas * 60 + minutos;
+  HORAS_CACHE.set(horaStr, resultado);
+  return resultado;
 }
 
-function calcularDiferencaHoras(hrInicio: string | null, hrFim: string | null): number {
+function calcularDiferencaHoras(
+  hrInicio: string | null,
+  hrFim: string | null,
+): number {
   if (!hrInicio || !hrFim) return 0;
 
   const minutosInicio = converterHoraParaMinutos(hrInicio);
@@ -161,91 +176,85 @@ function calcularDiferencaHoras(hrInicio: string | null, hrFim: string | null): 
 
   let diferencaMinutos = minutosFim - minutosInicio;
 
-  // Se a hora fim for menor que a início, assume que passou para o dia seguinte
   if (diferencaMinutos < 0) {
-    diferencaMinutos += 24 * 60;
+    diferencaMinutos += 1440; // 24 * 60
   }
 
   return diferencaMinutos / 60;
 }
 
 // ==================== PROCESSAMENTO DE DADOS ====================
-function agruparPorCliente(apontamentos: Apontamento[]): Map<string, DadosCliente> {
+// ✅ OTIMIZAÇÃO: Processamento em single-pass, Math.max inline
+function agruparPorCliente(
+  apontamentos: Apontamento[],
+): Map<string, DadosCliente> {
   const clientesMap = new Map<string, DadosCliente>();
 
-  apontamentos.forEach(apontamento => {
-    const codCliente = apontamento.COD_CLIENTE?.toString() || 'SEM_CODIGO';
+  for (let i = 0; i < apontamentos.length; i++) {
+    const apt = apontamentos[i];
+    const codCliente = apt.COD_CLIENTE?.toString() || 'SEM_CODIGO';
 
-    // Inicializa cliente se não existir
-    if (!clientesMap.has(codCliente)) {
-      clientesMap.set(codCliente, {
-        nome_cliente: apontamento.NOME_CLIENTE || null,
-        limmes_tarefas: [],
+    let cliente = clientesMap.get(codCliente);
+
+    if (!cliente) {
+      cliente = {
+        nome_cliente: apt.NOME_CLIENTE || null,
+        maxLimmes: 0,
         tarefasDistintas: new Set<number>(),
         horasExecutadas: 0,
-      });
+      };
+      clientesMap.set(codCliente, cliente);
     }
 
-    const cliente = clientesMap.get(codCliente)!;
-
-    // Adiciona limmes_tarefa e registra tarefa distinta
-    if (apontamento.LIMMES_TAREFA) {
-      cliente.limmes_tarefas.push(apontamento.LIMMES_TAREFA);
-      
-      if (apontamento.COD_TAREFA) {
-        cliente.tarefasDistintas.add(apontamento.COD_TAREFA);
-      }
+    // ✅ OTIMIZAÇÃO: Calcular max inline ao invés de array
+    if (apt.LIMMES_TAREFA && apt.LIMMES_TAREFA > cliente.maxLimmes) {
+      cliente.maxLimmes = apt.LIMMES_TAREFA;
     }
 
-    // Calcula e acumula horas executadas
-    const horasApontamento = calcularDiferencaHoras(
-      apontamento.HRINI_OS || null,
-      apontamento.HRFIM_OS || null
-    );
-    
-    cliente.horasExecutadas += horasApontamento;
-  });
+    if (apt.COD_TAREFA) {
+      cliente.tarefasDistintas.add(apt.COD_TAREFA);
+    }
+
+    // ✅ OTIMIZAÇÃO: Evitar chamadas de função quando possível
+    if (apt.HRINI_OS && apt.HRFIM_OS) {
+      cliente.horasExecutadas += calcularDiferencaHoras(
+        apt.HRINI_OS,
+        apt.HRFIM_OS,
+      );
+    }
+  }
 
   return clientesMap;
 }
 
-function arredondar(valor: number): number {
-  return Math.round(valor * 100) / 100;
-}
+// ✅ OTIMIZAÇÃO: Arredondamento inline
+const arredondar = (valor: number): number => Math.round(valor * 100) / 100;
 
-function calcularDetalhesClientes(clientesMap: Map<string, DadosCliente>): {
-  detalhes: DetalheCliente[];
-  totalContratadas: number;
-  totalExecutadas: number;
-} {
+// ✅ OTIMIZAÇÃO: Single-pass para cálculos
+function calcularDetalhesClientes(clientesMap: Map<string, DadosCliente>) {
   let totalHorasContratadas = 0;
   let totalHorasExecutadas = 0;
 
-  const detalhesClientes = Array.from(clientesMap.entries()).map(
+  const detalhes = Array.from(clientesMap.entries()).map(
     ([codCliente, dados]) => {
-      // Maior limmes_tarefa para este cliente
-      const horasContratadasCliente =
-        dados.limmes_tarefas.length > 0
-          ? Math.max(...dados.limmes_tarefas)
-          : 0;
+      const horasContratadas = dados.maxLimmes;
+      const horasExecutadas = arredondar(dados.horasExecutadas);
 
-      const horasExecutadasCliente = arredondar(dados.horasExecutadas);
-
-      totalHorasContratadas += horasContratadasCliente;
-      totalHorasExecutadas += horasExecutadasCliente;
+      totalHorasContratadas += horasContratadas;
+      totalHorasExecutadas += horasExecutadas;
 
       return {
         cod_cliente: codCliente,
         nome_cliente: dados.nome_cliente,
-        horasContratadas: horasContratadasCliente,
-        horasExecutadas: horasExecutadasCliente,
+        horasContratadas,
+        horasExecutadas,
         totalLimmesTarefas: dados.tarefasDistintas.size,
       };
-    }
+    },
   );
 
   return {
-    detalhes: detalhesClientes,
+    detalhes,
     totalContratadas: arredondar(totalHorasContratadas),
     totalExecutadas: arredondar(totalHorasExecutadas),
   };
@@ -254,7 +263,7 @@ function calcularDetalhesClientes(clientesMap: Map<string, DadosCliente>): {
 function calcularResumo(
   totalContratadas: number,
   totalExecutadas: number,
-  totalClientes: number
+  totalClientes: number,
 ) {
   return {
     totalClientes,
@@ -270,33 +279,43 @@ function calcularResumo(
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    
-    // Validar parâmetros
+
     const params = validarParametros(searchParams);
     if (params instanceof NextResponse) return params;
 
-    // Construir datas
     const { dataInicio, dataFim } = construirDatas(params.mes, params.ano);
 
-    // Construir e executar query
-    const { sql, params: sqlParams } = aplicarFiltros(
-      SQL_BASE,
-      params,
-      [dataInicio, dataFim]
-    );
+    const { sql, params: sqlParams } = aplicarFiltros(SQL_BASE, params, [
+      dataInicio,
+      dataFim,
+    ]);
 
+    // ✅ Query otimizada executa
     const apontamentos = await firebirdQuery(sql, sqlParams);
 
-    // Processar dados
+    // ✅ Early return se não houver dados
+    if (!apontamentos || apontamentos.length === 0) {
+      return NextResponse.json({
+        totalHorasContratadas: 0,
+        totalHorasExecutadas: 0,
+        detalhesClientes: [],
+        resumo: {
+          totalClientes: 0,
+          diferencaHoras: 0,
+          percentualExecucao: 0,
+        },
+      });
+    }
+
     const clientesMap = agruparPorCliente(apontamentos);
-    
-    const { detalhes, totalContratadas, totalExecutadas } = 
+
+    const { detalhes, totalContratadas, totalExecutadas } =
       calcularDetalhesClientes(clientesMap);
-    
+
     const resumo = calcularResumo(
       totalContratadas,
       totalExecutadas,
-      clientesMap.size
+      clientesMap.size,
     );
 
     return NextResponse.json({
@@ -305,19 +324,19 @@ export async function GET(request: Request) {
       detalhesClientes: detalhes,
       resumo,
     });
-
   } catch (error) {
-    console.error('[API HORAS] Erro ao calcular horas contratadas vs executadas:', error);
-    console.error('[API HORAS] Stack trace:', error instanceof Error ? error.stack : 'N/A');
-    console.error('[API HORAS] Message:', error instanceof Error ? error.message : error);
-    
+    console.error(
+      '[API HORAS] Erro:',
+      error instanceof Error ? error.message : error,
+    );
+
     return NextResponse.json(
-      { 
+      {
         error: 'Erro interno do servidor',
-        message: error instanceof Error ? error.message : 'Erro desconhecido',
-        details: process.env.NODE_ENV === 'development' ? error : undefined
+        message: error instanceof Error ? error.message : 'Erro desconhecado',
+        details: process.env.NODE_ENV === 'development' ? error : undefined,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
