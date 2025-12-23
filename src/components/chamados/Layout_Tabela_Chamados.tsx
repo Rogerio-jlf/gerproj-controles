@@ -10,19 +10,24 @@ interface LayoutProps {
   pageTitle: string;
 }
 
+// ===== CONFIGURAÇÃO DE ZOOM =====
+const ZOOM_LEVEL = 0.75; // Mude apenas este valor
+const ZOOM_COMPENSATION = 100 / ZOOM_LEVEL; // Calcula automaticamente (ex: 100 / 0.75 = 133.33)
+// ================================
+
 export function LayoutTabelaChamados({ children }: LayoutProps) {
   return (
     <ProtecaoRotas>
       <div
         className="flex bg-white overflow-hidden"
         style={{
-          zoom: 0.75,
+          zoom: ZOOM_LEVEL,
           minHeight: '100vh',
-          height: '133.33vh', // Compensa o zoom
+          height: `${ZOOM_COMPENSATION}vh`, // Compensa automaticamente
         }}
       >
         {/* ========== SIDEBAR ========== */}
-        <div className="h-full p-6">
+        <div className="h-full pl-6 py-6">
           <Sidebar />
         </div>
         {/* ===== */}

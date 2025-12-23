@@ -10,6 +10,11 @@ interface LayoutProps {
   pageTitle: string;
 }
 
+// ===== CONFIGURAÇÃO DE ZOOM =====
+const ZOOM_LEVEL = 0.75; // Mude apenas este valor
+const ZOOM_COMPENSATION = 100 / ZOOM_LEVEL; // Calcula automaticamente (ex: 100 / 0.75 = 133.33)
+// ================================
+
 export function LayoutDashboard({ children }: LayoutProps) {
   const { isLoggedIn } = useAuth();
   const router = useRouter();
@@ -25,12 +30,12 @@ export function LayoutDashboard({ children }: LayoutProps) {
   }
 
   return (
-    <div 
+    <div
       className="flex bg-white overflow-hidden"
       style={{
-        zoom: 0.75,
+        zoom: ZOOM_LEVEL,
         minHeight: '100vh',
-        height: '133.33vh' // Compensa o zoom
+        height: `${ZOOM_COMPENSATION}vh`, // Compensa automaticamente
       }}
     >
       {/* ========== SIDEBAR ========== */}
