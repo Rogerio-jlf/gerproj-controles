@@ -70,14 +70,14 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
   if (!active || !payload || !payload.length) return null;
 
   return (
-    <div className="bg-white p-3 rounded-md shadow-md shadow-black border">
-      <p className="font-semibold text-slate-800 mb-2 tracking-widest select-none">
+    <div className="bg-white p-2 sm:p-3 rounded-md shadow-md shadow-black border">
+      <p className="font-semibold text-slate-800 mb-1 sm:mb-2 tracking-widest select-none text-xs sm:text-sm">
         {labelFormatter ? labelFormatter(label) : label}
       </p>
       {payload.map((entry, index) => (
         <p
           key={index}
-          className="text-sm tracking-widest select-none"
+          className="text-[10px] sm:text-xs tracking-widest select-none"
           style={{ color: entry?.color || undefined }}
         >
           {entry?.name}:{' '}
@@ -97,8 +97,8 @@ type ChartCardProps = {
 };
 
 const ChartCard: React.FC<ChartCardProps> = ({ title, children }) => (
-  <div className="bg-white rounded-xl shadow-md shadow-black p-6 border transition-all hover:shadow-xl hover:ring-2 hover:ring-pink-600 ">
-    <h3 className="text-lg font-extrabold text-black mb-4 tracking-widest select-none uppercase">
+  <div className="bg-white rounded-lg sm:rounded-xl shadow-md shadow-black p-3 sm:p-4 lg:p-6 border transition-all hover:shadow-xl hover:ring-2 hover:ring-pink-600">
+    <h3 className="text-sm sm:text-base lg:text-lg font-extrabold text-black mb-3 sm:mb-4 tracking-widest select-none uppercase">
       {title}
     </h3>
     {children}
@@ -110,13 +110,14 @@ type ErrorMessageProps = {
   message: string;
   onRetry?: () => void;
 };
+
 const ErrorMessage: React.FC<ErrorMessageProps> = ({ message, onRetry }) => (
-  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-    <p className="text-red-800 mb-2">❌ {message}</p>
+  <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
+    <p className="text-red-800 mb-2 text-xs sm:text-sm">❌ {message}</p>
     {onRetry && (
       <button
         onClick={onRetry}
-        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-all"
+        className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm bg-red-600 text-white rounded-md hover:bg-red-700 transition-all"
       >
         Tentar Novamente
       </button>
@@ -188,33 +189,33 @@ export function Graficos({ filters }: FilterProps) {
 
   if (loading) {
     return (
-      <div className="py-60 border border-gray-200 bg-gradient-to-br from-white via-indigo-50/20 to-purple-50/30 min-h-screen rounded-xl shadow-md">
-        <div className="flex flex-col items-center justify-center gap-6">
+      <div className="py-20 sm:py-40 lg:py-60 border border-gray-200 bg-gradient-to-br from-white via-indigo-50/20 to-purple-50/30 min-h-screen rounded-lg sm:rounded-xl shadow-md">
+        <div className="flex flex-col items-center justify-center gap-4 sm:gap-6 px-4">
           <div className="relative">
             <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-200 via-blue-400 to-blue-600 opacity-20 blur-xl"></div>
 
             <div className="relative flex items-center justify-center">
-              <Loader2 className="animate-spin text-blue-600" size={160} />
+              <Loader2 className="animate-spin text-blue-600" size={120} />
 
               <div className="absolute inset-0 flex items-center justify-center">
-                <FaChartBar className="text-blue-600" size={60} />
+                <FaChartBar className="text-blue-600" size={40} />
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col items-center justify-center gap-4">
-            <h1 className="text-3xl font-extrabold tracking-widest text-black select-none">
+          <div className="flex flex-col items-center justify-center gap-3 sm:gap-4">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-widest text-black select-none text-center">
               Aguarde, buscando dados do servidor...
             </h1>
 
             <div className="flex items-center justify-center gap-1">
-              <span className="text-xl font-semibold tracking-widest text-slate-600 italic select-none">
+              <span className="text-sm sm:text-lg lg:text-xl font-semibold tracking-widest text-slate-600 italic select-none text-center">
                 Carregando informações para os gráficos
               </span>
               <div className="flex items-center justify-center gap-1">
-                <span className="h-2 w-2 animate-[bounce_1s_ease-in-out_infinite] rounded-full bg-slate-600"></span>
-                <span className="h-2 w-2 animate-[bounce_1s_ease-in-out_0.2s_infinite] rounded-full bg-slate-600"></span>
-                <span className="h-2 w-2 animate-[bounce_1s_ease-in-out_0.4s_infinite] rounded-full bg-slate-600"></span>
+                <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 animate-[bounce_1s_ease-in-out_infinite] rounded-full bg-slate-600"></span>
+                <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 animate-[bounce_1s_ease-in-out_0.2s_infinite] rounded-full bg-slate-600"></span>
+                <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 animate-[bounce_1s_ease-in-out_0.4s_infinite] rounded-full bg-slate-600"></span>
               </div>
             </div>
           </div>
@@ -225,8 +226,8 @@ export function Graficos({ filters }: FilterProps) {
 
   if (error) {
     return (
-      <div className="p-6 border border-gray-200 bg-gradient-to-br from-white via-indigo-50/20 to-purple-50/30 rounded-xl shadow-md">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">
+      <div className="p-4 sm:p-6 border border-gray-200 bg-gradient-to-br from-white via-indigo-50/20 to-purple-50/30 rounded-lg sm:rounded-xl shadow-md">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-6 sm:mb-8">
           GRÁFICOS DE ANÁLISES
         </h1>
         <ErrorMessage
@@ -241,11 +242,13 @@ export function Graficos({ filters }: FilterProps) {
 
   if (!dados || !dados.graficos) {
     return (
-      <div className="p-6 border border-gray-200 bg-gradient-to-br from-white via-indigo-50/20 to-purple-50/30 rounded-xl shadow-md">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">
+      <div className="p-4 sm:p-6 border border-gray-200 bg-gradient-to-br from-white via-indigo-50/20 to-purple-50/30 rounded-lg sm:rounded-xl shadow-md">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-6 sm:mb-8">
           GRÁFICOS DE ANÁLISES
         </h1>
-        <p className="text-gray-600">Nenhum dado disponível</p>
+        <p className="text-gray-600 text-sm sm:text-base">
+          Nenhum dado disponível
+        </p>
       </div>
     );
   }
@@ -261,23 +264,27 @@ export function Graficos({ filters }: FilterProps) {
   const { totalizadores } = dados;
 
   return (
-    <div className="h-full overflow-y-auto px-6 pb-6 border-b-slate-500">
-      <div className="w-full flex flex-col gap-10">
+    <div className="h-full overflow-y-auto px-3 sm:px-4 lg:px-6 pb-4 sm:pb-6 border-b-slate-500">
+      <div className="w-full flex flex-col gap-6 sm:gap-8 lg:gap-10">
         <div className="flex flex-col gap-2">
-          <h1 className="text-xl font-extrabold text-black tracking-widest select-none">
+          <h1 className="text-base sm:text-lg lg:text-xl font-extrabold text-black tracking-widest select-none">
             MÉTRICAS & GRÁFICOS DE ANÁLISES
           </h1>
           <ContainerCardsMetricas filters={filters} />
         </div>
 
         {/* Grid de gráficos - área com scroll */}
-        <div className="grid grid-cols-2 gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-10">
           {/* Gráfico 1: Evolução Diária de Horas */}
           {horasPorDia && horasPorDia.length > 0 && (
             <ChartCard
               title={`Evolução Diária de Horas - ${filters.mes}/${filters.ano}`}
             >
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer
+                width="100%"
+                height={250}
+                className="sm:h-[280px] lg:h-[300px]"
+              >
                 <LineChart data={horasPorDia}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis
@@ -287,13 +294,12 @@ export function Graficos({ filters }: FilterProps) {
                     axisLine={{ stroke: '#d1d5db', strokeWidth: 1 }}
                     tick={{
                       fill: '#111827',
-                      fontSize: 13,
+                      fontSize: 11,
                       fontWeight: 800,
                       letterSpacing: '0.2em',
                       textAnchor: 'middle',
                     }}
                     tickFormatter={(value) => {
-                      // Extrai apenas o dia da data (formato DD/MM ou DD-MM)
                       const day = value.split(/[\/\-]/)[0];
                       return day;
                     }}
@@ -304,7 +310,7 @@ export function Graficos({ filters }: FilterProps) {
                     axisLine={{ stroke: '#d1d5db', strokeWidth: 1 }}
                     tick={{
                       fill: '#111827',
-                      fontSize: 13,
+                      fontSize: 11,
                       fontWeight: 800,
                       letterSpacing: '0.2em',
                     }}
@@ -319,20 +325,20 @@ export function Graficos({ filters }: FilterProps) {
                       />
                     }
                   />
-                  <Legend />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
                   <Line
                     type="monotone"
                     dataKey="horas"
                     stroke={COLORS.primary}
                     strokeWidth={2}
-                    dot={{ fill: COLORS.primary, r: 4 }}
-                    activeDot={{ r: 6 }}
+                    dot={{ fill: COLORS.primary, r: 3 }}
+                    activeDot={{ r: 5 }}
                     name="Horas Trabalhadas"
                   />
                 </LineChart>
               </ResponsiveContainer>
-              <div className="mt-4 p-3 bg-slate-100 rounded-md border shadow-xs shadow-black">
-                <p className="text-base text-black tracking-widest select-none font-extrabold">
+              <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-slate-100 rounded-md border shadow-xs shadow-black">
+                <p className="text-xs sm:text-sm lg:text-base text-black tracking-widest select-none font-extrabold">
                   <span>Total no período:</span>{' '}
                   {formatarHorasTotaisSufixo(totalizadores?.TOTAL_HRS || 0)}
                 </p>
@@ -342,11 +348,17 @@ export function Graficos({ filters }: FilterProps) {
 
           {/* Gráfico 2: Top Chamados */}
           {topChamados && topChamados.length > 0 && (
-            <ChartCard title={`Top 5 Chamados por Horas - ${filters.mes}/${filters.ano}`}>
-              <ResponsiveContainer width="100%" height={350}>
+            <ChartCard
+              title={`Top 5 Chamados por Horas - ${filters.mes}/${filters.ano}`}
+            >
+              <ResponsiveContainer
+                width="100%"
+                height={280}
+                className="sm:h-[320px] lg:h-[350px]"
+              >
                 <BarChart
                   data={topChamados.slice(0, 5)}
-                  margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
+                  margin={{ top: 20, right: 10, left: 10, bottom: 20 }}
                 >
                   <XAxis
                     dataKey="chamado"
@@ -355,7 +367,7 @@ export function Graficos({ filters }: FilterProps) {
                     axisLine={{ stroke: '#d1d5db', strokeWidth: 1 }}
                     tick={{
                       fill: '#111827',
-                      fontSize: 13,
+                      fontSize: 11,
                       fontWeight: 800,
                       letterSpacing: '0.2em',
                       textAnchor: 'middle',
@@ -371,7 +383,7 @@ export function Graficos({ filters }: FilterProps) {
                     axisLine={{ stroke: '#d1d5db', strokeWidth: 1 }}
                     tick={{
                       fill: '#111827',
-                      fontSize: 13,
+                      fontSize: 11,
                       fontWeight: 800,
                       letterSpacing: '0.2em',
                     }}
@@ -388,7 +400,7 @@ export function Graficos({ filters }: FilterProps) {
                       />
                     }
                   />
-                  <Legend />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
                   <Bar
                     dataKey="horas"
                     fill={COLORS.secondary}
@@ -397,7 +409,7 @@ export function Graficos({ filters }: FilterProps) {
                     label={{
                       position: 'top',
                       fill: '#111827',
-                      fontSize: 12,
+                      fontSize: 10,
                       fontWeight: 800,
                       letterSpacing: '0.2em',
                       formatter: (value: number) =>
@@ -406,7 +418,7 @@ export function Graficos({ filters }: FilterProps) {
                   />
                 </BarChart>
               </ResponsiveContainer>
-              <div className="mt-4 space-y-1">
+              <div className="mt-3 sm:mt-4 space-y-1">
                 {topChamados.slice(0, 3).map(
                   (
                     chamado: {
@@ -418,12 +430,12 @@ export function Graficos({ filters }: FilterProps) {
                   ) => (
                     <div
                       key={chamado.chamado}
-                      className="flex items-center justify-between text-sm"
+                      className="flex items-center justify-between text-xs sm:text-sm"
                     >
-                      <span className="text-black tracking-widest select-none font-extrabold text-sm">
+                      <span className="text-black tracking-widest select-none font-extrabold">
                         {index + 1} - {chamado.cliente}
                       </span>
-                      <span className="font-extrabold text-black tracking-widest select-none text-sm">
+                      <span className="font-extrabold text-black tracking-widest select-none">
                         {formatarHorasTotaisSufixo(chamado.horas)}
                       </span>
                     </div>
@@ -438,7 +450,11 @@ export function Graficos({ filters }: FilterProps) {
             <ChartCard
               title={`Distribuição de Horas por Status - ${filters.mes}/${filters.ano}`}
             >
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer
+                width="100%"
+                height={250}
+                className="sm:h-[280px] lg:h-[300px]"
+              >
                 <PieChart>
                   <Pie
                     data={horasPorStatus}
@@ -448,7 +464,7 @@ export function Graficos({ filters }: FilterProps) {
                     label={(entry: { status?: string; percentual?: number }) =>
                       `${entry.status}: ${entry.percentual}%`
                     }
-                    outerRadius={90}
+                    outerRadius={80}
                     fill="#8884d8"
                     dataKey="horas"
                   >
@@ -479,7 +495,7 @@ export function Graficos({ filters }: FilterProps) {
                   />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="mt-4 grid grid-cols-2 gap-2">
+              <div className="mt-3 sm:mt-4 grid grid-cols-2 gap-2">
                 {horasPorStatus.map(
                   (
                     status: {
@@ -494,13 +510,13 @@ export function Graficos({ filters }: FilterProps) {
                       className="flex items-center gap-2"
                     >
                       <div
-                        className="w-3 h-3 rounded-full"
+                        className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full"
                         style={{
                           backgroundColor:
                             COLORS.pie[index % COLORS.pie.length],
                         }}
                       />
-                      <span className="text-sm text-slate-800 font-semibold select-none tracking-widest">
+                      <span className="text-[10px] sm:text-xs lg:text-sm text-slate-800 font-semibold select-none tracking-widest">
                         {status.status}
                       </span>
                     </div>
@@ -515,7 +531,11 @@ export function Graficos({ filters }: FilterProps) {
             <ChartCard
               title={`Horas por Recurso - ${filters.mes}/${filters.ano}`}
             >
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer
+                width="100%"
+                height={250}
+                className="sm:h-[280px] lg:h-[300px]"
+              >
                 <BarChart data={horasPorRecurso} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis
@@ -525,7 +545,7 @@ export function Graficos({ filters }: FilterProps) {
                     axisLine={{ stroke: '#d1d5db', strokeWidth: 1 }}
                     tick={{
                       fill: '#111827',
-                      fontSize: 13,
+                      fontSize: 11,
                       fontWeight: 800,
                       letterSpacing: '0.2em',
                       textAnchor: 'middle',
@@ -534,13 +554,13 @@ export function Graficos({ filters }: FilterProps) {
                   <YAxis
                     dataKey="recurso"
                     type="category"
-                    width={150}
+                    width={120}
                     stroke="#6b7280"
                     tickLine={false}
                     axisLine={{ stroke: '#d1d5db', strokeWidth: 1 }}
                     tick={{
                       fill: '#111827',
-                      fontSize: 13,
+                      fontSize: 11,
                       fontWeight: 800,
                       letterSpacing: '0.2em',
                     }}
@@ -562,7 +582,7 @@ export function Graficos({ filters }: FilterProps) {
                       />
                     }
                   />
-                  <Legend />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
                   <Bar
                     dataKey="horas"
                     fill={COLORS.success}
@@ -571,8 +591,8 @@ export function Graficos({ filters }: FilterProps) {
                   />
                 </BarChart>
               </ResponsiveContainer>
-              <div className="mt-4 p-3 bg-slate-100 rounded-md border shadow-xs shadow-black">
-                <p className="text-base text-black tracking-widest select-none font-extrabold">
+              <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-slate-100 rounded-md border shadow-xs shadow-black">
+                <p className="text-xs sm:text-sm lg:text-base text-black tracking-widest select-none font-extrabold">
                   <span className="font-semibold">Média por recurso:</span>{' '}
                   {formatarHorasTotaisSufixo(
                     horasPorRecurso.reduce(
@@ -584,15 +604,20 @@ export function Graficos({ filters }: FilterProps) {
               </div>
             </ChartCard>
           )}
+
           {/* Gráfico 5: Horas por Cliente */}
           {isAdmin && horasPorCliente && horasPorCliente.length > 0 && (
             <ChartCard
               title={`Horas por Cliente - ${filters.mes}/${filters.ano}`}
             >
-              <ResponsiveContainer width="100%" height={350}>
+              <ResponsiveContainer
+                width="100%"
+                height={280}
+                className="sm:h-[320px] lg:h-[350px]"
+              >
                 <BarChart
                   data={horasPorCliente.slice(0, 10)}
-                  margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
+                  margin={{ top: 20, right: 10, left: 10, bottom: 20 }}
                 >
                   <XAxis
                     dataKey="cliente"
@@ -601,7 +626,7 @@ export function Graficos({ filters }: FilterProps) {
                     axisLine={{ stroke: '#d1d5db', strokeWidth: 1 }}
                     tick={{
                       fill: '#111827',
-                      fontSize: 13,
+                      fontSize: 11,
                       fontWeight: 800,
                       letterSpacing: '0.2em',
                     }}
@@ -617,7 +642,7 @@ export function Graficos({ filters }: FilterProps) {
                     axisLine={{ stroke: '#d1d5db', strokeWidth: 1 }}
                     tick={{
                       fill: '#111827',
-                      fontSize: 13,
+                      fontSize: 11,
                       fontWeight: 800,
                       letterSpacing: '0.2em',
                     }}
@@ -631,7 +656,7 @@ export function Graficos({ filters }: FilterProps) {
                       />
                     }
                   />
-                  <Legend />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
                   <Bar
                     dataKey="horas"
                     fill={COLORS.info}
@@ -640,7 +665,7 @@ export function Graficos({ filters }: FilterProps) {
                     label={{
                       position: 'top',
                       fill: '#111827',
-                      fontSize: 12,
+                      fontSize: 10,
                       fontWeight: 800,
                       letterSpacing: '0.2em',
                       formatter: (value: number) =>
@@ -655,10 +680,14 @@ export function Graficos({ filters }: FilterProps) {
           {/* Gráfico 6: Horas por Mês */}
           {horasPorMes && horasPorMes.length > 0 && (
             <ChartCard title={`Horas Totais por Mês - ${filters.ano}`}>
-              <ResponsiveContainer width="100%" height={350}>
+              <ResponsiveContainer
+                width="100%"
+                height={280}
+                className="sm:h-[320px] lg:h-[350px]"
+              >
                 <BarChart
                   data={horasPorMes}
-                  margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
+                  margin={{ top: 20, right: 10, left: 10, bottom: 20 }}
                 >
                   <XAxis
                     dataKey="mes"
@@ -667,7 +696,7 @@ export function Graficos({ filters }: FilterProps) {
                     axisLine={{ stroke: '#d1d5db', strokeWidth: 1 }}
                     tick={{
                       fill: '#111827',
-                      fontSize: 13,
+                      fontSize: 11,
                       fontWeight: 800,
                       letterSpacing: '0.2em',
                       textAnchor: 'middle',
@@ -681,7 +710,7 @@ export function Graficos({ filters }: FilterProps) {
                     axisLine={{ stroke: '#d1d5db', strokeWidth: 1 }}
                     tick={{
                       fill: '#111827',
-                      fontSize: 13,
+                      fontSize: 11,
                       fontWeight: 800,
                       letterSpacing: '0.2em',
                     }}
@@ -696,7 +725,7 @@ export function Graficos({ filters }: FilterProps) {
                       />
                     }
                   />
-                  <Legend />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
                   <Bar
                     dataKey="horas"
                     fill={COLORS.gradient}
@@ -705,7 +734,7 @@ export function Graficos({ filters }: FilterProps) {
                     label={{
                       position: 'top',
                       fill: '#111827',
-                      fontSize: 12,
+                      fontSize: 10,
                       fontWeight: 800,
                       letterSpacing: '0.2em',
                       formatter: (value: number) =>
@@ -725,7 +754,7 @@ export function Graficos({ filters }: FilterProps) {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-              <div className="flex items-center justify-between mt-4 p-3 bg-slate-100 rounded-md border shadow-xs shadow-black text-base text-black tracking-widest select-none font-extrabold">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-3 sm:mt-4 p-2 sm:p-3 bg-slate-100 rounded-md border shadow-xs shadow-black text-xs sm:text-sm lg:text-base text-black tracking-widest select-none font-extrabold gap-2 sm:gap-0">
                 <div>
                   <span className="font-semibold">Total anual:</span>{' '}
                   {formatarHorasTotaisSufixo(
@@ -736,7 +765,7 @@ export function Graficos({ filters }: FilterProps) {
                   )}
                 </div>
                 <div>
-                  <span className="ml-3 font-semibold">Média mensal:</span>{' '}
+                  <span className="font-semibold">Média mensal:</span>{' '}
                   {formatarHorasTotaisSufixo(
                     horasPorMes.reduce(
                       (acc: number, m: { horas: number }) => acc + m.horas,

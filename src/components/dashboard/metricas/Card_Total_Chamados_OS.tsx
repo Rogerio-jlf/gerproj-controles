@@ -1,3 +1,4 @@
+// ========== Card_Total_Chamados_OS.tsx ==========
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
@@ -14,7 +15,6 @@ interface FilterProps {
   };
 }
 
-// ========== CARD 1: Total Chamados OS ==========
 interface TotalizadoresResponse {
   TOTAL_CHAMADOS: number;
   TOTAL_OS: number;
@@ -73,10 +73,10 @@ export function CardTotalChamadosOS({ filters }: FilterProps) {
 
   if (isLoading) {
     return (
-      <div className="flex h-36 cursor-pointer flex-col items-center justify-center rounded-xl border bg-gradient-to-br from-white to-gray-50 shadow-md shadow-black">
+      <div className="flex h-32 sm:h-36 lg:h-40 cursor-pointer flex-col items-center justify-center rounded-lg sm:rounded-xl border bg-gradient-to-br from-white to-gray-50 shadow-md shadow-black">
         <div className="flex h-full flex-col items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-purple-200 border-t-purple-600"></div>
-          <span className="mt-2 text-xs tracking-widest font-semibold italic text-slate-600 select-none">
+          <div className="h-6 w-6 sm:h-8 sm:w-8 animate-spin rounded-full border-3 sm:border-4 border-purple-200 border-t-purple-600"></div>
+          <span className="mt-1.5 sm:mt-2 text-xs tracking-widest font-semibold italic text-slate-600 select-none">
             Carregando...
           </span>
         </div>
@@ -86,14 +86,14 @@ export function CardTotalChamadosOS({ filters }: FilterProps) {
 
   if (isError || !data) {
     return (
-      <div className="flex h-36 cursor-pointer flex-col items-center justify-center rounded-xl border bg-gradient-to-br from-white to-gray-50 shadow-md shadow-black">
-        <div className="flex h-full flex-col items-center justify-center gap-2">
-          <FaExclamationTriangle className="text-red-500" size={16} />
-          <span className="mt-2 text-xs tracking-widest font-semibold italic text-slate-600 select-none">
+      <div className="flex h-32 sm:h-36 lg:h-40 cursor-pointer flex-col items-center justify-center rounded-lg sm:rounded-xl border bg-gradient-to-br from-white to-gray-50 shadow-md shadow-black">
+        <div className="flex h-full flex-col items-center justify-center gap-1.5 sm:gap-2">
+          <FaExclamationTriangle className="text-red-500" size={14} />
+          <span className="mt-1 sm:mt-2 text-xs tracking-widest font-semibold italic text-slate-600 select-none text-center px-2">
             Erro ao carregar os dados
           </span>
           {error && (
-            <span className="text-[10px] text-red-500 select-none">
+            <span className="text-[9px] sm:text-[10px] text-red-500 select-none text-center px-2">
               {error instanceof Error ? error.message : 'Erro desconhecido'}
             </span>
           )}
@@ -103,26 +103,26 @@ export function CardTotalChamadosOS({ filters }: FilterProps) {
   }
 
   return (
-    <div className="relative flex h-36 flex-col rounded-xl border bg-white shadow-md shadow-black overflow-hidden">
+    <div className="relative flex h-32 sm:h-36 lg:h-40 flex-col rounded-lg sm:rounded-xl border bg-white shadow-md shadow-black overflow-hidden">
       {/* Chamados Finalizados - Superior Esquerdo */}
-      <div className="absolute top-2 left-2">
+      <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2">
         <div className="flex flex-col gap-0">
-          <span className="text-[9px] font-bold text-slate-600 tracking-wide select-none uppercase">
+          <span className="text-[8px] sm:text-[9px] font-bold text-slate-600 tracking-wide select-none uppercase">
             Finalizados
           </span>
-          <span className="text-lg font-extrabold tracking-wide bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent select-none">
+          <span className="text-base sm:text-lg lg:text-xl font-extrabold tracking-wide bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent select-none">
             {data.CHAMADOS_FINALIZADO ?? 0}
           </span>
         </div>
       </div>
 
       {/* Chamados Em Atendimento - Superior Direito */}
-      <div className="absolute top-2 right-2 text-right">
+      <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 text-right">
         <div className="flex flex-col gap-0 items-end">
-          <span className="text-[9px] font-bold text-slate-600 tracking-wide select-none uppercase">
+          <span className="text-[8px] sm:text-[9px] font-bold text-slate-600 tracking-wide select-none uppercase">
             Em Atendimento
           </span>
-          <span className="text-lg font-extrabold tracking-wide bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent select-none">
+          <span className="text-base sm:text-lg lg:text-xl font-extrabold tracking-wide bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent select-none">
             {data.CHAMADOS_EM_ATENDIMENTO ?? 0}
           </span>
         </div>
@@ -130,35 +130,35 @@ export function CardTotalChamadosOS({ filters }: FilterProps) {
 
       {/* Total de Chamados - Centro */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-        <div className="flex flex-col gap-0.5 items-center">
-          <span className="text-xs font-bold text-slate-800 tracking-widest select-none uppercase">
+        <div className="flex flex-col gap-0 sm:gap-0.5 items-center">
+          <span className="text-[10px] sm:text-xs lg:text-sm font-bold text-slate-800 tracking-widest select-none uppercase">
             Total Chamados
           </span>
-          <span className="text-3xl font-extrabold tracking-widest bg-gradient-to-r from-purple-600 to-purple-700 bg-clip-text text-transparent select-none">
+          <span className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-widest bg-gradient-to-r from-purple-600 to-purple-700 bg-clip-text text-transparent select-none">
             {data.TOTAL_CHAMADOS ?? 0}
           </span>
         </div>
       </div>
 
       {/* Chamados Standby - Inferior Esquerdo */}
-      <div className="absolute bottom-2 left-2">
+      <div className="absolute bottom-1.5 left-1.5 sm:bottom-2 sm:left-2">
         <div className="flex flex-col gap-0">
-          <span className="text-[9px] font-bold text-slate-600 tracking-wide select-none uppercase">
+          <span className="text-[8px] sm:text-[9px] font-bold text-slate-600 tracking-wide select-none uppercase">
             Standby
           </span>
-          <span className="text-lg font-extrabold tracking-wide bg-gradient-to-r from-yellow-600 to-yellow-700 bg-clip-text text-transparent select-none">
+          <span className="text-base sm:text-lg lg:text-xl font-extrabold tracking-wide bg-gradient-to-r from-yellow-600 to-yellow-700 bg-clip-text text-transparent select-none">
             {data.CHAMADOS_STANDBY ?? 0}
           </span>
         </div>
       </div>
 
       {/* Chamados Aguardando Validação - Inferior Direito */}
-      <div className="absolute bottom-2 right-2 text-right">
+      <div className="absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2 text-right">
         <div className="flex flex-col gap-0 items-end">
-          <span className="text-[9px] font-bold text-slate-600 tracking-wide select-none uppercase">
+          <span className="text-[8px] sm:text-[9px] font-bold text-slate-600 tracking-wide select-none uppercase">
             Aguard. Validação
           </span>
-          <span className="text-lg font-extrabold tracking-wide bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent select-none">
+          <span className="text-base sm:text-lg lg:text-xl font-extrabold tracking-wide bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent select-none">
             {data.CHAMADOS_AGUARDANDO_VALIDACAO ?? 0}
           </span>
         </div>

@@ -1,3 +1,4 @@
+// ========== Card_Horas_Contratadas_Horas_Executadas.tsx ==========
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
@@ -14,7 +15,6 @@ interface FilterProps {
   };
 }
 
-// ========== CARD 2: Horas Contratadas × Executadas ==========
 interface ApiResponse {
   totalHorasContratadas: number;
   totalHorasExecutadas: number;
@@ -71,10 +71,10 @@ export function CardHorasContratadasHorasExecutadas({ filters }: FilterProps) {
 
   if (isLoading) {
     return (
-      <div className="flex h-36 cursor-pointer flex-col items-center justify-center rounded-xl border bg-gradient-to-br from-white to-gray-50 shadow-md shadow-black">
+      <div className="flex h-32 sm:h-36 lg:h-40 cursor-pointer flex-col items-center justify-center rounded-lg sm:rounded-xl border bg-gradient-to-br from-white to-gray-50 shadow-md shadow-black">
         <div className="flex h-full flex-col items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-purple-200 border-t-purple-600"></div>
-          <span className="mt-2 text-xs tracking-widest font-semibold italic text-slate-600 select-none">
+          <div className="h-6 w-6 sm:h-8 sm:w-8 animate-spin rounded-full border-3 sm:border-4 border-purple-200 border-t-purple-600"></div>
+          <span className="mt-1.5 sm:mt-2 text-xs tracking-widest font-semibold italic text-slate-600 select-none">
             Carregando...
           </span>
         </div>
@@ -84,10 +84,10 @@ export function CardHorasContratadasHorasExecutadas({ filters }: FilterProps) {
 
   if (isError || !data) {
     return (
-      <div className="flex h-36 cursor-pointer flex-col items-center justify-center rounded-xl border bg-gradient-to-br from-white to-gray-50 shadow-md shadow-black">
+      <div className="flex h-32 sm:h-36 lg:h-40 cursor-pointer flex-col items-center justify-center rounded-lg sm:rounded-xl border bg-gradient-to-br from-white to-gray-50 shadow-md shadow-black">
         <div className="flex h-full flex-col items-center justify-center">
-          <FaExclamationTriangle className="text-red-500" size={16} />
-          <span className="mt-2 text-xs tracking-widest font-semibold italic text-slate-600 select-none">
+          <FaExclamationTriangle className="text-red-500" size={14} />
+          <span className="mt-1.5 sm:mt-2 text-xs tracking-widest font-semibold italic text-slate-600 select-none text-center px-2">
             Erro ao carregar os dados
           </span>
         </div>
@@ -111,29 +111,29 @@ export function CardHorasContratadasHorasExecutadas({ filters }: FilterProps) {
   };
 
   return (
-    <div className="relative flex h-36 flex-col justify-center rounded-xl border bg-white px-4 shadow-md shadow-black overflow-hidden">
+    <div className="relative flex h-32 sm:h-36 lg:h-40 flex-col justify-center rounded-lg sm:rounded-xl border bg-white px-3 sm:px-4 shadow-md shadow-black overflow-hidden">
       {/* Título */}
-      <div className="text-center mb-2 relative z-10">
-        <span className="text-xs font-bold text-slate-800 tracking-widest select-none uppercase">
+      <div className="text-center mb-1.5 sm:mb-2 relative z-10">
+        <span className="text-[10px] sm:text-xs font-bold text-slate-800 tracking-widest select-none uppercase">
           Horas Contratadas × Executadas
         </span>
       </div>
 
       {/* Barras de progresso e status */}
-      <div className="w-full flex flex-col gap-2.5 relative z-10">
+      <div className="w-full flex flex-col gap-1.5 sm:gap-2 lg:gap-2.5 relative z-10">
         {/* Contratadas */}
         <div>
-          <div className="mb-1 flex items-center justify-between">
-            <span className="text-[10px] font-bold text-slate-800 tracking-widest select-none uppercase">
+          <div className="mb-0.5 sm:mb-1 flex items-center justify-between">
+            <span className="text-[9px] sm:text-[10px] font-bold text-slate-800 tracking-widest select-none uppercase">
               Contratadas
             </span>
-            <span className="text-xs font-bold text-blue-600 tracking-widest select-none">
+            <span className="text-[10px] sm:text-xs font-bold text-blue-600 tracking-widest select-none">
               {formatarHorasTotaisSufixo(totalHorasContratadas)}
             </span>
           </div>
-          <div className="h-2 w-full rounded-full bg-gray-200 overflow-hidden shadow-xs shadow-black">
+          <div className="h-1.5 sm:h-2 w-full rounded-full bg-gray-200 overflow-hidden shadow-xs shadow-black">
             <div
-              className="h-2 rounded-full bg-gradient-to-r from-blue-400 to-blue-500"
+              className="h-1.5 sm:h-2 rounded-full bg-gradient-to-r from-blue-400 to-blue-500"
               style={{ width: '100%' }}
             />
           </div>
@@ -141,12 +141,12 @@ export function CardHorasContratadasHorasExecutadas({ filters }: FilterProps) {
 
         {/* Executadas */}
         <div>
-          <div className="mb-1 flex items-center justify-between">
-            <span className="text-[10px] font-bold text-slate-800 tracking-widest select-none uppercase">
+          <div className="mb-0.5 sm:mb-1 flex items-center justify-between">
+            <span className="text-[9px] sm:text-[10px] font-bold text-slate-800 tracking-widest select-none uppercase">
               Executadas
             </span>
             <span
-              className={`text-xs font-bold tracking-widest select-none ${
+              className={`text-[10px] sm:text-xs font-bold tracking-widest select-none ${
                 diferenca > 0.5
                   ? 'text-red-600'
                   : diferenca < -0.5
@@ -157,9 +157,9 @@ export function CardHorasContratadasHorasExecutadas({ filters }: FilterProps) {
               {formatarHorasTotaisSufixo(totalHorasExecutadas)}
             </span>
           </div>
-          <div className="h-2 w-full rounded-full bg-gray-200 overflow-hidden relative shadow-black shadow-xs">
+          <div className="h-1.5 sm:h-2 w-full rounded-full bg-gray-200 overflow-hidden relative shadow-black shadow-xs">
             <div
-              className={`h-2 rounded-full ${getBarColor()} shadow-sm transition-all duration-500 ${
+              className={`h-1.5 sm:h-2 rounded-full ${getBarColor()} shadow-sm transition-all duration-500 ${
                 percentual > 100 ? 'animate-pulse' : ''
               }`}
               style={{ width: `${Math.min(percentual, 100)}%` }}
