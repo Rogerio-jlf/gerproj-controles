@@ -72,7 +72,7 @@ export function Sidebar() {
         {/* Botão de Toggle - Aba tipo orelha de pasta no topo centralizada */}
         <button
           onClick={toggleSidebar}
-          className={`absolute -top-1 left-1/2 -translate-x-1/2 z-[100] flex items-end justify-center pb-1.5 sm:pb-2 bg-gradient-to-b from-teal-500 via-teal-600 to-purple-900 shadow-lg shadow-black/50 border-t-2 border-x-2 border-teal-400/50 transition-all hover:border-teal-300 hover:shadow-xl hover:shadow-teal-500/40 active:scale-95 rounded-t-2xl ${
+          className={`absolute -top-1 left-1/2 -translate-x-1/2 z-[100] flex items-end justify-center pb-1.5 sm:pb-2 bg-gradient-to-b from-teal-600 via-teal-700 to-teal-800 shadow-lg shadow-black/50 border-t-2 border-x-2 border-teal-400/50 transition-all hover:border-teal-300 hover:shadow-xl hover:shadow-teal-500/40 active:scale-95 rounded-t-2xl ${
             isCollapsed 
               ? 'h-10 sm:h-11 lg:h-12 w-16 sm:w-18 lg:w-20 hover:h-11 sm:hover:h-12 lg:hover:h-14'
               : 'h-10 sm:h-11 lg:h-12 w-16 sm:w-18 lg:w-20 hover:h-11 sm:hover:h-12 lg:hover:h-14'

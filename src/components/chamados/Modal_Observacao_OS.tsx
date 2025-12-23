@@ -51,7 +51,7 @@ export function ModalObservacaoOS({
       {/* Modal Container */}
       <div className="animate-in slide-in-from-bottom-4 relative z-10 w-full max-w-4xl overflow-hidden rounded-xl bg-white shadow-2xl">
         {/* Header */}
-        <header className="flex items-center justify-between border-b-2 border-teal-600 bg-gradient-to-r from-teal-600 to-teal-700 p-5">
+        <header className="flex items-center justify-between border-b-2 border-teal-600 bg-gradient-to-r from-teal-600 to-teal-700 px-6 py-2">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/20">
               <FiFileText className="text-white" size={24} />

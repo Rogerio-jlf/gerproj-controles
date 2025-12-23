@@ -39,7 +39,7 @@ export function LayoutDashboard({ children }: LayoutProps) {
       }}
     >
       {/* ========== SIDEBAR ========== */}
-      <div className="h-full p-6">
+      <div className="h-full pl-6 py-6">
         <Sidebar />
       </div>
       {/* ===== */}

@@ -2,6 +2,7 @@
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
+import { formatarHorasTotaisSufixo } from '@/formatters/formatar-hora';
 import { useQuery } from '@tanstack/react-query';
 import { FaExclamationTriangle } from 'react-icons/fa';
 
@@ -21,13 +22,6 @@ interface ApiResponse {
   detalhes: any[];
 }
 
-const formatarHorasTotaisSufixo = (horas: number): string => {
-  if (horas === 0) return '0h';
-  const h = Math.floor(horas);
-  const m = Math.round((horas - h) * 60);
-  if (m === 0) return `${h}h`;
-  return `${h}h${m}m`;
-};
 
 export function CardHorasContratadasHorasExecutadas({ filters }: FilterProps) {
   const { isAdmin, codCliente } = useAuth();
@@ -114,7 +108,7 @@ export function CardHorasContratadasHorasExecutadas({ filters }: FilterProps) {
     <div className="relative flex h-32 sm:h-36 lg:h-40 flex-col justify-center rounded-lg sm:rounded-xl border bg-white px-3 sm:px-4 shadow-md shadow-black overflow-hidden">
       {/* Título */}
       <div className="text-center mb-1.5 sm:mb-2 relative z-10">
-        <span className="text-[10px] sm:text-xs font-bold text-slate-800 tracking-widest select-none uppercase">
+        <span className="text-[10px] sm:text-sm font-bold text-slate-800 tracking-widest select-none uppercase">
           Horas Contratadas × Executadas
         </span>
       </div>

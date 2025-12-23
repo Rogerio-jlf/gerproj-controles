@@ -183,33 +183,33 @@ export function ModalOS({
   return (
     <div
       onClick={handleBackdropClick}
-      className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4"
     >
       {/* Overlay */}
       <div className="absolute inset-0 bg-black/70 backdrop-blur-md" />
 
       {/* Modal Container */}
-      <div className="animate-in slide-in-from-bottom-4 relative z-10 max-h-[95vh] w-full max-w-[2200px] overflow-hidden rounded-xl bg-white transition-all ease-out">
+      <div className="animate-in slide-in-from-bottom-4 relative z-10 flex flex-col max-h-[100vh] h-full w-full max-w-[2200px] overflow-hidden rounded-xl bg-white transition-all ease-out">
         {/* Header */}
-        <header className="relative flex items-center justify-between bg-teal-700 px-6 py-2 shadow-md shadow-black">
-          <div className="flex items-center gap-6">
-            <TbFileInvoice className="text-white" size={60} />
-            <div className="flex flex-col">
-              <h1 className="text-2xl font-extrabold tracking-widest text-gray-200 select-none">
+        <header className="relative flex items-center justify-between bg-teal-700 px-3 sm:px-4 lg:px-6 py-2 sm:py-3 shadow-md shadow-black flex-shrink-0">
+          <div className="flex items-center gap-3 sm:gap-4 lg:gap-6 min-w-0">
+            <TbFileInvoice className="text-white flex-shrink-0" size={40} />
+            <div className="flex flex-col min-w-0">
+              <h1 className="text-base sm:text-lg lg:text-2xl font-extrabold tracking-widest text-gray-200 select-none truncate">
                 ORDENS DE SERVIÇO
               </h1>
-              <p className="text-xl font-extrabold tracking-widest text-gray-200 select-none italic">
+              <p className="text-sm sm:text-base lg:text-xl font-extrabold tracking-widest text-gray-200 select-none italic truncate">
                 Chamado #{formatarNumeros(codChamado)} - {dataChamado}
               </p>
             </div>
           </div>
           <button
             onClick={handleClose}
-            className="group cursor-pointer rounded-full bg-white/20 p-3 transition-all hover:scale-125 shadow-md shadow-black hover:bg-red-500 active:scale-95"
+            className="group cursor-pointer rounded-full bg-white/20 p-2 sm:p-3 transition-all hover:scale-125 shadow-md shadow-black hover:bg-red-500 active:scale-95 flex-shrink-0"
           >
             <IoClose
               className="text-white group-hover:scale-125 group-active:scale-95"
-              size={20}
+              size={18}
             />
           </button>
         </header>
@@ -217,8 +217,8 @@ export function ModalOS({
 
         {/* Body */}
         <div
-          className="overflow-y-auto p-6"
-          style={{ maxHeight: '100vh', minHeight: '500px' }}
+          className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6"
+          style={{ maxHeight: 'calc(100vh - 80px)', minHeight: '300px' }}
         >
           {isLoading && (
             <IsLoading
@@ -236,8 +236,8 @@ export function ModalOS({
           )}
 
           {!isLoading && !error && osData.length === 0 && (
-            <div className="py-20 text-center">
-              <p className="text-xl font-bold text-slate-600 tracking-widest select-none">
+            <div className="py-10 sm:py-20 text-center px-4">
+              <p className="text-base sm:text-lg lg:text-xl font-bold text-slate-600 tracking-widest select-none">
                 Nenhuma OS encontrada para este chamado no período {mes}/{ano}
               </p>
             </div>
@@ -246,9 +246,9 @@ export function ModalOS({
           {!isLoading && !error && osData.length > 0 && (
             <>
               {/* Badge com total */}
-              <div className="mb-6 flex items-center gap-4">
-                <div className="h-2.5 w-2.5 rounded-full bg-teal-800 animate-pulse"></div>
-                <span className="text-2xl font-extrabold text-gray-800 tracking-widest select-none">
+              <div className="mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3 lg:gap-4">
+                <div className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full bg-teal-800 animate-pulse flex-shrink-0"></div>
+                <span className="text-sm sm:text-base lg:text-xl font-extrabold text-gray-800 tracking-widest select-none">
                   Total: {osData.length} {osData.length === 1 ? 'OS' : "OS's"}{' '}
                   em {mes}/{ano}
                 </span>
@@ -257,12 +257,16 @@ export function ModalOS({
               {/* Tabela de OS's com altura fixa */}
               <div className="overflow-hidden rounded-lg border border-teal-800 shadow-lg">
                 <div
-                  className="overflow-y-auto scrollbar-thin scrollbar-track-teal-100 scrollbar-thumb-teal-600 hover:scrollbar-thumb-teal-800"
-                  style={{ height: '55vh', minHeight: '400px' }}
+                  className="overflow-x-auto overflow-y-auto scrollbar-thin scrollbar-track-teal-100 scrollbar-thumb-teal-600 hover:scrollbar-thumb-teal-800"
+                  style={{
+                    height: 'calc(100vh - 200px)',
+                    maxHeight: '75vh',
+                    minHeight: '300px',
+                  }}
                 >
                   <table
                     className="w-full border-separate border-spacing-0"
-                    style={{ tableLayout: 'fixed' }}
+                    style={{ tableLayout: 'fixed', minWidth: '1000px' }}
                   >
                     {/* Thead com ResizeHandle */}
                     <thead className="sticky top-0 z-10">
@@ -271,7 +275,7 @@ export function ModalOS({
                           {headerGroup.headers.map((header, idx) => (
                             <th
                               key={header.id}
-                              className="bg-teal-800 p-2 font-extrabold tracking-widest select-none text-base text-white border-teal-900 relative border-r shadow-md shadow-black"
+                              className="bg-teal-700 p-1.5 sm:p-2 font-extrabold tracking-widest select-none text-xs sm:text-sm lg:text-base text-white border-teal-900 relative border-r shadow-sm shadow-black"
                               style={{ width: `${columnWidths[header.id]}px` }}
                             >
                               {flexRender(
@@ -306,7 +310,7 @@ export function ModalOS({
                           {row.getVisibleCells().map((cell) => (
                             <td
                               key={cell.id}
-                              className="p-2 border-b border-gray-300"
+                              className="p-1.5 sm:p-2 border-b border-gray-300 text-xs sm:text-sm"
                               style={{
                                 width: `${columnWidths[cell.column.id]}px`,
                               }}

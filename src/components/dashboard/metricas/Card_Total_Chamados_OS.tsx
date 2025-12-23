@@ -105,9 +105,9 @@ export function CardTotalChamadosOS({ filters }: FilterProps) {
   return (
     <div className="relative flex h-32 sm:h-36 lg:h-40 flex-col rounded-lg sm:rounded-xl border bg-white shadow-md shadow-black overflow-hidden">
       {/* Chamados Finalizados - Superior Esquerdo */}
-      <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2">
+      <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-4">
         <div className="flex flex-col gap-0">
-          <span className="text-[8px] sm:text-[9px] font-bold text-slate-600 tracking-wide select-none uppercase">
+          <span className="text-[10px] sm:text-xs lg:text-sm font-bold text-black tracking-widest select-none uppercase">
             Finalizados
           </span>
           <span className="text-base sm:text-lg lg:text-xl font-extrabold tracking-wide bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent select-none">
@@ -117,9 +117,9 @@ export function CardTotalChamadosOS({ filters }: FilterProps) {
       </div>
 
       {/* Chamados Em Atendimento - Superior Direito */}
-      <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 text-right">
+      <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-4 text-right">
         <div className="flex flex-col gap-0 items-end">
-          <span className="text-[8px] sm:text-[9px] font-bold text-slate-600 tracking-wide select-none uppercase">
+          <span className="text-[10px] sm:text-xs lg:text-sm font-bold text-black tracking-widest select-none uppercase">
             Em Atendimento
           </span>
           <span className="text-base sm:text-lg lg:text-xl font-extrabold tracking-wide bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent select-none">
@@ -131,8 +131,8 @@ export function CardTotalChamadosOS({ filters }: FilterProps) {
       {/* Total de Chamados - Centro */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
         <div className="flex flex-col gap-0 sm:gap-0.5 items-center">
-          <span className="text-[10px] sm:text-xs lg:text-sm font-bold text-slate-800 tracking-widest select-none uppercase">
-            Total Chamados
+          <span className="text-[10px] sm:text-xs lg:text-sm font-bold text-black tracking-widest select-none uppercase">
+            Chamados
           </span>
           <span className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-widest bg-gradient-to-r from-purple-600 to-purple-700 bg-clip-text text-transparent select-none">
             {data.TOTAL_CHAMADOS ?? 0}
@@ -141,9 +141,9 @@ export function CardTotalChamadosOS({ filters }: FilterProps) {
       </div>
 
       {/* Chamados Standby - Inferior Esquerdo */}
-      <div className="absolute bottom-1.5 left-1.5 sm:bottom-2 sm:left-2">
+      <div className="absolute bottom-1.5 left-1.5 sm:bottom-2 sm:left-4">
         <div className="flex flex-col gap-0">
-          <span className="text-[8px] sm:text-[9px] font-bold text-slate-600 tracking-wide select-none uppercase">
+          <span className="text-[10px] sm:text-xs lg:text-sm font-bold text-black tracking-widest select-none uppercase">
             Standby
           </span>
           <span className="text-base sm:text-lg lg:text-xl font-extrabold tracking-wide bg-gradient-to-r from-yellow-600 to-yellow-700 bg-clip-text text-transparent select-none">
@@ -153,9 +153,9 @@ export function CardTotalChamadosOS({ filters }: FilterProps) {
       </div>
 
       {/* Chamados Aguardando Validação - Inferior Direito */}
-      <div className="absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2 text-right">
+      <div className="absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-4 text-right">
         <div className="flex flex-col gap-0 items-end">
-          <span className="text-[8px] sm:text-[9px] font-bold text-slate-600 tracking-wide select-none uppercase">
+          <span className="text-[10px] sm:text-xs lg:text-sm font-bold text-black tracking-widest select-none uppercase">
             Aguard. Validação
           </span>
           <span className="text-base sm:text-lg lg:text-xl font-extrabold tracking-wide bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent select-none">

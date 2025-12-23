@@ -596,11 +596,11 @@ function BadgeTotalizador({ label, valor, valorTotal }: BadgeTotalizadorProps) {
     </div>
   );
 }
+// ====================
 
 // ==================== TABLE HEADER ====================
 function TableHeader({
   table,
-  isAdmin,
   columnWidths,
   handleMouseDown,
   handleDoubleClick,
@@ -620,7 +620,7 @@ function TableHeader({
           {headerGroup.headers.map((header: any, idx: number) => (
             <th
               key={header.id}
-              className="bg-teal-700 py-2 lg:py-3 px-2 lg:px-3 relative border-r border-teal-900 shadow-md shadow-black"
+              className="bg-teal-700 py-2 lg:py-3 px-2 lg:px-3 relative border-r border-teal-900 shadow-sm shadow-black"
               style={{ width: `${columnWidths[header.id]}px` }}
             >
               {header.isPlaceholder
@@ -643,7 +643,7 @@ function TableHeader({
         </tr>
       ))}
 
-      <tr className="bg-teal-700 shadow-md shadow-black">
+      <tr className="bg-teal-700 shadow-sm shadow-black">
         {table.getAllColumns().map((column: any, idx: number) => (
           <th
             key={column.id}

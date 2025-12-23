@@ -139,6 +139,7 @@ const InfoCard = memo(
     fullWidth = false,
     tooltip = false,
     fullValue,
+    minHeight,
   }: {
     icon: any;
     label: string;
@@ -146,28 +147,54 @@ const InfoCard = memo(
     fullWidth?: boolean;
     tooltip?: boolean;
     fullValue?: string;
+    minHeight?: string;
   }) => {
     const [showTooltip, setShowTooltip] = useState(false);
+    const [isTruncated, setIsTruncated] = useState(false);
+
+    const contentRef = useCallback(
+      (node: HTMLDivElement | null) => {
+        if (node) {
+          // Para texto de largura completa, verifica se está truncado verticalmente
+          if (fullWidth) {
+            const isOverflowing = node.scrollHeight > node.clientHeight;
+            setIsTruncated(isOverflowing);
+          } else {
+            // Para texto em uma linha, verifica se está truncado horizontalmente
+            const isOverflowing = node.scrollWidth > node.clientWidth;
+            setIsTruncated(isOverflowing);
+          }
+        }
+      },
+      [fullWidth],
+    );
+
+    const shouldShowTooltip =
+      tooltip && showTooltip && fullValue && isTruncated;
 
     return (
       <div
-        className={`group rounded-md border bg-gradient-to-br from-slate-50 to-white p-4 transition-all shadow-xs shadow-black relative ${fullWidth ? 'col-span-full' : ''}`}
+        className={`group rounded-md border bg-gradient-to-br from-slate-50 to-white px-3 sm:px-4 py-2 transition-all shadow-xs shadow-black relative ${fullWidth ? 'col-span-full' : ''}`}
+        style={{ minHeight }}
         onMouseEnter={() => tooltip && setShowTooltip(true)}
         onMouseLeave={() => tooltip && setShowTooltip(false)}
       >
         <div className="mb-2 flex items-center gap-2">
-          <Icon className="text-slate-800" size={16} />
-          <span className="text-xs font-bold text-slate-800 tracking-widest select-none">
+          <Icon className="text-slate-800" size={14} />
+          <span className="text-[10px] sm:text-xs font-bold text-slate-800 tracking-widest select-none">
             {label}
           </span>
         </div>
-        <div className="text-base font-bold text-slate-800 tracking-widest select-none truncate overflow-hidden whitespace-nowrap">
+        <div
+          ref={contentRef}
+          className={`text-sm sm:text-base text-justify font-bold text-slate-800 tracking-widest select-none ${fullWidth ? 'whitespace-normal break-words line-clamp-5' : 'truncate overflow-hidden whitespace-nowrap'}`}
+        >
           {value}
         </div>
 
-        {/* Tooltip */}
-        {tooltip && showTooltip && fullValue && (
-          <div className="absolute z-[80] left-1/2 -translate-x-1/2 bottom-full mb-2 w-max max-w-lg px-4 py-2 text-sm font-semibold text-white bg-slate-800 rounded-lg shadow-lg animate-in fade-in slide-in-from-bottom-2">
+        {/* Tooltip - só aparece se o texto estiver truncado */}
+        {shouldShowTooltip && (
+          <div className="absolute z-[80] left-1/2 -translate-x-1/2 bottom-full mb-2 w-max max-w-[90vw] sm:max-w-lg px-4 py-2 text-xs sm:text-sm font-semibold text-white bg-slate-800 rounded-lg shadow-lg animate-in fade-in slide-in-from-bottom-2">
             <div className="break-words whitespace-normal">{fullValue}</div>
             {/* Seta do tooltip */}
             <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-slate-800"></div>
@@ -370,18 +397,19 @@ export function ModalValidacaoOS({
   // =================== RENDERIZAÇÃO PRINCIPAL ===================
   return (
     <>
-      <div className="animate-in fade-in fixed inset-0 z-[70] flex items-center justify-center p-4">
+      <div className="animate-in fade-in fixed inset-0 z-[70] flex items-center justify-center p-2 sm:p-4">
         <div className="absolute inset-0 bg-black/70 backdrop-blur-md" />
 
-        <div className="animate-in slide-in-from-bottom-4 relative z-10 max-h-[95vh] w-full max-w-2xl overflow-hidden rounded-xl bg-white transition-all ease-out">
-          <header className="relative flex items-center justify-between bg-teal-700 p-6 shadow-md shadow-black">
-            <div className="flex items-center justify-center gap-6">
-              <FaFileWaveform className="text-white" size={60} />
+        <div className="animate-in slide-in-from-bottom-4 relative z-10 flex flex-col max-h-[100vh] h-full w-full max-w-7xl rounded-xl bg-white transition-all ease-out overflow-hidden">
+          {/* Header fixo */}
+          <header className="relative flex items-center justify-between bg-teal-700 px-4 sm:px-6 py-2 sm:py-3 shadow-md shadow-black flex-shrink-0">
+            <div className="flex items-center justify-center gap-3 sm:gap-6">
+              <FaFileWaveform className="text-white" size={40} />
               <div className="flex flex-col">
-                <h1 className="text-2xl font-extrabold tracking-widest text-gray-200 select-none">
+                <h1 className="text-lg sm:text-2xl font-extrabold tracking-widest text-gray-200 select-none">
                   DETALHES DA OS
                 </h1>
-                <p className="text-lg font-extrabold tracking-widest text-gray-200 select-none">
+                <p className="text-sm sm:text-lg font-extrabold tracking-widest text-gray-200 select-none">
                   Revise e Valide a OS
                 </p>
               </div>
@@ -389,17 +417,18 @@ export function ModalValidacaoOS({
             <button
               onClick={handleClose}
               disabled={saveValidationMutation.isPending}
-              className="group active:scale-95 cursor-pointer rounded-full bg-white/20 p-3 shadow-md shadow-black transition-all hover:scale-125 hover:bg-red-500"
+              className="group active:scale-95 cursor-pointer rounded-full bg-white/20 p-2 sm:p-3 shadow-md shadow-black transition-all hover:scale-125 hover:bg-red-500"
             >
               <IoClose
                 className="text-white group-hover:scale-125 group-active:scale-95"
-                size={20}
+                size={18}
               />
             </button>
           </header>
 
-          <div className="rounded-b-2xl bg-white p-4 shadow-2xl">
-            <div className="mb-6 grid grid-cols-2 gap-2">
+          {/* Conteúdo com scroll */}
+          <div className="flex-1 overflow-y-auto rounded-b-2xl bg-white p-3 sm:p-4 shadow-2xl">
+            <div className="mb-4 sm:mb-6 grid grid-cols-2 sm:grid-cols-4 gap-2">
               <InfoCard
                 icon={FaHashtag}
                 label="Número OS"
@@ -469,23 +498,24 @@ export function ModalValidacaoOS({
                 fullValue={corrigirTextoCorrompido(
                   selectedRow.OBS ?? '---------------',
                 )}
+                minHeight="170px"
               />
             </div>
 
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3 sm:gap-4">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-slate-400"></div>
                 </div>
                 <div className="relative flex justify-center">
-                  <span className="bg-white px-4 font-extrabold text-slate-800 tracking-widest select-none text-base">
+                  <span className="bg-white px-4 font-extrabold text-slate-800 tracking-widest select-none text-sm sm:text-base">
                     Validação
                   </span>
                 </div>
               </div>
 
               <div
-                className={`group relative flex cursor-pointer items-center gap-6 border rounded-md shadow-xs shadow-black ${modalData.concordaPagar ? 'bg-blue-100 border-blue-500' : 'bg-red-100 border-red-500'} px-4 py-2 transition-all hover:shadow-lg hover:shadow-black`}
+                className={`group relative flex cursor-pointer items-center gap-4 sm:gap-6 border rounded-md shadow-xs shadow-black ${modalData.concordaPagar ? 'bg-blue-100 border-blue-500' : 'bg-red-100 border-red-500'} px-3 sm:px-4 py-2 transition-all hover:shadow-lg hover:shadow-black`}
               >
                 <div className="relative flex items-center">
                   <input
@@ -498,7 +528,7 @@ export function ModalValidacaoOS({
                 </div>
                 <div className="flex-1">
                   <span
-                    className={`block text-lg font-bold select-none tracking-widest ${
+                    className={`block text-base sm:text-lg font-bold select-none tracking-widest ${
                       modalData.concordaPagar
                         ? 'text-blue-600 font-extrabold'
                         : 'text-red-600 font-extrabold'
@@ -510,7 +540,7 @@ export function ModalValidacaoOS({
                   </span>
 
                   {modalData.concordaPagar && (
-                    <span className="text-xs text-slate-700 font-semibold tracking-widest select-none">
+                    <span className="text-[10px] sm:text-xs text-slate-700 font-semibold tracking-widest select-none">
                       Caso não concorde, desmarque e informe o motivo na
                       observação abaixo
                     </span>
@@ -519,17 +549,17 @@ export function ModalValidacaoOS({
               </div>
 
               {!modalData.concordaPagar && (
-                <div className="animate-in fade-in slide-in-from-top-2 transition-all rounded-md border border-amber-500 bg-amber-100 px-4 py-2">
-                  <div className="flex items-center gap-6">
+                <div className="animate-in fade-in slide-in-from-top-2 transition-all rounded-md border border-amber-500 bg-amber-100 px-3 sm:px-4 py-2">
+                  <div className="flex items-center gap-4 sm:gap-6">
                     <FaExclamationTriangle
-                      className="text-amber-700 animate-pulse"
-                      size={32}
+                      className="text-amber-700 animate-pulse flex-shrink-0"
+                      size={24}
                     />
                     <div className="flex-1">
-                      <p className="font-bold text-amber-800 tracking-widest select-none text-base">
+                      <p className="font-bold text-amber-800 tracking-widest select-none text-sm sm:text-base">
                         Atenção!
                       </p>
-                      <p className="mt-1 text-sm text-amber-800 font-semibold tracking-widest select-none">
+                      <p className="mt-1 text-xs sm:text-sm text-amber-800 font-semibold tracking-widest select-none">
                         Você deve informar o motivo da discordância no campo de
                         observação
                       </p>
@@ -541,7 +571,7 @@ export function ModalValidacaoOS({
               <div className="flex flex-col">
                 <label
                   htmlFor="observacao"
-                  className="mb-1 block text-xs font-bold text-slate-800 tracking-widest select-none"
+                  className="mb-1 block text-[10px] sm:text-xs font-bold text-slate-800 tracking-widest select-none"
                 >
                   {!modalData.concordaPagar ? (
                     <>
@@ -560,7 +590,7 @@ export function ModalValidacaoOS({
                     value={modalData.observacao}
                     onChange={(e) => handleObservacaoChange(e.target.value)}
                     rows={4}
-                    className={`w-full rounded-xl border bg-white px-4 py-2 text-slate-800 tracking-widest placeholder:text-sm placeholder:font-semibold select-none font-semibold transition-all focus:outline-none focus:ring-4 disabled:cursor-not-allowed disabled:opacity-50 shadow-xs shadow-black hover:shadow-lg hover:shadow-black placeholder:tracking-widest placeholder:text-slate-400 ${
+                    className={`w-full rounded-xl border bg-white px-3 sm:px-4 py-2 text-sm sm:text-base text-slate-800 tracking-widest placeholder:text-xs sm:placeholder:text-sm placeholder:font-semibold select-none font-semibold transition-all focus:outline-none focus:ring-4 disabled:cursor-not-allowed disabled:opacity-50 shadow-xs shadow-black hover:shadow-lg hover:shadow-black placeholder:tracking-widest placeholder:text-slate-400 ${
                       !modalData.concordaPagar
                         ? 'focus:ring-red-600 focus:shadow-none focus:ring-2 focus:border-none border-red-500'
                         : 'focus:ring-2 focus:ring-blue-600 focus:shadow-none'
@@ -576,25 +606,25 @@ export function ModalValidacaoOS({
               </div>
 
               {validationError && (
-                <div className="animate-in fade-in slide-in-from-top-2 transition-all rounded-md border border-red-500 bg-red-100 px-4 py-2">
-                  <div className="flex items-center gap-4">
+                <div className="animate-in fade-in slide-in-from-top-2 transition-all rounded-md border border-red-500 bg-red-100 px-3 sm:px-4 py-2">
+                  <div className="flex items-center gap-3 sm:gap-4">
                     <TbAlertOctagonFilled
-                      className="text-red-600 animate-pulse"
-                      size={28}
+                      className="text-red-600 animate-pulse flex-shrink-0"
+                      size={24}
                     />
-                    <p className="flex-1 text-sm tracking-widest select-none font-semibold text-red-800">
+                    <p className="flex-1 text-xs sm:text-sm tracking-widest select-none font-semibold text-red-800">
                       {validationError}
                     </p>
                   </div>
                 </div>
               )}
 
-              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end mt-10">
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
                 <button
                   type="button"
                   onClick={handleClose}
                   disabled={saveValidationMutation.isPending}
-                  className="w-[200px] cursor-pointer rounded-md border-none bg-gradient-to-r from-red-600 to-red-700 px-6 py-2 text-lg font-extrabold tracking-widest text-white shadow-xs shadow-black transition-all hover:shadow-lg hover:shadow-black active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="w-full sm:w-[200px] cursor-pointer rounded-md border-none bg-gradient-to-r from-red-600 to-red-700 px-4 sm:px-6 py-2 text-base sm:text-lg font-extrabold tracking-widest text-white shadow-xs shadow-black transition-all hover:shadow-lg hover:shadow-black active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Cancelar
                 </button>
@@ -602,17 +632,17 @@ export function ModalValidacaoOS({
                 <button
                   type="button"
                   onClick={handleSubmit}
-                  className="group relative overflow-hidden w-[200px] cursor-pointer rounded-md border-none bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-2 text-lg font-extrabold tracking-widest text-white shadow-xs shadow-black transition-all hover:shadow-lg hover:shadow-black active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="group relative overflow-hidden w-full sm:w-[200px] cursor-pointer rounded-md border-none bg-gradient-to-r from-blue-600 to-blue-700 px-4 sm:px-6 py-2 text-base sm:text-lg font-extrabold tracking-widest text-white shadow-xs shadow-black transition-all hover:shadow-lg hover:shadow-black active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={saveValidationMutation.isPending || !isFormValid()}
                 >
                   {saveValidationMutation.isPending ? (
-                    <span className="flex items-center justify-center gap-3">
-                      <LoadingButton size={24} />
+                    <span className="flex items-center justify-center gap-2 sm:gap-3">
+                      <LoadingButton size={20} />
                       Salvando...
                     </span>
                   ) : (
-                    <div className="flex items-center justify-center gap-3">
-                      <IoIosSave className="mr-2 inline-block" size={24} />
+                    <div className="flex items-center justify-center gap-2 sm:gap-3">
+                      <IoIosSave className="inline-block" size={20} />
                       <span>Salvar</span>
                     </div>
                   )}

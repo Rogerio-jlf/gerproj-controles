@@ -106,8 +106,8 @@ export function CardMediaHorasChamado({ filters }: FilterProps) {
   return (
     <div className="relative flex h-32 sm:h-36 lg:h-40 flex-col items-center justify-center rounded-lg sm:rounded-xl border bg-white shadow-md shadow-black overflow-hidden">
       {/* Conteúdo Centralizado */}
-      <div className="flex flex-col gap-0.5 sm:gap-1 items-center">
-        <span className="text-[10px] sm:text-xs font-bold text-slate-800 tracking-widest select-none uppercase">
+      <div className="flex flex-col gap-2 sm:gap-2 items-center">
+        <span className="text-[10px] sm:text-sm font-bold text-slate-800 tracking-widest select-none uppercase">
           Média por Chamado
         </span>
         <div className="flex items-baseline gap-1">
