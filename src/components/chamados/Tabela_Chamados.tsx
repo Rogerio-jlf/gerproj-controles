@@ -369,16 +369,16 @@ export function TabelaChamados() {
         <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
           <div
             className="flex-1 overflow-x-auto overflow-y-auto scrollbar-thin scrollbar-track-purple-100 scrollbar-thumb-purple-600 hover:scrollbar-thumb-purple-800"
-            style={{ 
-              maxHeight: 'calc(100vh - 220px)',
-              minHeight: '400px'
+            style={{
+              maxHeight: 'calc(133.33vh - 293px)', // Ajustado para compensar o zoom
+              minHeight: '533px', // 400px * 1.3333
             }}
           >
             <table
               className="w-full border-separate border-spacing-0"
-              style={{ 
+              style={{
                 tableLayout: 'fixed',
-                minWidth: '1400px'
+                minWidth: '1400px',
               }}
             >
               <TableHeader
@@ -580,11 +580,7 @@ interface BadgeTotalizadorProps {
   valorTotal?: string | number;
 }
 
-function BadgeTotalizador({
-  label,
-  valor,
-  valorTotal,
-}: BadgeTotalizadorProps) {
+function BadgeTotalizador({ label, valor, valorTotal }: BadgeTotalizadorProps) {
   return (
     <div className="group flex items-center gap-2 rounded bg-white px-3 py-1 lg:py-1.5 border border-purple-300 flex-shrink-0">
       <div className="h-2 w-2 animate-pulse rounded-full bg-purple-900"></div>

@@ -14,20 +14,25 @@ export function LayoutDashboard({ children }: LayoutProps) {
   const { isLoggedIn } = useAuth();
   const router = useRouter();
 
-  // Redireciona para login se o usuário não estiver autenticado
   useEffect(() => {
     if (!isLoggedIn) {
       router.replace('/paginas/login');
     }
   }, [isLoggedIn, router]);
 
-  // Não renderiza nada se o usuário não estiver autenticado
   if (!isLoggedIn) {
     return null;
   }
 
   return (
-    <div className="flex h-screen bg-white overflow-hidden">
+    <div 
+      className="flex bg-white overflow-hidden"
+      style={{
+        zoom: 0.75,
+        minHeight: '100vh',
+        height: '133.33vh' // Compensa o zoom
+      }}
+    >
       {/* ========== SIDEBAR ========== */}
       <div className="h-full p-6">
         <Sidebar />
