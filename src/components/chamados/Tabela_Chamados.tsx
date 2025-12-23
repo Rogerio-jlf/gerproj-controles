@@ -39,6 +39,12 @@ interface ApiResponseChamados {
   data: ChamadoRowProps[];
 }
 
+declare module '@tanstack/react-table' {
+  interface TableMeta<TData> {
+    handleChamadoClick?: (codChamado: number, temOS: boolean) => void;
+  }
+}
+
 // ==================== UTILITÁRIOS ====================
 const createAuthHeaders = () => ({
   'Content-Type': 'application/json',
@@ -363,7 +369,7 @@ export function TabelaChamados() {
         <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
           <div
             className="flex-1 overflow-y-auto scrollbar-thin scrollbar-track-purple-100 scrollbar-thumb-purple-600 hover:scrollbar-thumb-purple-800"
-            style={{ maxHeight: 'calc(100vh - 370px)' }}
+            style={{ maxHeight: 'calc(100vh - 290px)' }}
           >
             <table
               className="w-full border-separate border-spacing-0"
@@ -449,13 +455,13 @@ function Header({
   const { cliente, recurso, status } = useFilters().filters;
 
   return (
-    <header className="flex flex-col gap-10 bg-purple-900 p-6">
+    <header className="flex flex-col gap-4 bg-purple-900 p-4">
       <div className="flex w-full items-center justify-between">
-        <div className="flex items-center gap-6">
-          <div className="flex h-16 w-16 items-center justify-center rounded-md bg-white border border-purple-300">
-            <IoCall className="text-black" size={48} />
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-md bg-white border border-purple-300">
+            <IoCall className="text-black" size={32} />
           </div>
-          <h2 className="text-4xl tracking-widest select-none font-bold text-white">
+          <h2 className="text-2xl tracking-widest select-none font-bold text-white">
             RELATÓRIO CHAMADOS - {mes}/{ano}
           </h2>
         </div>
@@ -463,25 +469,25 @@ function Header({
         <FiRefreshCw
           onClick={onRefresh}
           title="Atualizar Dados"
-          className="cursor-pointer text-white transition-all hover:scale-125 hover:rotate-180 active:scale-95 mr-7"
-          size={52}
+          className="cursor-pointer text-white transition-all hover:scale-125 hover:rotate-180 active:scale-95 mr-4"
+          size={36}
         />
       </div>
 
       <div className="flex w-full items-center justify-between gap-4">
-        <div className="flex items-center justify-start flex-1 gap-4 flex-wrap">
+        <div className="flex items-center justify-start flex-1 gap-3 flex-wrap">
           <BadgeTotalizador
             label={totalChamadosFiltrados === 1 ? 'Chamado' : 'Chamados'}
             valor={totalChamadosFiltrados}
             valorTotal={hasActiveFilters ? totalChamados : undefined}
-            width="w-[280px]"
+            width="w-[260px]"
           />
 
           <BadgeTotalizador
             label={totalOSFiltrados === 1 ? 'OS' : "OS's"}
             valor={totalOSFiltrados}
             valorTotal={hasActiveFilters ? totalOS : undefined}
-            width="w-[230px]"
+            width="w-[210px]"
           />
 
           <BadgeTotalizador
@@ -492,25 +498,25 @@ function Header({
                 ? formatarHorasTotaisSufixo(totalHorasOS)
                 : undefined
             }
-            width="w-[590px]"
+            width="w-[520px]"
           />
         </div>
 
-        <div className="flex items-center justify-end gap-10">
+        <div className="flex items-center justify-end gap-6">
           {hasActiveFilters && (
             <button
               onClick={clearAllFilters}
               title="Limpar Filtros"
-              className="group cursor-pointer rounded-full border border-purple-300 bg-white p-4 text-lg font-extrabold tracking-widest text-white transition-all hover:scale-115 active:scale-95"
+              className="group cursor-pointer rounded-full border border-purple-300 bg-white p-3 text-lg font-extrabold tracking-widest text-white transition-all hover:scale-115 active:scale-95"
             >
               <FaEraser
-                size={20}
+                size={16}
                 className="text-black group-hover:scale-115 transition-all"
               />
             </button>
           )}
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <ExportaExcelChamadosButton
               data={filteredData}
               isAdmin={isAdmin}
@@ -528,7 +534,6 @@ function Header({
               disabled={filteredData.length === 0}
             />
 
-            {/* ← ADICIONAR O BOTÃO PDF AQUI */}
             <ExportaPDFChamadosButton
               data={filteredData}
               isAdmin={isAdmin}
@@ -548,9 +553,9 @@ function Header({
           </div>
 
           {isAdmin && (
-            <div className="flex items-center gap-4 rounded-full bg-purple-900 px-6 py-2 ring-2 ring-emerald-600 shadow-md shadow-black">
-              <div className="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-600"></div>
-              <span className="text-base font-bold text-emerald-300 tracking-widest select-none italic">
+            <div className="flex items-center gap-3 rounded-full bg-purple-900 px-4 py-1.5 ring-2 ring-emerald-600 shadow-md shadow-black">
+              <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-600"></div>
+              <span className="text-sm font-bold text-emerald-300 tracking-widest select-none italic">
                 Administrador
               </span>
             </div>
@@ -577,12 +582,12 @@ function BadgeTotalizador({
 }: BadgeTotalizadorProps) {
   return (
     <div
-      className={`group flex items-center gap-4 rounded bg-white px-6 py-2 border border-purple-300 flex-shrink-0 ${width}`}
+      className={`group flex items-center gap-3 rounded bg-white px-4 py-1.5 border border-purple-300 flex-shrink-0 ${width}`}
     >
-      <div className="h-2.5 w-2.5 animate-pulse rounded-full bg-purple-900"></div>
-      <span className="text-lg tracking-widest font-extrabold select-none text-gray-800">
+      <div className="h-2 w-2 animate-pulse rounded-full bg-purple-900"></div>
+      <span className="text-base tracking-widest font-extrabold select-none text-gray-800">
         {label}:{' '}
-        <span className="text-lg tracking-widest font-extrabold select-none text-purple-600 italic">
+        <span className="text-base tracking-widest font-extrabold select-none text-purple-600 italic">
           {valor}
           {valorTotal !== undefined && (
             <span className="ml-1">/{valorTotal}</span>
@@ -616,7 +621,7 @@ function TableHeader({
           {headerGroup.headers.map((header: any, idx: number) => (
             <th
               key={header.id}
-              className="bg-teal-700 py-6 pl-3.5 pr-4 relative border-r border-teal-900 shadow-md shadow-black"
+              className="bg-teal-700 py-3 pl-3 pr-3 relative border-r border-teal-900 shadow-md shadow-black"
               style={{ width: `${columnWidths[header.id]}px` }}
             >
               {header.isPlaceholder
@@ -643,11 +648,11 @@ function TableHeader({
         {table.getAllColumns().map((column: any, idx: number) => (
           <th
             key={column.id}
-            className="py-4 pl-4 pr-4 relative"
+            className="p-2 relative"
             style={{ width: `${columnWidths[column.id]}px` }}
           >
             {column.id === 'TOTAL_HORAS_OS' ? (
-              <div className="h-[42px]" />
+              <div className="h-[38px]" />
             ) : (
               <FiltroHeaderChamados
                 value={(column.getFilterValue() as string) ?? ''}
@@ -728,7 +733,7 @@ function TableBody({
               <td
                 key={cell.id}
                 style={{ width: `${columnWidths[cell.column.id]}px` }}
-                className={`border-b border-r border-gray-500 p-3 transition-all ${
+                className={`border-b border-r border-gray-500 p-2 transition-all ${
                   cellIndex === 0 ? 'pl-3' : ''
                 } ${cellIndex === row.getVisibleCells().length - 1 ? 'pr-4' : ''}`}
               >

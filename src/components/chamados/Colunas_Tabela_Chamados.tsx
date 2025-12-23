@@ -34,19 +34,19 @@ export type ChamadoRowProps = {
 const getStylesStatus = (status: string | undefined) => {
   switch (status?.toUpperCase()) {
     case 'NAO FINALIZADO':
-      return 'bg-red-500 border border-red-600 text-black italic';
+      return 'bg-red-600 border border-red-700 text-white italic';
     case 'EM ATENDIMENTO':
-      return 'bg-blue-500 border border-blue-600 text-black italic';
+      return 'bg-blue-600 border border-blue-700 text-white italic';
     case 'FINALIZADO':
-      return 'bg-green-500 border border-green-600 text-black italic';
+      return 'bg-green-600 border border-green-700 text-white italic';
     case 'NAO INICIADO':
-      return 'bg-yellow-500 border border-yellow-600 text-black italic';
+      return 'bg-yellow-600 border border-yellow-700 text-white italic';
     case 'STANDBY':
-      return 'bg-orange-500 border border-orange-600 text-black italic';
+      return 'bg-orange-600 border border-orange-700 text-white italic';
     case 'ATRIBUIDO':
-      return 'bg-teal-500 border border-teal-600 text-black italic';
+      return 'bg-teal-600 border border-teal-700 text-white italic';
     case 'AGUARDANDO VALIDACAO':
-      return 'bg-purple-500 border border-purple-600 text-black italic';
+      return 'bg-purple-600 border border-purple-700 text-white italic';
     default:
       return 'bg-gray-500 border border-gray-600 text-black italic';
   }
@@ -125,7 +125,7 @@ export const getColunasChamados = (
       accessorKey: 'COD_CHAMADO',
       id: 'COD_CHAMADO',
       header: () => (
-        <div className="text-center tracking-widest font-bold select-none text-white">
+        <div className="text-center tracking-widest font-bold select-none text-white text-sm">
           CHAMADO
         </div>
       ),
@@ -161,8 +161,8 @@ export const getColunasChamados = (
     {
       id: 'DATA_CHAMADO',
       header: () => (
-        <div className="text-center tracking-widest font-bold select-none text-white">
-          DATA/HORA
+        <div className="text-center tracking-widest font-bold select-none text-white text-sm">
+          ENTRADA
         </div>
       ),
       cell: ({ row }) => {
@@ -182,7 +182,7 @@ export const getColunasChamados = (
       accessorKey: 'PRIOR_CHAMADO',
       id: 'PRIOR_CHAMADO',
       header: () => (
-        <div className="text-center tracking-widest font-bold select-none text-white">
+        <div className="text-center tracking-widest font-bold select-none text-white text-sm">
           PRIOR.
         </div>
       ),
@@ -202,7 +202,7 @@ export const getColunasChamados = (
       accessorKey: 'ASSUNTO_CHAMADO',
       id: 'ASSUNTO_CHAMADO',
       header: () => (
-        <div className="text-center tracking-widest font-bold select-none text-white">
+        <div className="text-center tracking-widest font-bold select-none text-white text-sm">
           ASSUNTO
         </div>
       ),
@@ -226,7 +226,7 @@ export const getColunasChamados = (
       accessorKey: 'EMAIL_CHAMADO',
       id: 'EMAIL_CHAMADO',
       header: () => (
-        <div className="text-center tracking-widest font-bold select-none text-white">
+        <div className="text-center tracking-widest font-bold select-none text-white text-sm">
           EMAIL
         </div>
       ),
@@ -259,7 +259,7 @@ export const getColunasChamados = (
       accessorKey: 'NOME_CLASSIFICACAO',
       id: 'NOME_CLASSIFICACAO',
       header: () => (
-        <div className="text-center tracking-widest font-bold select-none text-white">
+        <div className="text-center tracking-widest font-bold select-none text-white text-sm">
           CLASSIFICAÇÃO
         </div>
       ),
@@ -283,8 +283,8 @@ export const getColunasChamados = (
       accessorKey: 'DTENVIO_CHAMADO',
       id: 'DTENVIO_CHAMADO',
       header: () => (
-        <div className="text-center tracking-widest font-bold select-none text-white">
-          DATA/HORA ATRIBUIÇÃO
+        <div className="text-center tracking-widest font-bold select-none text-white text-sm">
+          ATRIBUIÇÃO
         </div>
       ),
       cell: ({ getValue }) => {
@@ -314,7 +314,7 @@ export const getColunasChamados = (
       accessorKey: 'NOME_RECURSO',
       id: 'NOME_RECURSO',
       header: () => (
-        <div className="text-center tracking-widest font-bold select-none text-white">
+        <div className="text-center tracking-widest font-bold select-none text-white text-sm">
           CONSULTOR
         </div>
       ),
@@ -352,7 +352,7 @@ export const getColunasChamados = (
       accessorKey: 'STATUS_CHAMADO',
       id: 'STATUS_CHAMADO',
       header: () => (
-        <div className="text-center tracking-widest font-bold select-none text-white">
+        <div className="text-center tracking-widest font-bold select-none text-white text-sm">
           STATUS
         </div>
       ),
@@ -384,8 +384,8 @@ export const getColunasChamados = (
       accessorKey: 'CONCLUSAO_CHAMADO',
       id: 'CONCLUSAO_CHAMADO',
       header: () => (
-        <div className="text-center tracking-widest font-bold select-none text-white">
-          CONCLUSÃO CHAMADO
+        <div className="text-center tracking-widest font-bold select-none text-white text-sm">
+          CONCLUSÃO
         </div>
       ),
       cell: ({ getValue }) => {
@@ -415,7 +415,7 @@ export const getColunasChamados = (
       accessorKey: 'TOTAL_HORAS_OS',
       id: 'TOTAL_HORAS_OS',
       header: () => (
-        <div className="text-center tracking-widest font-bold select-none text-white">
+        <div className="text-center tracking-widest font-bold select-none text-white text-sm">
           QTD. HORAS
         </div>
       ),

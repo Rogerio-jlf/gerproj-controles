@@ -8,6 +8,13 @@ import { ColumnDef } from '@tanstack/react-table';
 import React from 'react';
 import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import { corrigirTextoCorrompido } from '../../formatters/formatar-texto-corrompido';
+import { PopoverObservacaoOS } from './Popover_Observacao_OS';
+
+declare module '@tanstack/react-table' {
+  interface TableMeta<TData> {
+    handleOpenModalObs?: (os: TData) => void;
+  }
+}
 
 // ==================== INTERFACES ====================
 export interface OSRowProps {
@@ -48,7 +55,7 @@ const ValidacaoBadge = ({ status }: { status?: string | null }) => {
   }
 
   return (
-    <div className="inline-flex items-center gap-2 rounded bg-gray-300 px-3 py-1.5 text-sm font-extrabold text-gray-800 tracking-widest select-none italic border border-gray-400">
+    <div className="inline-flex items-center gap-2 rounded bg-gray-300 px-3 py-1.5 text-sm font-extrabold text-black tracking-widest select-none italic border border-gray-400">
       {status ?? '---------------'}
     </div>
   );
@@ -89,8 +96,8 @@ const CellWithConditionalTooltip = ({
   }, [content]);
 
   const cellContent = (
-    <div 
-      ref={cellRef} 
+    <div
+      ref={cellRef}
       className={className}
       title={isTruncated ? content : undefined}
     >
@@ -116,7 +123,7 @@ export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
       cell: ({ getValue }) => {
         const value = (getValue() as number) ?? '---------------';
         return (
-          <div className="text-center font-semibold select-none tracking-widest text-sm text-gray-800">
+          <div className="text-center font-semibold select-none tracking-widest text-sm text-black">
             {formatarNumeros(value)}
           </div>
         );
@@ -135,7 +142,7 @@ export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
       cell: ({ getValue }) => {
         const value = getValue() as string;
         return (
-          <div className="text-center font-semibold select-none tracking-widest text-sm text-gray-800">
+          <div className="text-center font-semibold select-none tracking-widest text-sm text-black">
             {formatarDataParaBR(value)}
           </div>
         );
@@ -154,7 +161,7 @@ export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
       cell: ({ getValue }) => {
         const value = getValue() as string;
         return (
-          <div className="text-center font-semibold select-none tracking-widest text-sm text-gray-800">
+          <div className="text-center font-semibold select-none tracking-widest text-sm text-black">
             {formatarHora(value)}
           </div>
         );
@@ -173,7 +180,7 @@ export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
       cell: ({ getValue }) => {
         const value = getValue() as string;
         return (
-          <div className="text-center font-semibold select-none tracking-widest text-sm text-gray-800">
+          <div className="text-center font-semibold select-none tracking-widest text-sm text-black">
             {formatarHora(value)}
           </div>
         );
@@ -192,14 +199,14 @@ export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
       cell: ({ getValue }) => {
         const value = getValue() as number;
         return (
-          <div className="text-center font-semibold select-none tracking-widest text-sm text-gray-800">
+          <div className="text-center font-semibold select-none tracking-widest text-sm text-black">
             {formatarHorasTotaisSufixo(value)}
           </div>
         );
       },
     },
+    // ====================
 
-    // ✅ MODIFICADO: Observação da OS - Agora expansível
     {
       accessorKey: 'OBS',
       id: 'OBS',
@@ -208,23 +215,55 @@ export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
           OBSERVAÇÃO
         </div>
       ),
-      cell: ({ getValue }) => {
+      cell: ({ getValue, row, table }) => {
         const value = (getValue() as string) ?? '---------------';
         const isSemObs = value === '---------------';
-        
+
         if (isSemObs) {
           return (
-            <div className="text-center font-semibold tracking-widest text-sm text-gray-800 select-none">
+            <div className="text-center font-semibold tracking-widest text-sm text-black select-none">
               {value}
             </div>
           );
         }
 
+        // Pega a função do meta para abrir o modal
+        const handleOpenModalObs = table.options.meta?.handleOpenModalObs;
+        const textoCorrigido = corrigirTextoCorrompido(value);
+
         return (
-          <CellWithConditionalTooltip
-            content={corrigirTextoCorrompido(value)}
-            className="font-semibold tracking-widest text-sm text-gray-800 select-none overflow-hidden whitespace-nowrap text-ellipsis text-left"
-          />
+          <div
+            className="flex items-center gap-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Texto que inicia truncado e se expande até um máximo */}
+            <div
+              className="flex-1 font-semibold tracking-widest text-sm text-black select-none text-left"
+              style={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitLineClamp: 3, // Máximo de 3 linhas quando expandido
+                WebkitBoxOrient: 'vertical',
+                wordBreak: 'break-word',
+                overflowWrap: 'break-word',
+                lineHeight: '1.4',
+              }}
+            >
+              {textoCorrigido}
+            </div>
+
+            {/* Botão com Popover */}
+            <PopoverObservacaoOS
+              observacao={value}
+              numOS={row.original.NUM_OS}
+              onOpenModal={
+                handleOpenModalObs
+                  ? () => handleOpenModalObs(row.original)
+                  : undefined
+              }
+            />
+          </div>
         );
       },
     },
@@ -241,10 +280,10 @@ export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
       cell: ({ getValue }) => {
         const value = (getValue() as string) ?? '---------------';
         const isSemRecurso = value === '---------------';
-        
+
         if (isSemRecurso) {
           return (
-            <div className="text-center font-semibold select-none tracking-widest text-sm text-gray-800">
+            <div className="text-center font-semibold select-none tracking-widest text-sm text-black">
               {value}
             </div>
           );
@@ -254,11 +293,11 @@ export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
         const parts = corrected.trim().split(/\s+/).filter(Boolean);
         const display =
           parts.length <= 2 ? parts.join(' ') : parts.slice(0, 2).join(' ');
-        
+
         return (
           <CellWithConditionalTooltip
             content={display}
-            className="text-center font-semibold select-none tracking-widest text-sm text-gray-800 overflow-hidden whitespace-nowrap text-ellipsis"
+            className="text-center font-semibold select-none tracking-widest text-sm text-black overflow-hidden whitespace-nowrap text-ellipsis"
             isCentered={true}
           />
         );
@@ -277,10 +316,10 @@ export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
       cell: ({ getValue }) => {
         const value = (getValue() as string) ?? '---------------';
         const isSemNomeTarefa = value === '---------------';
-        
+
         if (isSemNomeTarefa) {
           return (
-            <div className="text-center font-semibold tracking-widest text-sm text-gray-800 select-none">
+            <div className="text-center font-semibold tracking-widest text-sm text-black select-none">
               {value}
             </div>
           );
@@ -289,7 +328,7 @@ export const getColunasOS = (): ColumnDef<OSRowProps>[] => {
         return (
           <CellWithConditionalTooltip
             content={corrigirTextoCorrompido(value)}
-            className="font-semibold tracking-widest text-sm text-gray-800 select-none overflow-hidden whitespace-nowrap text-ellipsis text-left"
+            className="font-semibold tracking-widest text-sm text-black select-none overflow-hidden whitespace-nowrap text-ellipsis text-left"
           />
         );
       },

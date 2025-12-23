@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useFilters } from '@/context/FiltersContext';
 import { formatarDataParaBR } from '@/formatters/formatar-data';
 import { formatarNumeros } from '@/formatters/formatar-numeros';
+import { corrigirTextoCorrompido } from '@/formatters/formatar-texto-corrompido';
 import { useRedimensionarColunas } from '@/hooks/useRedimensionarColunas';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -12,19 +13,20 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { IoClose } from 'react-icons/io5';
 import { TbFileInvoice } from 'react-icons/tb';
 import { IsError } from '../utils/IsError';
 import { IsLoading } from '../utils/IsLoading';
 import { getColunasOS, OSRowProps } from './Colunas_Tabela_OS';
+import { ModalObservacaoOS } from './Modal_Observacao_OS';
 import { RedimensionarColunas } from './Redimensionar_Colunas';
 
 // ==================== INTERFACES ====================
 interface ApiResponseOS {
   success: boolean;
   codChamado: number;
-  dataChamado?: string; // ✅ NOVO: Data do chamado
+  dataChamado?: string;
   periodo?: {
     mes: number;
     ano: number;
@@ -101,6 +103,11 @@ export function ModalOS({
   const { filters } = useFilters();
   const { mes, ano } = filters;
 
+  const [isModalObsOpen, setIsModalObsOpen] = useState(false);
+  const [selectedOSForObs, setSelectedOSForObs] = useState<OSRowProps | null>(
+    null,
+  );
+
   // Larguras iniciais das colunas
   const initialColumnWidths = {
     NUM_OS: 120,
@@ -137,22 +144,27 @@ export function ModalOS({
   const osData = useMemo(() => data?.data ?? [], [data?.data]);
   const columns = useMemo(() => getColunasOS(), []);
 
-  // ✅ NOVO: Extrai a data do chamado da resposta da API
   const dataChamado = useMemo(() => {
     if (data?.dataChamado) {
       return formatarDataParaBR(data.dataChamado);
     }
-    // Fallback para mes/ano caso a API não retorne dataChamado
     return `${mes}/${ano}`;
   }, [data?.dataChamado, mes, ano]);
+
+  const handleOpenModalObs = useCallback((os: OSRowProps) => {
+    setSelectedOSForObs(os);
+    setIsModalObsOpen(true);
+  }, []);
 
   const table = useReactTable<OSRowProps>({
     data: osData,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    meta: {
+      handleOpenModalObs,
+    },
   });
 
-  // Função para fechar modal
   const handleClose = () => {
     onClose();
   };
@@ -165,6 +177,9 @@ export function ModalOS({
 
   if (!isOpen || codChamado === null) return null;
 
+  // ================================================================================
+  // RENDERIZAÇÃO PRINCIPAL
+  // ================================================================================
   return (
     <div
       onClick={handleBackdropClick}
@@ -176,14 +191,13 @@ export function ModalOS({
       {/* Modal Container */}
       <div className="animate-in slide-in-from-bottom-4 relative z-10 max-h-[95vh] w-full max-w-[2200px] overflow-hidden rounded-xl bg-white transition-all ease-out">
         {/* Header */}
-        <header className="relative flex items-center justify-between bg-teal-700 p-6 shadow-md shadow-black">
+        <header className="relative flex items-center justify-between bg-teal-700 px-6 py-2 shadow-md shadow-black">
           <div className="flex items-center gap-6">
             <TbFileInvoice className="text-white" size={60} />
             <div className="flex flex-col">
               <h1 className="text-2xl font-extrabold tracking-widest text-gray-200 select-none">
                 ORDENS DE SERVIÇO
               </h1>
-              {/* ✅ MODIFICADO: Agora usa dataChamado formatada */}
               <p className="text-xl font-extrabold tracking-widest text-gray-200 select-none italic">
                 Chamado #{formatarNumeros(codChamado)} - {dataChamado}
               </p>
@@ -199,6 +213,7 @@ export function ModalOS({
             />
           </button>
         </header>
+        {/* ==================== */}
 
         {/* Body */}
         <div
@@ -239,11 +254,11 @@ export function ModalOS({
                 </span>
               </div>
 
-              {/* Tabela de OS's */}
+              {/* Tabela de OS's com altura fixa */}
               <div className="overflow-hidden rounded-lg border border-teal-800 shadow-lg">
                 <div
                   className="overflow-y-auto scrollbar-thin scrollbar-track-teal-100 scrollbar-thumb-teal-600 hover:scrollbar-thumb-teal-800"
-                  style={{ maxHeight: '55vh' }}
+                  style={{ height: '55vh', minHeight: '400px' }}
                 >
                   <table
                     className="w-full border-separate border-spacing-0"
@@ -256,7 +271,7 @@ export function ModalOS({
                           {headerGroup.headers.map((header, idx) => (
                             <th
                               key={header.id}
-                              className="bg-teal-800 p-4 font-extrabold tracking-widest select-none text-base text-white border-teal-900 relative border-r shadow-md shadow-black"
+                              className="bg-teal-800 p-2 font-extrabold tracking-widest select-none text-base text-white border-teal-900 relative border-r shadow-md shadow-black"
                               style={{ width: `${columnWidths[header.id]}px` }}
                             >
                               {flexRender(
@@ -264,7 +279,6 @@ export function ModalOS({
                                 header.getContext(),
                               )}
 
-                              {/* ResizeHandle em cada coluna (exceto última) */}
                               {idx < headerGroup.headers.length - 1 && (
                                 <RedimensionarColunas
                                   columnId={header.id}
@@ -292,7 +306,7 @@ export function ModalOS({
                           {row.getVisibleCells().map((cell) => (
                             <td
                               key={cell.id}
-                              className="p-4 border-b border-gray-300"
+                              className="p-2 border-b border-gray-300"
                               style={{
                                 width: `${columnWidths[cell.column.id]}px`,
                               }}
@@ -313,6 +327,25 @@ export function ModalOS({
           )}
         </div>
       </div>
+      <ModalObservacaoOS
+        isOpen={isModalObsOpen}
+        onClose={() => {
+          setIsModalObsOpen(false);
+          setSelectedOSForObs(null);
+        }}
+        observacao={selectedOSForObs?.OBS ?? ''}
+        numOS={selectedOSForObs?.NUM_OS ?? 0}
+        dataOS={
+          selectedOSForObs?.DTINI_OS
+            ? formatarDataParaBR(selectedOSForObs.DTINI_OS)
+            : undefined
+        }
+        consultor={
+          selectedOSForObs?.NOME_RECURSO
+            ? corrigirTextoCorrompido(selectedOSForObs.NOME_RECURSO)
+            : undefined
+        }
+      />
     </div>
   );
 }

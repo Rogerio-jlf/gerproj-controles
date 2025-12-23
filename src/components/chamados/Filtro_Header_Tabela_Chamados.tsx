@@ -370,7 +370,7 @@ const DropdownWithFilter = memo(
         <button
           onClick={handleToggle}
           disabled={isLoading}
-          className={`group relative flex w-full cursor-pointer items-center justify-between rounded-md py-2 pr-3 pl-3 text-sm font-bold tracking-widest transition-all hover:shadow-lg hover:shadow-black focus:ring-2 focus:ring-pink-600 focus:outline-none active:scale-95 ${
+          className={`group relative flex w-full cursor-pointer items-center justify-between rounded-md p-2 text-sm font-bold tracking-widest transition-all hover:shadow-lg hover:shadow-black focus:ring-2 focus:ring-pink-600 focus:outline-none active:scale-95 ${
             value
               ? 'bg-white text-black ring-2 ring-pink-600'
               : 'border border-teal-950 bg-teal-900 text-white'
