@@ -1,4 +1,3 @@
-import { useFilters } from '@/context/FiltersContext';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -6,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { IoCall, IoClose, IoHome, IoLogOut, IoMenu } from 'react-icons/io5';
 import { PiTimerFill } from 'react-icons/pi';
 import { useAuth } from '../../context/AuthContext';
+import { useFilters } from '../../context/FiltersContext';
 import { ModalSaldoHoras } from '../saldo-horas/Modal_Saldo_Horas';
 
 // ================================================================================

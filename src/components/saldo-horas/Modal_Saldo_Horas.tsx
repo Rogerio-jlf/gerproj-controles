@@ -1,14 +1,14 @@
 'use client';
 
-import { SaldoRowProps } from '@/components/saldo-horas/Colunas_Tabela_Saldo';
-import { TabelaSaldoHoras } from '@/components/saldo-horas/Tabela_Saldo_Horas';
-import { useAuth } from '@/context/AuthContext';
-import { useFilters } from '@/context/FiltersContext';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { FaExclamationTriangle, FaInfoCircle } from 'react-icons/fa';
 import { IoClose } from 'react-icons/io5';
 import { PiTimerFill } from 'react-icons/pi';
+import { SaldoRowProps } from '../../components/saldo-horas/Colunas_Tabela_Saldo';
+import { TabelaSaldoHoras } from '../../components/saldo-horas/Tabela_Saldo_Horas';
+import { useAuth } from '../../context/AuthContext';
+import { useFilters } from '../../context/FiltersContext';
 
 interface ApiResponse {
     mesAtual: number;

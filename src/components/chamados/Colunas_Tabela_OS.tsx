@@ -1,12 +1,12 @@
-import { formatarDataParaBR } from '@/formatters/formatar-data';
-import { formatarHora, formatarHorasTotaisSufixo } from '@/formatters/formatar-hora';
-import { formatarNumeros } from '@/formatters/formatar-numeros';
 import { ColumnDef } from '@tanstack/react-table';
 import { FileText } from 'lucide-react';
 import React from 'react';
 import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { formatarDataParaBR } from '../../formatters/formatar-data';
+import { formatarHora, formatarHorasTotaisSufixo } from '../../formatters/formatar-hora';
+import { formatarNumeros } from '../../formatters/formatar-numeros';
 import { corrigirTextoCorrompido } from '../../formatters/formatar-texto-corrompido';
-import { TooltipTabela } from '../utils/Tooltip';
+import { TooltipTabela } from '../shared/Tooltip';
 
 declare module '@tanstack/react-table' {
     interface TableMeta<TData> {

@@ -1,10 +1,6 @@
 // src/components/chamados/Tabela_Chamados.tsx
 'use client';
 
-import { useAuth } from '@/context/AuthContext';
-import { useFilters } from '@/context/FiltersContext';
-import { formatarHorasTotaisSufixo } from '@/formatters/formatar-hora';
-import { useRedimensionarColunas } from '@/hooks/useRedimensionarColunas';
 import { useQuery } from '@tanstack/react-query';
 import {
     ColumnFiltersState,
@@ -15,8 +11,12 @@ import {
 import React, { useCallback, useMemo, useState } from 'react';
 import { FaEraser } from 'react-icons/fa';
 import { IoCall } from 'react-icons/io5';
-import { IsError } from '../utils/IsError';
-import { IsLoading } from '../utils/IsLoading';
+import { useAuth } from '../../context/AuthContext';
+import { useFilters } from '../../context/FiltersContext';
+import { formatarHorasTotaisSufixo } from '../../formatters/formatar-hora';
+import { useRedimensionarColunas } from '../../hooks/useRedimensionarColunas';
+import { IsError } from '../shared/IsError';
+import { IsLoading } from '../shared/IsLoading';
 import { ExportaExcelChamadosButton } from './Button_Excel';
 import { ExportaPDFChamadosButton } from './Button_PDF';
 import { ChamadoRowProps, getColunasChamados } from './Colunas_Tabela_Chamados';

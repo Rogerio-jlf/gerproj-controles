@@ -3,13 +3,13 @@
 # ========================================
 
 ### Buscar todas as OS's - ADMIN
-GET http://localhost:3000/api/cards-metricas/hrs-contratadas-hrs-executadas?isAdmin=true&mes=12&ano=2025
+GET http://localhost:3000/api/dashboard/hrs-contratadas-hrs-executadas?isAdmin=true&mes=12&ano=2025
 
 ### Buscar todas as OS's com (admin) e filtra por codCliente
-GET http://localhost:3000/api/cards-metricas/hrs-contratadas-hrs-executadas?isAdmin=true&mes=12&ano=2025&codClienteFilter=120
+GET http://localhost:3000/api/dashboard/hrs-contratadas-hrs-executadas?isAdmin=true&mes=12&ano=2025&codClienteFilter=120
 
 ### Buscar todas as OS's com (admin) e filtra por codCliente e codRecurso
-GET http://localhost:3000/api/cards-metricas/hrs-contratadas-hrs-executadas?isAdmin=true&mes=12&ano=2025&codClienteFilter=120&codRecursoFilter=122
+GET http://localhost:3000/api/dashboard/hrs-contratadas-hrs-executadas?isAdmin=true&mes=12&ano=2025&codClienteFilter=120&codRecursoFilter=122
 
 # ===============================================================================================================================================
 
@@ -81,16 +81,16 @@ GET http://localhost:3000//api/chamados/13230/os?isAdmin=true&mes=12&ano=2025
 
 
 # ========================================
-# API/CARDS-METRICAS/TOTAL-CHAMADOS-OS
+# API/DASHBOARD/TOTAL-CHAMADOS-OS
 # ========================================
 ### BUSCAR TOTAL DE CHAMADOS POR STATUS - ADMIN
-GET http://localhost:3000/api/cards-metricas/total-chamados-os?mes=12&ano=2025&isAdmin=true
+GET http://localhost:3000/api/dashboard/total-chamados-os?mes=12&ano=2025&isAdmin=true
 
 # ========================================
-# API/CARDS-METRICAS/TOTAL-CHAMADOS-OS
+# API/DASHBOARD/TOTAL-CHAMADOS-OS
 # ========================================
 ### BUSCAR MÉDIA DE HORAS POR CHAMADO - ADMIN
-GET http://localhost:3000/api/cards-metricas/media-hrs-chamado-tarefa?codCliente=156&mes=12&ano=2025&isAdmin=true
+GET http://localhost:3000/api/dashboard/media-hrs-chamado-tarefa?codCliente=156&mes=12&ano=2025&isAdmin=true
 
 
 

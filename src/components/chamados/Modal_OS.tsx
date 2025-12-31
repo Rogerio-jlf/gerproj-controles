@@ -1,19 +1,19 @@
 // src/components/chamados/Modal_OS.tsx
 'use client';
 
-import { useAuth } from '@/context/AuthContext';
-import { useFilters } from '@/context/FiltersContext';
-import { formatarDataParaBR } from '@/formatters/formatar-data';
-import { formatarNumeros } from '@/formatters/formatar-numeros';
-import { corrigirTextoCorrompido } from '@/formatters/formatar-texto-corrompido';
-import { useRedimensionarColunas } from '@/hooks/useRedimensionarColunas';
 import { useQuery } from '@tanstack/react-query';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { useCallback, useMemo, useState } from 'react';
 import { IoClose } from 'react-icons/io5';
 import { TbFileInvoice } from 'react-icons/tb';
-import { IsError } from '../utils/IsError';
-import { IsLoading } from '../utils/IsLoading';
+import { useAuth } from '../../context/AuthContext';
+import { useFilters } from '../../context/FiltersContext';
+import { formatarDataParaBR } from '../../formatters/formatar-data';
+import { formatarNumeros } from '../../formatters/formatar-numeros';
+import { corrigirTextoCorrompido } from '../../formatters/formatar-texto-corrompido';
+import { useRedimensionarColunas } from '../../hooks/useRedimensionarColunas';
+import { IsError } from '../shared/IsError';
+import { IsLoading } from '../shared/IsLoading';
 import { getColunasOS, OSRowProps } from './Colunas_Tabela_OS';
 import { ModalObservacaoOS } from './Modal_Observacao_OS';
 import { RedimensionarColunas } from './Redimensionar_Colunas';

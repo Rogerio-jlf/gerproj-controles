@@ -6,9 +6,6 @@ module.exports = {
     printWidth: 100,
     tabWidth: 4, // Mude de 2 para 4
     useTabs: false,
-    plugins: [
-        'prettier-plugin-organize-imports',
-        'prettier-plugin-tailwindcss',
-    ],
+    plugins: ['prettier-plugin-organize-imports', 'prettier-plugin-tailwindcss'],
     organizeImportsSkipDestructiveCodeActions: true,
 };

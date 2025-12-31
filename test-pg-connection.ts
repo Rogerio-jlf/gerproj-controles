@@ -2,22 +2,22 @@
 import { Client } from 'pg';
 
 async function testConnection() {
-  const client = new Client({
-    host: 'localhost',
-    port: 5432,
-    user: 'postgres',
-    password: 'postgres',
-    database: 'GERPROJ',
-  });
+    const client = new Client({
+        host: 'localhost',
+        port: 5432,
+        user: 'postgres',
+        password: 'postgres',
+        database: 'GERPROJ',
+    });
 
-  try {
-    await client.connect();
-    console.log('Conexão bem-sucedida ao banco GERPROJ!');
-  } catch (error) {
-    console.error('Erro ao conectar no banco:', error);
-  } finally {
-    await client.end();
-  }
+    try {
+        await client.connect();
+        console.log('Conexão bem-sucedida ao banco GERPROJ!');
+    } catch (error) {
+        console.error('Erro ao conectar no banco:', error);
+    } finally {
+        await client.end();
+    }
 }
 
 testConnection();

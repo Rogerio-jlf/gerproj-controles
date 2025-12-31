@@ -1,4 +1,3 @@
-import { formatarHorasTotaisSufixo } from '@/formatters/formatar-hora';
 import { ColumnDef } from '@tanstack/react-table';
 import {
     FaCheckCircle,
@@ -7,6 +6,7 @@ import {
     FaMinusCircle,
     FaTimesCircle,
 } from 'react-icons/fa';
+import { formatarHorasTotaisSufixo } from '../../formatters/formatar-hora';
 
 export interface Compensacao {
     mesOrigem: string;

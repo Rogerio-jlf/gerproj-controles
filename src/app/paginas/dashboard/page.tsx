@@ -1,14 +1,14 @@
 'use client';
 
-import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { useAuth } from '../../../context/AuthContext';
 
 // components
-import { Graficos } from '@/components/dashboard/graficos/Graficos';
-import { useFilters } from '@/context/FiltersContext';
+import { Graficos } from '../../../components/dashboard/graficos/Graficos';
 import { LayoutDashboard } from '../../../components/dashboard/Layout_Dashboard';
-import { Filtros } from '../../../components/utils/Filtros';
+import { Filtros } from '../../../components/shared/Filtros';
+import { useFilters } from '../../../context/FiltersContext';
 
 export default function DashboardPage() {
     const { isLoggedIn } = useAuth();
@@ -30,7 +30,7 @@ export default function DashboardPage() {
             <div className="flex h-full flex-col gap-10 overflow-hidden">
                 {/* Área fixa - sem scroll */}
                 <div className="flex-shrink-0">
-                    <Filtros showRefreshButton={true} />
+                    <Filtros />
                 </div>
 
                 {/* Área com scroll - gráficos */}

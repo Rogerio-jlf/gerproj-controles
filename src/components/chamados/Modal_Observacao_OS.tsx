@@ -1,11 +1,11 @@
 'use client';
 
-import { formatarNumeros } from '@/formatters/formatar-numeros';
-import { corrigirTextoCorrompido } from '@/formatters/formatar-texto-corrompido';
 import React, { useState } from 'react';
 import { FiCheck, FiCopy } from 'react-icons/fi';
 import { IoClose } from 'react-icons/io5';
 import { TbFileInvoice } from 'react-icons/tb';
+import { formatarNumeros } from '../../formatters/formatar-numeros';
+import { corrigirTextoCorrompido } from '../../formatters/formatar-texto-corrompido';
 
 interface ModalObservacaoOSProps {
     isOpen: boolean;

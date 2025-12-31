@@ -2,12 +2,12 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { ProtecaoRotas } from '../utils/ProtecaoRotas';
-import { Sidebar } from '../utils/Sidebar';
+import { ProtecaoRotas } from '../shared/ProtecaoRotas';
+import { Sidebar } from '../shared/Sidebar';
 
 interface LayoutProps {
-  children: ReactNode;
-  pageTitle: string;
+    children: ReactNode;
+    pageTitle: string;
 }
 
 // ===== CONFIGURAÇÃO DE ZOOM =====
@@ -16,28 +16,26 @@ const ZOOM_COMPENSATION = 100 / ZOOM_LEVEL; // Calcula automaticamente (ex: 100 
 // ================================
 
 export function LayoutTabelaChamados({ children }: LayoutProps) {
-  return (
-    <ProtecaoRotas>
-      <div
-        className="flex bg-white overflow-hidden"
-        style={{
-          zoom: ZOOM_LEVEL,
-          minHeight: '100vh',
-          height: `${ZOOM_COMPENSATION}vh`, // Compensa automaticamente
-        }}
-      >
-        {/* ========== SIDEBAR ========== */}
-        <div className="h-full pl-6 py-6">
-          <Sidebar />
-        </div>
-        {/* ===== */}
+    return (
+        <ProtecaoRotas>
+            <div
+                className="flex overflow-hidden bg-white"
+                style={{
+                    zoom: ZOOM_LEVEL,
+                    minHeight: '100vh',
+                    height: `${ZOOM_COMPENSATION}vh`, // Compensa automaticamente
+                }}
+            >
+                {/* ========== SIDEBAR ========== */}
+                <div className="h-full py-6 pl-6">
+                    <Sidebar />
+                </div>
+                {/* ===== */}
 
-        {/* ========== MAIN ========== */}
-        <main className="flex-1 flex flex-col p-6 overflow-hidden">
-          {children}
-        </main>
-        {/* ===== */}
-      </div>
-    </ProtecaoRotas>
-  );
+                {/* ========== MAIN ========== */}
+                <main className="flex flex-1 flex-col overflow-hidden p-6">{children}</main>
+                {/* ===== */}
+            </div>
+        </ProtecaoRotas>
+    );
 }

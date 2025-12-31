@@ -1,10 +1,10 @@
 'use client';
 
-import { useAuth } from '@/context/AuthContext';
-import { formatarHorasTotaisSufixo } from '@/formatters/formatar-hora';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { FaExclamationTriangle, FaTasks, FaTicketAlt } from 'react-icons/fa';
+import { useAuth } from '../../../context/AuthContext';
+import { formatarHorasTotaisSufixo } from '../../../formatters/formatar-hora';
 
 interface FilterProps {
     filters: {
@@ -197,7 +197,7 @@ export function CardMediaHorasChamado({ filters }: FilterProps) {
         if (filters.status) params.append('status', filters.status);
 
         const response = await fetch(
-            `/api/cards-metricas/media-hrs-chamado-tarefa?${params.toString()}`,
+            `/api/dashboard/media-hrs-chamado-tarefa?${params.toString()}`,
             {
                 method: 'GET',
                 headers: {
@@ -268,6 +268,9 @@ export function CardMediaHorasChamado({ filters }: FilterProps) {
         },
     ];
 
+    // ================================================================================
+    // RENDERIZAÇÃO PRINCIPAL
+    // ================================================================================
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="mb-2 flex items-center justify-between">
@@ -276,7 +279,7 @@ export function CardMediaHorasChamado({ filters }: FilterProps) {
                 </h1>
             </div>
 
-            <div className="group relative flex h-71 flex-col overflow-hidden rounded-xl bg-white shadow-md shadow-black">
+            <div className="group relative flex h-70 flex-col overflow-hidden rounded-xl bg-white shadow-md shadow-black">
                 {/* Gradient accent line */}
                 <div className="absolute top-0 right-0 left-0 h-1 bg-purple-500"></div>
 

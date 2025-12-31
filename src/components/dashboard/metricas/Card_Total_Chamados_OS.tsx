@@ -1,6 +1,5 @@
 'use client';
 
-import { useAuth } from '@/context/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import {
@@ -11,6 +10,7 @@ import {
     FaInfoCircle,
     FaPlay,
 } from 'react-icons/fa';
+import { useAuth } from '../../../context/AuthContext';
 
 interface FilterProps {
     filters: {
@@ -215,7 +215,7 @@ export function CardTotalChamadosOS({ filters, onStatusClick }: FilterProps) {
         if (filters.recurso) params.append('codRecursoFilter', filters.recurso);
         if (filters.status) params.append('status', filters.status);
 
-        const response = await fetch(`/api/cards-metricas/total-chamados-os?${params.toString()}`, {
+        const response = await fetch(`/api/dashboard/total-chamados-os?${params.toString()}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -246,7 +246,7 @@ export function CardTotalChamadosOS({ filters, onStatusClick }: FilterProps) {
     if (isError || !data) {
         return (
             <div>
-                <div className="flex h-32 cursor-not-allowed flex-col items-center justify-center rounded-xl border border-red-400 bg-red-100 shadow-md shadow-black sm:h-36 lg:h-40">
+                <div className="flex h-32 cursor-not-allowed flex-col items-center justify-center rounded-xl border border-red-400 bg-red-100 shadow-md shadow-black">
                     <div className="flex flex-col items-center justify-center gap-2 p-2">
                         <FaExclamationTriangle className="text-red-500" size={24} />
                         <span className="text-center text-sm font-semibold tracking-widest text-red-700 select-none sm:text-sm">
@@ -325,6 +325,9 @@ export function CardTotalChamadosOS({ filters, onStatusClick }: FilterProps) {
         },
     ];
 
+    // ================================================================================
+    // RENDERIZAÇÃO PRINCIPAL
+    // ================================================================================
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="mb-2 flex items-center justify-between">
@@ -333,7 +336,7 @@ export function CardTotalChamadosOS({ filters, onStatusClick }: FilterProps) {
                 </h1>
             </div>
 
-            <div className="group relative flex h-auto min-h-[8rem] flex-col overflow-hidden rounded-xl bg-white shadow-md shadow-black sm:min-h-[9rem] lg:min-h-[10rem]">
+            <div className="group relative flex h-72 flex-col overflow-hidden rounded-xl bg-white shadow-md shadow-black">
                 {/* Gradient accent line */}
                 <div className="absolute top-0 right-0 left-0 h-1 bg-purple-500"></div>
 

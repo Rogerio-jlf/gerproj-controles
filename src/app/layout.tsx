@@ -4,45 +4,41 @@ import { ClientProviders } from '../app/ClientProvider';
 import './globals.css';
 
 const kodchasan = Kodchasan({
-  variable: '--font-kodchasan',
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+    variable: '--font-kodchasan',
+    subsets: ['latin'],
+    weight: ['400', '500', '600', '700'],
 });
 
 export const metadata: Metadata = {
-  title: 'Solutii - Dashboard Cliente',
-  description: 'Painel de controle para clientes da Solutii',
-  manifest: '/manifest.json',
-  icons: {
-    icon: [
-      { url: '/favicon.ico', type: 'image/x-icon' },
-      { url: '/icon1.png', sizes: '192x192', type: 'image/png' },
-    ],
-    apple: '/apple-icon.png',
-    other: [
-      {
-        rel: 'mask-icon',
-        url: '/icon0.svg',
-        color: '#ffffff',
-      },
-    ],
-  },
+    title: 'Solutii - Dashboard Cliente',
+    description: 'Painel de controle para clientes da Solutii',
+    manifest: '/manifest.json',
+    icons: {
+        icon: [
+            { url: '/favicon.ico', type: 'image/x-icon' },
+            { url: '/icon1.png', sizes: '192x192', type: 'image/png' },
+        ],
+        apple: '/apple-icon.png',
+        other: [
+            {
+                rel: 'mask-icon',
+                url: '/icon0.svg',
+                color: '#ffffff',
+            },
+        ],
+    },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#ffffff',
+    themeColor: '#ffffff',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <html lang="en">
-      <body className={`${kodchasan.variable} antialiased`}>
-        <ClientProviders>{children}</ClientProviders>
-      </body>
-    </html>
-  );
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <html lang="en">
+            <body className={`${kodchasan.variable} antialiased`}>
+                <ClientProviders>{children}</ClientProviders>
+            </body>
+        </html>
+    );
 }

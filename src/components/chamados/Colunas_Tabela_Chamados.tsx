@@ -1,11 +1,11 @@
-import { formatarDataHoraChamado, formatarDataParaBR } from '@/formatters/formatar-data';
-import { formatarHorasTotaisSufixo } from '@/formatters/formatar-hora';
-import { formatarNumeros, formatarPrioridade } from '@/formatters/formatar-numeros';
 import { ColumnDef } from '@tanstack/react-table';
 import { ChevronRight, FileText } from 'lucide-react';
 import React from 'react';
+import { formatarDataHoraChamado, formatarDataParaBR } from '../../formatters/formatar-data';
+import { formatarHorasTotaisSufixo } from '../../formatters/formatar-hora';
+import { formatarNumeros, formatarPrioridade } from '../../formatters/formatar-numeros';
 import { corrigirTextoCorrompido } from '../../formatters/formatar-texto-corrompido';
-import { TooltipTabela } from '../utils/Tooltip';
+import { TooltipTabela } from '../shared/Tooltip';
 
 // ==================== TIPOS ====================
 export type ChamadoRowProps = {

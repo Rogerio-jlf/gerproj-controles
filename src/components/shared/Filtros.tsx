@@ -1,17 +1,14 @@
-import { useAuth } from '@/context/AuthContext';
-import { useFilters } from '@/context/FiltersContext';
-import { corrigirTextoCorrompido } from '@/formatters/formatar-texto-corrompido';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { IoClose } from 'react-icons/io5';
 import { MdCalendarMonth, MdFilterAlt } from 'react-icons/md';
 import { useDebounce } from 'use-debounce';
+import { useAuth } from '../../context/AuthContext';
+import { useFilters } from '../../context/FiltersContext';
+import { corrigirTextoCorrompido } from '../../formatters/formatar-texto-corrompido';
 import { Relogio } from './Relogio';
 
 // ==================== INTERFACES ====================
-interface FiltersProps {
-    showRefreshButton?: boolean;
-}
 
 interface Cliente {
     cod: string;
@@ -144,14 +141,16 @@ const fetchStatus = async ({
     return response.json();
 };
 
-// ==============================================================
-// ==================== COMPONENTE PRINCIPAL ====================
-// ==============================================================
-export function Filtros({ showRefreshButton = false }: FiltersProps) {
+// ================================================================================
+// COMPONENTE PRINCIPAL
+// ================================================================================
+export function Filtros() {
     const hoje = new Date();
+    const anoAtual = hoje.getFullYear();
+    const mesAtual = hoje.getMonth() + 1;
+
     const { filters, setFilters } = useFilters();
     const { isAdmin, codCliente } = useAuth();
-    const queryClient = useQueryClient();
 
     const [ano, setAno] = useState(filters.ano);
     const [mes, setMes] = useState(filters.mes);
@@ -281,34 +280,7 @@ export function Filtros({ showRefreshButton = false }: FiltersProps) {
         }
     }, [statusData, statusSelecionado, isInitialized]);
 
-    const clearAllFilters = () => {
-        const novoAno = hoje.getFullYear();
-        const novoMes = hoje.getMonth() + 1;
-
-        setAno(novoAno);
-        setMes(novoMes);
-        setClienteSelecionado('');
-        setRecursoSelecionado('');
-        setStatusSelecionado('');
-
-        setFilters({
-            ano: novoAno,
-            mes: novoMes,
-            cliente: '',
-            recurso: '',
-            status: '',
-        });
-    };
-
-    const handleRefresh = () => {
-        clearAllFilters();
-        queryClient.invalidateQueries({ queryKey: ['clientes'] });
-        queryClient.invalidateQueries({ queryKey: ['recursos'] });
-        queryClient.invalidateQueries({ queryKey: ['status'] });
-        queryClient.invalidateQueries({ queryKey: ['tabela-chamados'] });
-        queryClient.invalidateQueries({ queryKey: ['tabela-os'] });
-    };
-
+    // ==================== CONSTANTES ====================
     const years = [2024, 2025, 2026];
     const months = [
         'Janeiro',
@@ -327,7 +299,14 @@ export function Filtros({ showRefreshButton = false }: FiltersProps) {
 
     const isLoading = recursosLoading || statusLoading;
 
-    // ==================== SUBCOMPONENTE ====================
+    // ==================== VERIFICAÇÃO DE FILTROS ATIVOS ====================
+    const isAnoAtivo = ano !== anoAtual;
+    const isMesAtivo = mes !== mesAtual;
+    const isClienteAtivo = clienteSelecionado !== '';
+    const isRecursoAtivo = recursoSelecionado !== '';
+    const isStatusAtivo = statusSelecionado !== '';
+
+    // ==================== COMPONENTE SELECT COM CLEAR ====================
     interface SelectWithClearProps {
         value: string | number;
         onChange: (value: string) => void;
@@ -337,6 +316,7 @@ export function Filtros({ showRefreshButton = false }: FiltersProps) {
         placeholder: string;
         className?: string;
         showClear?: boolean;
+        isActive?: boolean;
     }
 
     function SelectWithClear({
@@ -348,6 +328,7 @@ export function Filtros({ showRefreshButton = false }: FiltersProps) {
         placeholder,
         className,
         showClear = true,
+        isActive = false,
     }: SelectWithClearProps) {
         const hasValue = value !== '' && value !== 0;
 
@@ -357,7 +338,9 @@ export function Filtros({ showRefreshButton = false }: FiltersProps) {
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
                     disabled={disabled}
-                    className={`${className} ${hasValue && !disabled && showClear ? 'pr-12' : 'pr-8'}`}
+                    className={`${className} ${hasValue && !disabled && showClear ? 'pr-12' : 'pr-8'} ${
+                        isActive ? 'ring-4 ring-purple-600' : ''
+                    }`}
                     style={{
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
@@ -367,7 +350,7 @@ export function Filtros({ showRefreshButton = false }: FiltersProps) {
                     <option
                         value=""
                         key="placeholder-option"
-                        className="text-sm font-semibold tracking-widest select-none"
+                        className="text-base font-semibold tracking-widest select-none"
                     >
                         {placeholder}
                     </option>
@@ -384,7 +367,7 @@ export function Filtros({ showRefreshButton = false }: FiltersProps) {
                             <option
                                 key={`option-${optValue}-${index}`}
                                 value={optValue}
-                                className="text-sm font-semibold tracking-widest select-none"
+                                className="text-base font-semibold tracking-widest select-none"
                                 title={optLabel}
                             >
                                 {processarNome(optLabel, 2)}
@@ -412,7 +395,9 @@ export function Filtros({ showRefreshButton = false }: FiltersProps) {
         );
     }
 
-    // ==================== RENDERIZAÇÃO PRINCIPAL ====================
+    // ================================================================================
+    // RENDERIZAÇÃO PRINCIPAL
+    // ================================================================================
     return (
         <div className="flex flex-col gap-2">
             {/* Cabeçalho compacto */}
@@ -443,7 +428,9 @@ export function Filtros({ showRefreshButton = false }: FiltersProps) {
                 <select
                     value={ano}
                     onChange={(e) => setAno(Number(e.target.value))}
-                    className="w-full cursor-pointer rounded-md border p-2 text-sm font-extrabold tracking-widest shadow-md shadow-black transition-all duration-300 select-none hover:shadow-xl hover:shadow-black focus:ring-2 focus:ring-purple-600 focus:outline-none"
+                    className={`w-full cursor-pointer rounded-md border p-2 text-base font-extrabold tracking-widest shadow-md shadow-black transition-all duration-300 select-none hover:shadow-xl hover:shadow-black focus:ring-2 focus:ring-purple-600 focus:outline-none ${
+                        isAnoAtivo ? 'ring-4 ring-purple-600' : ''
+                    }`}
                 >
                     {years.map((yearOption) => (
                         <option
@@ -460,7 +447,9 @@ export function Filtros({ showRefreshButton = false }: FiltersProps) {
                 <select
                     value={mes}
                     onChange={(e) => setMes(Number(e.target.value))}
-                    className="w-full cursor-pointer rounded-md border p-2 text-sm font-extrabold tracking-widest shadow-md shadow-black transition-all duration-300 select-none hover:shadow-xl hover:shadow-black focus:ring-2 focus:ring-purple-600 focus:outline-none"
+                    className={`w-full cursor-pointer rounded-md border p-2 text-base font-extrabold tracking-widest shadow-md shadow-black transition-all duration-300 select-none hover:shadow-xl hover:shadow-black focus:ring-2 focus:ring-purple-600 focus:outline-none ${
+                        isMesAtivo ? 'ring-4 ring-purple-600' : ''
+                    }`}
                 >
                     {months.map((monthName, i) => (
                         <option
@@ -482,7 +471,8 @@ export function Filtros({ showRefreshButton = false }: FiltersProps) {
                     options={clientesData.map((c) => ({ value: c.cod, label: c.nome }))}
                     placeholder={clientesLoading ? 'Carregando...' : 'Selecione o cliente'}
                     showClear={!codCliente}
-                    className="w-full cursor-pointer rounded-md border p-2 text-sm font-extrabold tracking-widest shadow-md shadow-black transition-all duration-300 select-none hover:shadow-xl hover:shadow-black focus:ring-2 focus:ring-purple-600 focus:outline-none disabled:cursor-not-allowed disabled:opacity-30"
+                    isActive={isClienteAtivo}
+                    className="w-full cursor-pointer rounded-md border p-2 text-base font-extrabold tracking-widest shadow-md shadow-black transition-all duration-300 select-none hover:shadow-xl hover:shadow-black focus:ring-2 focus:ring-purple-600 focus:outline-none disabled:cursor-not-allowed disabled:opacity-30"
                 />
 
                 {/* Recurso */}
@@ -493,7 +483,8 @@ export function Filtros({ showRefreshButton = false }: FiltersProps) {
                     disabled={!recursosData.length || isLoading}
                     options={recursosData.map((r) => ({ value: r.cod, label: r.nome }))}
                     placeholder={isLoading ? 'Carregando...' : 'Selecione o recurso'}
-                    className="w-full cursor-pointer rounded-md border p-2 text-sm font-extrabold tracking-widest shadow-md shadow-black transition-all duration-300 select-none hover:shadow-xl hover:shadow-black focus:ring-2 focus:ring-purple-600 focus:outline-none"
+                    isActive={isRecursoAtivo}
+                    className="w-full cursor-pointer rounded-md border p-2 text-base font-extrabold tracking-widest shadow-md shadow-black transition-all duration-300 select-none hover:shadow-xl hover:shadow-black focus:ring-2 focus:ring-purple-600 focus:outline-none"
                 />
 
                 {/* Status */}
@@ -504,7 +495,8 @@ export function Filtros({ showRefreshButton = false }: FiltersProps) {
                     disabled={!statusData.length || isLoading}
                     options={statusData.map((s) => ({ value: s, label: s }))}
                     placeholder={isLoading ? 'Carregando...' : 'Selecione o status'}
-                    className="w-full cursor-pointer rounded-md border p-2 text-sm font-extrabold tracking-widest shadow-md shadow-black transition-all duration-300 select-none hover:shadow-xl hover:shadow-black focus:ring-2 focus:ring-purple-600 focus:outline-none"
+                    isActive={isStatusAtivo}
+                    className="w-full cursor-pointer rounded-md border p-2 text-base font-extrabold tracking-widest shadow-md shadow-black transition-all duration-300 select-none hover:shadow-xl hover:shadow-black focus:ring-2 focus:ring-purple-600 focus:outline-none"
                 />
             </div>
         </div>

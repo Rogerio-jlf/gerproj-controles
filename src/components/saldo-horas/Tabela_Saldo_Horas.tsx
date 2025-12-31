@@ -1,7 +1,7 @@
 'use client';
 
-import { getColunasSaldo, SaldoRowProps } from '@/components/saldo-horas/Colunas_Tabela_Saldo';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import { getColunasSaldo, SaldoRowProps } from '../../components/saldo-horas/Colunas_Tabela_Saldo';
 
 interface TabelaSaldoHorasProps {
     historico: SaldoRowProps[];

@@ -1,11 +1,11 @@
 'use client';
 
-import { formatarDataParaBR } from '@/formatters/formatar-data';
-import { formatarNumeros } from '@/formatters/formatar-numeros';
-import { corrigirTextoCorrompido } from '@/formatters/formatar-texto-corrompido';
 import React, { useState } from 'react';
 import { FiCheck, FiCopy } from 'react-icons/fi';
 import { IoCall, IoClose } from 'react-icons/io5';
+import { formatarDataParaBR } from '../../formatters/formatar-data';
+import { formatarNumeros } from '../../formatters/formatar-numeros';
+import { corrigirTextoCorrompido } from '../../formatters/formatar-texto-corrompido';
 
 interface ModalSolicitacaoChamadoProps {
     isOpen: boolean;

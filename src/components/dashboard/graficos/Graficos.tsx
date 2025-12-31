@@ -1,12 +1,3 @@
-import { IsError } from '@/components/utils/IsError';
-import { IsLoading } from '@/components/utils/IsLoading';
-import { useAuth } from '@/context/AuthContext';
-import { formatarHorasArredondadas, formatarHorasTotaisSufixo } from '@/formatters/formatar-hora';
-import { corrigirTextoCorrompido } from '@/formatters/formatar-texto-corrompido';
-import {
-    renderizarDoisPrimeirosNomes,
-    renderizarPrimeiroNome,
-} from '@/formatters/remover-acentuacao';
 import { useQuery } from '@tanstack/react-query';
 import React from 'react';
 import {
@@ -23,6 +14,18 @@ import {
     XAxis,
     YAxis,
 } from 'recharts';
+import { IsError } from '../../../components/shared/IsError';
+import { IsLoading } from '../../../components/shared/IsLoading';
+import { useAuth } from '../../../context/AuthContext';
+import {
+    formatarHorasArredondadas,
+    formatarHorasTotaisSufixo,
+} from '../../../formatters/formatar-hora';
+import { corrigirTextoCorrompido } from '../../../formatters/formatar-texto-corrompido';
+import {
+    renderizarDoisPrimeirosNomes,
+    renderizarPrimeiroNome,
+} from '../../../formatters/remover-acentuacao';
 import { ContainerCardsMetricas } from '../metricas/Container_Cards_Metricas';
 
 // ================== Interfaces ===================
@@ -158,7 +161,7 @@ const fetchOrdensServico = async (
         params.append('status', filters.status);
     }
 
-    const response = await fetch(`/api/cards-metricas/graficos?${params.toString()}`);
+    const response = await fetch(`/api/dashboard/graficos?${params.toString()}`);
 
     if (!response.ok) {
         throw new Error(`Erro HTTP: ${response.status}`);

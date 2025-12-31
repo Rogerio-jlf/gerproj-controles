@@ -1,6 +1,6 @@
 // Função para remover acentos de uma string
 export const removerAcentos = (texto: string): string => {
-   return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 };
 // ====================================================================================================
 
@@ -9,15 +9,15 @@ export const removerAcentos = (texto: string): string => {
  * Ex: "João Pedro da Silva" -> "Joao Pedro"
  */
 export const renderizarDoisPrimeirosNomes = (nomeCompleto?: string | null): string => {
-   if (!nomeCompleto) return '';
-   const semAcentos = removerAcentos(nomeCompleto);
-   const partes = semAcentos.trim().split(/\s+/).filter(Boolean);
-   return partes.slice(0, 2).join(' ');
+    if (!nomeCompleto) return '';
+    const semAcentos = removerAcentos(nomeCompleto);
+    const partes = semAcentos.trim().split(/\s+/).filter(Boolean);
+    return partes.slice(0, 2).join(' ');
 };
 
 export const renderizarPrimeiroNome = (nomeCompleto?: string | null): string => {
-   if (!nomeCompleto) return '';
-   const semAcentos = removerAcentos(nomeCompleto);
-   const partes = semAcentos.trim().split(/\s+/).filter(Boolean);
-   return partes.slice(0, 1).join(' ');
+    if (!nomeCompleto) return '';
+    const semAcentos = removerAcentos(nomeCompleto);
+    const partes = semAcentos.trim().split(/\s+/).filter(Boolean);
+    return partes.slice(0, 1).join(' ');
 };
