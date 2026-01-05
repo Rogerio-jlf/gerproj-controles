@@ -1,3 +1,5 @@
+// src/app/api/login/route.ts
+import { firebirdQuery } from '@/lib/firebird/firebird-client';
 import bcrypt from 'bcryptjs';
 import fs from 'fs/promises';
 import { NextResponse } from 'next/server';
@@ -5,336 +7,373 @@ import path from 'path';
 
 // ==================== TIPOS ====================
 interface LoginRequest {
-  email: string;
-  password: string;
+    email: string;
+    password: string;
+    loginType?: 'auto' | 'cliente' | 'consultor'; // auto detecta automaticamente
 }
 
 interface Usuario {
-  email: string;
-  password: string;
-  isAdmin?: boolean;
-  cod_cliente?: string | null;
-  codrec_os?: string | null;
-  nome?: string | null;
+    email: string;
+    password: string;
+    isAdmin?: boolean;
+    cod_cliente?: string | null;
+    codrec_os?: string | null;
+    nome?: string | null;
+}
+
+interface UsuarioConsultor {
+    COD_USUARIO: number;
+    NOME_USUARIO: string;
+    ID_USUARIO: string;
+    SENHA: string;
+    TIPO_USUARIO: 'USU' | 'ADM';
+    PERMTAR_USUARIO: string;
+    ALTSEN_USUARIO: number;
+    PERPROJ1_USUARIO: string;
+    PERPROJ2_USUARIO: string;
 }
 
 interface LoginResponse {
-  success: boolean;
-  message?: string;
-  isAdmin?: boolean;
-  codCliente?: string | null;
-  codRecOS?: string | null;
-  nomeRecurso?: string | null;
+    success: boolean;
+    message?: string;
+    loginType: 'cliente' | 'consultor';
+    isAdmin?: boolean;
+    codCliente?: string | null;
+    codRecOS?: string | null;
+    nomeRecurso?: string | null;
+    // Dados do consultor
+    codUsuario?: number;
+    nomeUsuario?: string;
+    idUsuario?: string;
+    tipoUsuario?: 'USU' | 'ADM';
+    permissoes?: {
+        permtar: boolean;
+        perproj1: boolean;
+        perproj2: boolean;
+    };
 }
 
 // ==================== CONSTANTES ====================
 const USERS_FILE_PATH = path.join(process.cwd(), 'users', 'usuarios.json');
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutos em ms
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
 
 const ERROR_MESSAGES = {
-  INVALID_CREDENTIALS: 'Email ou senha inválidos',
-  USER_NOT_FOUND: 'Usuário não encontrado',
-  INVALID_PASSWORD: 'Senha incorreta',
-  INVALID_REQUEST: 'Email e senha são obrigatórios',
-  SERVER_ERROR: 'Erro interno do servidor',
-  FILE_READ_ERROR: 'Erro ao ler arquivo de usuários',
+    INVALID_CREDENTIALS: 'Usuário ou senha inválidos',
+    USER_NOT_FOUND: 'Usuário não encontrado',
+    INVALID_PASSWORD: 'Senha incorreta',
+    INVALID_REQUEST: 'Email/usuário e senha são obrigatórios',
+    SERVER_ERROR: 'Erro interno do servidor',
+    FILE_READ_ERROR: 'Erro ao ler arquivo de usuários',
+    DATABASE_ERROR: 'Erro ao consultar banco de dados',
 } as const;
 
-// ==================== CACHE DE USUÁRIOS ====================
-// ✅ OTIMIZAÇÃO: Cache em memória para evitar leituras repetidas do arquivo
+// ==================== CACHE DE USUÁRIOS (CLIENTES) ====================
 interface CacheEntry {
-  usuarios: Map<string, Usuario>; // Map para busca O(1)
-  timestamp: number;
-  fileStats: { mtime: number }; // Para invalidar cache se arquivo mudar
+    usuarios: Map<string, Usuario>;
+    timestamp: number;
+    fileStats: { mtime: number };
 }
 
 let usuariosCache: CacheEntry | null = null;
 
 async function getFileModifiedTime(): Promise<number> {
-  try {
-    const stats = await fs.stat(USERS_FILE_PATH);
-    return stats.mtimeMs;
-  } catch {
-    return 0;
-  }
+    try {
+        const stats = await fs.stat(USERS_FILE_PATH);
+        return stats.mtimeMs;
+    } catch {
+        return 0;
+    }
 }
 
 async function isCacheValido(): Promise<boolean> {
-  if (!usuariosCache) return false;
+    if (!usuariosCache) return false;
 
-  const agora = Date.now();
-  const cacheExpirado = agora - usuariosCache.timestamp > CACHE_TTL;
+    const agora = Date.now();
+    const cacheExpirado = agora - usuariosCache.timestamp > CACHE_TTL;
 
-  if (cacheExpirado) return false;
+    if (cacheExpirado) return false;
 
-  // Verifica se o arquivo foi modificado
-  const mtime = await getFileModifiedTime();
-  return mtime === usuariosCache.fileStats.mtime;
+    const mtime = await getFileModifiedTime();
+    return mtime === usuariosCache.fileStats.mtime;
 }
 
 async function carregarUsuarios(): Promise<Map<string, Usuario>> {
-  // ✅ OTIMIZAÇÃO: Retorna cache se válido
-  if (await isCacheValido()) {
-    return usuariosCache!.usuarios;
-  }
-
-  try {
-    const data = await fs.readFile(USERS_FILE_PATH, 'utf-8');
-    const usuarios: Usuario[] = JSON.parse(data);
-
-    // ✅ OTIMIZAÇÃO: Converte array para Map para busca O(1)
-    const usuariosMap = new Map<string, Usuario>();
-
-    for (let i = 0; i < usuarios.length; i++) {
-      const u = usuarios[i];
-      const emailNormalizado = u.email.toLowerCase().trim();
-      usuariosMap.set(emailNormalizado, u);
+    if (await isCacheValido()) {
+        return usuariosCache!.usuarios;
     }
 
-    // Atualiza cache
-    const mtime = await getFileModifiedTime();
-    usuariosCache = {
-      usuarios: usuariosMap,
-      timestamp: Date.now(),
-      fileStats: { mtime },
-    };
+    try {
+        const data = await fs.readFile(USERS_FILE_PATH, 'utf-8');
+        const usuarios: Usuario[] = JSON.parse(data);
 
-    return usuariosMap;
-  } catch (error) {
-    console.error('[Login] Erro ao ler arquivo de usuários:', error);
-    throw new Error(ERROR_MESSAGES.FILE_READ_ERROR);
-  }
+        const usuariosMap = new Map<string, Usuario>();
+
+        for (let i = 0; i < usuarios.length; i++) {
+            const u = usuarios[i];
+            const emailNormalizado = u.email.toLowerCase().trim();
+            usuariosMap.set(emailNormalizado, u);
+        }
+
+        const mtime = await getFileModifiedTime();
+        usuariosCache = {
+            usuarios: usuariosMap,
+            timestamp: Date.now(),
+            fileStats: { mtime },
+        };
+
+        return usuariosMap;
+    } catch (error) {
+        console.error('[Login] Erro ao ler arquivo de usuários:', error);
+        throw new Error(ERROR_MESSAGES.FILE_READ_ERROR);
+    }
+}
+
+// ==================== DETECÇÃO DE TIPO DE LOGIN ====================
+function detectarTipoLogin(identificador: string): 'email' | 'username' {
+    // Email contém @ e ponto
+    if (identificador.includes('@') && identificador.includes('.')) {
+        return 'email';
+    }
+    return 'username';
+}
+
+// ==================== LOGIN DE CONSULTORES (FIREBIRD) ====================
+async function buscarConsultorPorId(idUsuario: string): Promise<UsuarioConsultor | null> {
+    try {
+        const sql = `
+            SELECT
+                COD_USUARIO,
+                NOME_USUARIO,
+                ID_USUARIO,
+                SENHA,
+                TIPO_USUARIO,
+                PERMTAR_USUARIO,
+                ALTSEN_USUARIO,
+                PERPROJ1_USUARIO,
+                PERPROJ2_USUARIO
+            FROM USUARIO
+            WHERE UPPER(TRIM(ID_USUARIO)) = UPPER(?)
+        `;
+
+        const resultado = await firebirdQuery<UsuarioConsultor>(sql, [idUsuario.trim()]);
+
+        if (resultado && resultado.length > 0) {
+            return resultado[0];
+        }
+
+        return null;
+    } catch (error) {
+        console.error('[Login] Erro ao buscar consultor:', error);
+        throw new Error(ERROR_MESSAGES.DATABASE_ERROR);
+    }
+}
+
+function validarSenhaConsultor(senhaDigitada: string, senhaArmazenada: string): boolean {
+    // Remove espaços extras da senha do banco
+    const senhaBanco = senhaArmazenada.trim();
+    const senhaDigitadaTrim = senhaDigitada.trim();
+
+    // Comparação direta (Firebird armazena senha em texto plano CHAR(10))
+    return senhaDigitadaTrim === senhaBanco;
+}
+
+function construirRespostaConsultor(consultor: UsuarioConsultor): LoginResponse {
+    return {
+        success: true,
+        loginType: 'consultor',
+        isAdmin: consultor.TIPO_USUARIO === 'ADM',
+        codUsuario: consultor.COD_USUARIO,
+        nomeUsuario: consultor.NOME_USUARIO,
+        idUsuario: consultor.ID_USUARIO,
+        tipoUsuario: consultor.TIPO_USUARIO,
+        permissoes: {
+            permtar: consultor.PERMTAR_USUARIO === 'SIM',
+            perproj1: consultor.PERPROJ1_USUARIO === 'SIM',
+            perproj2: consultor.PERPROJ2_USUARIO === 'SIM',
+        },
+    };
+}
+
+// ==================== LOGIN DE CLIENTES (JSON) ====================
+function buscarUsuarioPorEmail(
+    usuariosMap: Map<string, Usuario>,
+    email: string
+): Usuario | undefined {
+    const emailNormalizado = email.toLowerCase().trim();
+    return usuariosMap.get(emailNormalizado);
+}
+
+async function validarSenhaCliente(senhaPlana: string, senhaHash: string): Promise<boolean> {
+    try {
+        return await bcrypt.compare(senhaPlana, senhaHash);
+    } catch (error) {
+        console.error('[Login] Erro ao validar senha:', error);
+        return false;
+    }
+}
+
+function construirRespostaCliente(usuario: Usuario): LoginResponse {
+    return {
+        success: true,
+        loginType: 'cliente',
+        isAdmin: usuario.isAdmin ?? false,
+        codCliente: usuario.cod_cliente ?? null,
+        codRecOS: usuario.codrec_os ?? null,
+        nomeRecurso: usuario.nome ?? null,
+    };
 }
 
 // ==================== VALIDAÇÕES ====================
-// ✅ OTIMIZAÇÃO: Validação inline mais rápida
-function validarCredenciais(
-  email: string,
-  password: string,
-): NextResponse | null {
-  if (
-    !email ||
-    !password ||
-    typeof email !== 'string' ||
-    typeof password !== 'string'
-  ) {
-    return NextResponse.json(
-      {
-        success: false,
-        message: ERROR_MESSAGES.INVALID_REQUEST,
-      },
-      { status: 400 },
-    );
-  }
-
-  return null;
-}
-
-// ==================== BUSCA DE USUÁRIO ====================
-// ✅ OTIMIZAÇÃO: Busca O(1) usando Map ao invés de find O(n)
-function buscarUsuarioPorEmail(
-  usuariosMap: Map<string, Usuario>,
-  email: string,
-): Usuario | undefined {
-  const emailNormalizado = email.toLowerCase().trim();
-  return usuariosMap.get(emailNormalizado);
-}
-
-// ==================== CACHE DE VALIDAÇÃO DE SENHA ====================
-// ✅ OTIMIZAÇÃO: Cache de senhas já validadas (usando hash do email+senha)
-// IMPORTANTE: Limitar tamanho do cache para evitar memory leak
-interface SenhaCacheEntry {
-  valida: boolean;
-  timestamp: number;
-}
-
-const senhaCache = new Map<string, SenhaCacheEntry>();
-const SENHA_CACHE_TTL = 60 * 1000; // 1 minuto
-const SENHA_CACHE_MAX_SIZE = 1000;
-
-function getCacheKey(email: string, senha: string): string {
-  // Hash simples para cache (não é para segurança, só para chave)
-  return `${email}:${senha.length}:${senha.substring(0, 3)}`;
-}
-
-function limparCacheAntigas(): void {
-  const agora = Date.now();
-  const chaves = Array.from(senhaCache.keys());
-
-  for (let i = 0; i < chaves.length; i++) {
-    const k = chaves[i];
-    const entry = senhaCache.get(k);
-    if (entry && agora - entry.timestamp > SENHA_CACHE_TTL) {
-      senhaCache.delete(k);
-    }
-  }
-
-  // Limita tamanho máximo
-  if (senhaCache.size > SENHA_CACHE_MAX_SIZE) {
-    const excesso = senhaCache.size - SENHA_CACHE_MAX_SIZE;
-    const keysArray = Array.from(senhaCache.keys());
-    for (let i = 0; i < excesso; i++) {
-      senhaCache.delete(keysArray[i]);
-    }
-  }
-}
-
-async function validarSenha(
-  email: string,
-  senhaPlana: string,
-  senhaHash: string,
-): Promise<boolean> {
-  // ✅ OTIMIZAÇÃO: Verifica cache primeiro
-  const cacheKey = getCacheKey(email, senhaPlana);
-  const cached = senhaCache.get(cacheKey);
-
-  if (cached) {
-    const agora = Date.now();
-    if (agora - cached.timestamp < SENHA_CACHE_TTL) {
-      return cached.valida;
-    }
-    senhaCache.delete(cacheKey);
-  }
-
-  try {
-    const valida = await bcrypt.compare(senhaPlana, senhaHash);
-
-    // Adiciona ao cache apenas senhas válidas (segurança)
-    if (valida) {
-      senhaCache.set(cacheKey, {
-        valida,
-        timestamp: Date.now(),
-      });
-
-      // Limpa cache periodicamente
-      if (senhaCache.size > SENHA_CACHE_MAX_SIZE * 0.9) {
-        limparCacheAntigas();
-      }
+function validarCredenciais(email: string, password: string): NextResponse | null {
+    if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
+        return NextResponse.json(
+            {
+                success: false,
+                message: ERROR_MESSAGES.INVALID_REQUEST,
+            },
+            { status: 400 }
+        );
     }
 
-    return valida;
-  } catch (error) {
-    console.error('[Login] Erro ao validar senha:', error);
-    return false;
-  }
-}
-
-// ==================== CONSTRUÇÃO DA RESPOSTA ====================
-// ✅ OTIMIZAÇÃO: Resposta pré-construída para evitar alocações
-function construirRespostaLogin(usuario: Usuario): LoginResponse {
-  return {
-    success: true,
-    isAdmin: usuario.isAdmin ?? false,
-    codCliente: usuario.cod_cliente ?? null,
-    codRecOS: usuario.codrec_os ?? null,
-    nomeRecurso: usuario.nome ?? null,
-  };
+    return null;
 }
 
 // ==================== RESPOSTAS DE ERRO ====================
-// ✅ OTIMIZAÇÃO: Respostas pré-criadas para casos comuns
-const ERRO_AUTENTICACAO_RESPONSE = NextResponse.json(
-  {
-    success: false,
-    message: ERROR_MESSAGES.INVALID_CREDENTIALS,
-  },
-  { status: 401 },
-);
-
 function respostaErroAutenticacao(): NextResponse {
-  // Clona a resposta para evitar mutação
-  return NextResponse.json(
-    {
-      success: false,
-      message: ERROR_MESSAGES.INVALID_CREDENTIALS,
-    },
-    { status: 401 },
-  );
+    return NextResponse.json(
+        {
+            success: false,
+            message: ERROR_MESSAGES.INVALID_CREDENTIALS,
+        },
+        { status: 401 }
+    );
 }
 
 function respostaErroServidor(error: unknown): NextResponse {
-  console.error('[Login] Erro no servidor:', error);
+    console.error('[Login] Erro no servidor:', error);
 
-  return NextResponse.json(
-    {
-      success: false,
-      message: ERROR_MESSAGES.SERVER_ERROR,
-      details:
-        process.env.NODE_ENV === 'development'
-          ? error instanceof Error
-            ? error.message
-            : 'Erro desconhecido'
-          : undefined,
-    },
-    { status: 500 },
-  );
+    return NextResponse.json(
+        {
+            success: false,
+            message: ERROR_MESSAGES.SERVER_ERROR,
+            details:
+                process.env.NODE_ENV === 'development'
+                    ? error instanceof Error
+                        ? error.message
+                        : 'Erro desconhecido'
+                    : undefined,
+        },
+        { status: 500 }
+    );
 }
 
 // ==================== HANDLER PRINCIPAL ====================
 export async function POST(request: Request) {
-  try {
-    // 1. Parse e validação da requisição
-    const body: LoginRequest = await request.json();
-    const { email, password } = body;
+    try {
+        const body: LoginRequest = await request.json();
+        const { email, password, loginType = 'auto' } = body;
 
-    // ✅ OTIMIZAÇÃO: Logs apenas em desenvolvimento
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[Login] Tentativa de login para:', email);
+        if (process.env.NODE_ENV === 'development') {
+            console.log('[Login] Tentativa de login:', email, 'Tipo:', loginType);
+        }
+
+        // Validar credenciais
+        const erroValidacao = validarCredenciais(email, password);
+        if (erroValidacao) {
+            return erroValidacao;
+        }
+
+        // Detectar tipo de login automaticamente
+        const tipoDetectado = detectarTipoLogin(email);
+
+        // Se for loginType='auto', tenta ambos os métodos
+        // Se for 'cliente' ou 'consultor', força apenas aquele tipo
+
+        // TENTATIVA 1: Login de Consultor
+        if (loginType === 'auto' || loginType === 'consultor') {
+            if (tipoDetectado === 'username' || loginType === 'consultor') {
+                try {
+                    const consultor = await buscarConsultorPorId(email);
+
+                    if (consultor) {
+                        const senhaValida = validarSenhaConsultor(password, consultor.SENHA);
+
+                        if (senhaValida) {
+                            if (process.env.NODE_ENV === 'development') {
+                                console.log('[Login] Login de consultor bem-sucedido:', email);
+                            }
+
+                            const resposta = construirRespostaConsultor(consultor);
+                            return NextResponse.json(resposta, { status: 200 });
+                        }
+
+                        // Se encontrou o usuário mas senha errada, retorna erro
+                        if (loginType === 'consultor') {
+                            return respostaErroAutenticacao();
+                        }
+                    }
+                } catch (error) {
+                    console.error('[Login] Erro ao tentar login de consultor:', error);
+                    // Se forçou consultor, retorna erro
+                    if (loginType === 'consultor') {
+                        return respostaErroServidor(error);
+                    }
+                    // Se auto, continua para tentar cliente
+                }
+            }
+        }
+
+        // TENTATIVA 2: Login de Cliente
+        if (loginType === 'auto' || loginType === 'cliente') {
+            if (tipoDetectado === 'email' || loginType === 'cliente' || loginType === 'auto') {
+                try {
+                    const usuariosMap = await carregarUsuarios();
+                    const usuario = buscarUsuarioPorEmail(usuariosMap, email);
+
+                    if (usuario) {
+                        const senhaValida = await validarSenhaCliente(password, usuario.password);
+
+                        if (senhaValida) {
+                            if (process.env.NODE_ENV === 'development') {
+                                console.log('[Login] Login de cliente bem-sucedido:', email);
+                            }
+
+                            const resposta = construirRespostaCliente(usuario);
+                            return NextResponse.json(resposta, { status: 200 });
+                        }
+                    }
+                } catch (error) {
+                    console.error('[Login] Erro ao tentar login de cliente:', error);
+                    // Se forçou cliente, retorna erro
+                    if (loginType === 'cliente') {
+                        return respostaErroServidor(error);
+                    }
+                }
+            }
+        }
+
+        // Se chegou aqui, não encontrou em nenhum dos dois
+        if (process.env.NODE_ENV === 'development') {
+            console.log('[Login] Usuário não encontrado em nenhum sistema:', email);
+        }
+
+        return respostaErroAutenticacao();
+    } catch (error) {
+        return respostaErroServidor(error);
     }
-
-    // 2. Validar credenciais
-    const erroValidacao = validarCredenciais(email, password);
-    if (erroValidacao) {
-      return erroValidacao;
-    }
-
-    // 3. Carregar usuários (com cache)
-    const usuariosMap = await carregarUsuarios();
-
-    // 4. Buscar usuário por email (O(1) com Map)
-    const usuario = buscarUsuarioPorEmail(usuariosMap, email);
-    if (!usuario) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[Login] Usuário não encontrado:', email);
-      }
-      return respostaErroAutenticacao();
-    }
-
-    // 5. Validar senha (com cache)
-    const senhaValida = await validarSenha(email, password, usuario.password);
-    if (!senhaValida) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[Login] Senha inválida para:', email);
-      }
-      return respostaErroAutenticacao();
-    }
-
-    // 6. Login bem-sucedido
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[Login] Login bem-sucedido:', email);
-    }
-
-    const resposta = construirRespostaLogin(usuario);
-    return NextResponse.json(resposta, { status: 200 });
-  } catch (error) {
-    return respostaErroServidor(error);
-  }
 }
 
-// ==================== LIMPEZA DE CACHE (OPCIONAL) ====================
-// ✅ Função auxiliar para limpar caches manualmente se necessário
+// ==================== LIMPEZA DE CACHE ====================
 export function limparCaches(): void {
-  usuariosCache = null;
-  senhaCache.clear();
-  console.log('[Login] Caches limpos');
+    usuariosCache = null;
+    console.log('[Login] Caches limpos');
 }
 
-// ✅ Função para pré-carregar usuários (útil no startup)
 export async function preloadUsuarios(): Promise<void> {
-  try {
-    await carregarUsuarios();
-    console.log('[Login] Usuários pré-carregados no cache');
-  } catch (error) {
-    console.error('[Login] Erro ao pré-carregar usuários:', error);
-  }
+    try {
+        await carregarUsuarios();
+        console.log('[Login] Usuários pré-carregados no cache');
+    } catch (error) {
+        console.error('[Login] Erro ao pré-carregar usuários:', error);
+    }
 }

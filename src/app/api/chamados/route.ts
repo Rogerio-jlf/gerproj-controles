@@ -35,6 +35,7 @@ interface QueryParams {
     codRecursoFilter?: string;
     page: number;
     limit: number;
+    columnFilters?: Record<string, string>; // ✅ NOVO
 }
 
 interface ChamadoRaw {
@@ -136,6 +137,15 @@ const validarParametros = (sp: URLSearchParams): QueryParams | NextResponse => {
         );
     }
 
+    // ✅ NOVO: Extrair filtros de coluna
+    const columnFilters: Record<string, string> = {};
+    for (const [key, value] of sp.entries()) {
+        if (key.startsWith('filter_')) {
+            const columnId = key.replace('filter_', '');
+            columnFilters[columnId] = value;
+        }
+    }
+
     return {
         isAdmin,
         codCliente,
@@ -147,6 +157,7 @@ const validarParametros = (sp: URLSearchParams): QueryParams | NextResponse => {
         codRecursoFilter: sp.get('codRecursoFilter')?.trim() || undefined,
         page,
         limit,
+        columnFilters, // ✅ NOVO
     };
 };
 
@@ -175,14 +186,13 @@ const buscarChamadosComTotais = async (
         const codClienteAplicado =
             params.codClienteFilter || (!params.isAdmin ? params.codCliente : undefined);
 
-        // Determinar se precisa dos campos de avaliação
         const incluirAvaliacao =
             !params.statusFilter || params.statusFilter.toUpperCase().includes('FINALIZADO');
         const camposChamado = incluirAvaliacao
             ? CAMPOS_CHAMADO_BASE + CAMPOS_AVALIACAO
             : CAMPOS_CHAMADO_BASE;
 
-        // ===== CONSTRUIR WHERE CLAUSES (usado em ambas queries) =====
+        // ===== CONSTRUIR WHERE CLAUSES =====
         const whereClauses: string[] = [];
         const whereParams: any[] = [];
 
@@ -214,14 +224,107 @@ const buscarChamadosComTotais = async (
             whereParams.push(parseInt(params.codRecursoFilter));
         }
 
+        // ✅ NOVO: Aplicar filtros de coluna
+        if (params.columnFilters) {
+            // Filtro de COD_CHAMADO
+            if (params.columnFilters.COD_CHAMADO) {
+                const codChamado = params.columnFilters.COD_CHAMADO.replace(/\D/g, '');
+                if (codChamado) {
+                    whereClauses.push(`CAST(CHAMADO.COD_CHAMADO AS VARCHAR(20)) LIKE ?`);
+                    whereParams.push(`%${codChamado}%`);
+                }
+            }
+
+            // Filtro de DATA_CHAMADO
+            if (params.columnFilters.DATA_CHAMADO) {
+                const dateNumbers = params.columnFilters.DATA_CHAMADO.replace(/\D/g, '');
+                if (dateNumbers) {
+                    // Formato: DDMMYYYY
+                    whereClauses.push(`(
+                        CAST(EXTRACT(DAY FROM CHAMADO.DATA_CHAMADO) AS VARCHAR(2)) ||
+                        CAST(EXTRACT(MONTH FROM CHAMADO.DATA_CHAMADO) AS VARCHAR(2)) ||
+                        CAST(EXTRACT(YEAR FROM CHAMADO.DATA_CHAMADO) AS VARCHAR(4))
+                    ) LIKE ?`);
+                    whereParams.push(`%${dateNumbers}%`);
+                }
+            }
+
+            // Filtro de PRIOR_CHAMADO
+            if (params.columnFilters.PRIOR_CHAMADO) {
+                const prioridade = params.columnFilters.PRIOR_CHAMADO.replace(/\D/g, '');
+                if (prioridade) {
+                    whereClauses.push(`CHAMADO.PRIOR_CHAMADO = ?`);
+                    whereParams.push(parseInt(prioridade));
+                }
+            }
+
+            // Filtro de ASSUNTO_CHAMADO
+            if (params.columnFilters.ASSUNTO_CHAMADO) {
+                whereClauses.push(`UPPER(CHAMADO.ASSUNTO_CHAMADO) LIKE UPPER(?)`);
+                whereParams.push(`%${params.columnFilters.ASSUNTO_CHAMADO}%`);
+            }
+
+            // Filtro de EMAIL_CHAMADO
+            if (params.columnFilters.EMAIL_CHAMADO) {
+                whereClauses.push(`UPPER(CHAMADO.EMAIL_CHAMADO) LIKE UPPER(?)`);
+                whereParams.push(`%${params.columnFilters.EMAIL_CHAMADO}%`);
+            }
+
+            // Filtro de NOME_CLASSIFICACAO
+            if (params.columnFilters.NOME_CLASSIFICACAO) {
+                whereClauses.push(`CLASSIFICACAO.NOME_CLASSIFICACAO = ?`);
+                whereParams.push(params.columnFilters.NOME_CLASSIFICACAO);
+            }
+
+            // Filtro de DTENVIO_CHAMADO
+            if (params.columnFilters.DTENVIO_CHAMADO) {
+                const dateNumbers = params.columnFilters.DTENVIO_CHAMADO.replace(/\D/g, '');
+                if (dateNumbers) {
+                    whereClauses.push(`(
+                        CAST(EXTRACT(DAY FROM CHAMADO.DTENVIO_CHAMADO) AS VARCHAR(2)) ||
+                        CAST(EXTRACT(MONTH FROM CHAMADO.DTENVIO_CHAMADO) AS VARCHAR(2)) ||
+                        CAST(EXTRACT(YEAR FROM CHAMADO.DTENVIO_CHAMADO) AS VARCHAR(4))
+                    ) LIKE ?`);
+                    whereParams.push(`%${dateNumbers}%`);
+                }
+            }
+
+            // Filtro de NOME_RECURSO
+            if (params.columnFilters.NOME_RECURSO) {
+                whereClauses.push(`RECURSO.NOME_RECURSO = ?`);
+                whereParams.push(params.columnFilters.NOME_RECURSO);
+            }
+
+            // Filtro de STATUS_CHAMADO (adicional ao filtro do header)
+            if (params.columnFilters.STATUS_CHAMADO && !params.statusFilter) {
+                whereClauses.push(`CHAMADO.STATUS_CHAMADO = ?`);
+                whereParams.push(params.columnFilters.STATUS_CHAMADO);
+            }
+
+            // Filtro de CONCLUSAO_CHAMADO
+            if (params.columnFilters.CONCLUSAO_CHAMADO) {
+                const dateNumbers = params.columnFilters.CONCLUSAO_CHAMADO.replace(/\D/g, '');
+                if (dateNumbers) {
+                    whereClauses.push(`(
+                        CAST(EXTRACT(DAY FROM CHAMADO.CONCLUSAO_CHAMADO) AS VARCHAR(2)) ||
+                        CAST(EXTRACT(MONTH FROM CHAMADO.CONCLUSAO_CHAMADO) AS VARCHAR(2)) ||
+                        CAST(EXTRACT(YEAR FROM CHAMADO.CONCLUSAO_CHAMADO) AS VARCHAR(4))
+                    ) LIKE ?`);
+                    whereParams.push(`%${dateNumbers}%`);
+                }
+            }
+        }
+
         const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
-        // ===== QUERY DE CONTAGEM (necessária para paginação) =====
+        // ===== RESTO DA FUNÇÃO PERMANECE IGUAL =====
         const sqlCount = `SELECT COUNT(DISTINCT CHAMADO.COD_CHAMADO) AS TOTAL
 FROM CHAMADO
+LEFT JOIN CLIENTE ON CHAMADO.COD_CLIENTE = CLIENTE.COD_CLIENTE
+LEFT JOIN RECURSO ON CHAMADO.COD_RECURSO = RECURSO.COD_RECURSO
+LEFT JOIN CLASSIFICACAO ON CHAMADO.COD_CLASSIFICACAO = CLASSIFICACAO.COD_CLASSIFICACAO
 ${whereClause}`;
 
-        // ===== QUERY PRINCIPAL - CHAMADOS COM HORAS E PAGINAÇÃO =====
         const offset = (params.page - 1) * params.limit;
 
         let sqlChamados = `SELECT ${camposChamado},
@@ -243,7 +346,7 @@ ROWS ${offset + 1} TO ${offset + params.limit}`;
 
         const sqlParamsChamados = [dataInicio, dataFim, ...whereParams];
 
-        // ===== QUERY DE TOTAIS DE OS =====
+        // Query de totais permanece igual...
         let sqlTotais = `SELECT
     COUNT(DISTINCT OS.COD_OS) AS TOTAL_OS,
     SUM((CAST(SUBSTRING(OS.HRFIM_OS FROM 1 FOR 2) AS INTEGER) * 60 +
@@ -253,7 +356,7 @@ ROWS ${offset + 1} TO ${offset + params.limit}`;
 FROM OS
 INNER JOIN TAREFA ON OS.CODTRF_OS = TAREFA.COD_TAREFA`;
 
-        if (params.statusFilter) {
+        if (params.statusFilter || params.columnFilters?.STATUS_CHAMADO) {
             sqlTotais += ` LEFT JOIN CHAMADO ON OS.CHAMADO_OS = CAST(CHAMADO.COD_CHAMADO AS VARCHAR(20))`;
         }
 
@@ -263,7 +366,7 @@ INNER JOIN PROJETO ON TAREFA.CODPRO_TAREFA = PROJETO.COD_PROJETO
 INNER JOIN CLIENTE ON PROJETO.CODCLI_PROJETO = CLIENTE.COD_CLIENTE`;
         }
 
-        if (params.codRecursoFilter) {
+        if (params.codRecursoFilter || params.columnFilters?.NOME_RECURSO) {
             sqlTotais += ` LEFT JOIN RECURSO ON OS.CODREC_OS = RECURSO.COD_RECURSO`;
         }
 
@@ -297,9 +400,23 @@ INNER JOIN CLIENTE ON PROJETO.CODCLI_PROJETO = CLIENTE.COD_CLIENTE`;
             sqlParamsTotais.push(`%${params.statusFilter}%`);
         }
 
+        // ✅ NOVO: Aplicar filtro de STATUS_CHAMADO na query de totais
+        if (params.columnFilters?.STATUS_CHAMADO && !params.statusFilter) {
+            whereTotais.push('CHAMADO.STATUS_CHAMADO = ?');
+            sqlParamsTotais.push(params.columnFilters.STATUS_CHAMADO);
+        }
+
+        // ✅ NOVO: Aplicar filtro de COD_CHAMADO na query de totais
+        if (params.columnFilters?.COD_CHAMADO) {
+            const codChamado = params.columnFilters.COD_CHAMADO.replace(/\D/g, '');
+            if (codChamado) {
+                whereTotais.push('OS.CHAMADO_OS LIKE ?');
+                sqlParamsTotais.push(`%${codChamado}%`);
+            }
+        }
+
         sqlTotais += ` WHERE ${whereTotais.join(' AND ')}`;
 
-        // Executar as três queries em paralelo
         const [countResult, chamados, totaisResult] = await Promise.all([
             firebirdQuery<{ TOTAL: number }>(sqlCount, whereParams),
             firebirdQuery<ChamadoRaw>(sqlChamados, sqlParamsChamados),

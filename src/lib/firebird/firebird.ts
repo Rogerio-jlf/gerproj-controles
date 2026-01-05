@@ -1,3 +1,4 @@
+// src/lib/firebird/firebird.ts
 import Firebird from 'node-firebird';
 import { corrigirTextoCorrompido } from '../../formatters/formatar-texto-corrompido';
 

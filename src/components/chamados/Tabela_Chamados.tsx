@@ -8,7 +8,7 @@ import {
     getCoreRowModel,
     useReactTable,
 } from '@tanstack/react-table';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FaEraser } from 'react-icons/fa';
 import { IoCall } from 'react-icons/io5';
 import { MdNavigateBefore, MdNavigateNext } from 'react-icons/md';
@@ -79,6 +79,7 @@ const fetchChamados = async ({
     status,
     page,
     limit,
+    columnFilters, // ✅ NOVO
 }: {
     ano: string;
     mes: string;
@@ -89,6 +90,7 @@ const fetchChamados = async ({
     status?: string;
     page: number;
     limit: number;
+    columnFilters?: ColumnFiltersState; // ✅ NOVO
 }): Promise<ApiResponseChamados> => {
     const params = new URLSearchParams({
         ano,
@@ -103,6 +105,17 @@ const fetchChamados = async ({
 
     if (!isAdmin && codCliente) {
         params.append('codCliente', codCliente);
+    }
+
+    // ✅ NOVO: Adicionar filtros de coluna
+    if (columnFilters && columnFilters.length > 0) {
+        columnFilters.forEach((filter) => {
+            if (filter.value && String(filter.value).trim() !== '') {
+                // Mapear os IDs das colunas para os nomes dos parâmetros
+                const paramName = `filter_${filter.id}`;
+                params.append(paramName, String(filter.value));
+            }
+        });
     }
 
     const response = await fetch(`/api/chamados?${params.toString()}`, {
@@ -180,6 +193,7 @@ export function TabelaChamados() {
             codCliente ?? '',
             page,
             limit,
+            columnFilters, // ✅ NOVO: Adicionar na chave
         ],
         queryFn: () =>
             fetchChamados({
@@ -192,17 +206,18 @@ export function TabelaChamados() {
                 status: status ?? '',
                 page,
                 limit,
+                columnFilters, // ✅ NOVO: Passar para a função
             }),
         enabled: isLoggedIn && !!ano && !!mes,
-        staleTime: 0, // MUDANÇA: Reduzir para 0 ou remover
-        gcTime: 5 * 60 * 1000, // Manter dados em cache por 5 minutos
-        refetchOnMount: true, // ADICIONADO
+        staleTime: 0,
+        gcTime: 5 * 60 * 1000,
+        refetchOnMount: true,
         retry: 2,
     });
 
     const data = useMemo(() => {
         const chamados = apiData?.data ?? [];
-        return chamados;
+        return chamados; // Dados já vêm filtrados do servidor
     }, [apiData?.data]);
 
     const totalOS = useMemo(() => apiData?.totalOS ?? 0, [apiData?.totalOS]);
@@ -223,32 +238,22 @@ export function TabelaChamados() {
     // Funções de paginação
     const handleNextPage = useCallback(() => {
         if (pagination?.hasNextPage) {
-            setPage((prev) => {
-                const newPage = prev + 1;
-                console.log('Indo para página:', newPage); // Debug
-                return newPage;
-            });
-            setColumnFilters([]);
+            setPage((prev) => prev + 1);
+            // ✅ REMOVIDO: setColumnFilters([])
         }
     }, [pagination?.hasNextPage]);
 
     const handlePreviousPage = useCallback(() => {
         if (pagination?.hasPreviousPage) {
-            setPage((prev) => {
-                const newPage = Math.max(1, prev - 1);
-                console.log('Indo para página:', newPage); // Debug
-                return newPage;
-            });
-            setColumnFilters([]);
+            setPage((prev) => Math.max(1, prev - 1));
+            // ✅ REMOVIDO: setColumnFilters([])
         }
     }, [pagination?.hasPreviousPage]);
 
     const handleGoToPage = useCallback((pageNumber: number) => {
-        console.log('Tentando ir para página:', pageNumber); // Debug
         setPage(pageNumber);
-        setColumnFilters([]);
+        // ✅ REMOVIDO: setColumnFilters([])
 
-        // Força scroll para o topo
         const tableContainer = document.querySelector('.scrollbar-thin');
         if (tableContainer) {
             tableContainer.scrollTop = 0;
@@ -348,6 +353,12 @@ export function TabelaChamados() {
         });
     }, [columnFilters]);
 
+    useEffect(() => {
+        if (columnFilters.length > 0) {
+            setPage(1);
+        }
+    }, [columnFilters]);
+
     const dadosFiltrados = useMemo(() => {
         if (!hasActiveFilters) {
             return data;
@@ -380,17 +391,11 @@ export function TabelaChamados() {
     const totalHorasOS = useMemo(() => apiData?.totalHorasOS ?? 0, [apiData?.totalHorasOS]);
 
     const totalHorasFiltradas = useMemo(() => {
-        if (!hasActiveFilters) {
-            return totalHorasOS;
-        }
-
-        return dadosFiltrados.reduce((acc, chamado) => {
-            return acc + (chamado.TOTAL_HORAS_OS || 0);
-        }, 0);
-    }, [dadosFiltrados, hasActiveFilters, totalHorasOS]);
+        return apiData?.totalHorasOS ?? 0;
+    }, [apiData?.totalHorasOS]);
 
     const table = useReactTable<ChamadoRowProps>({
-        data: dadosFiltrados,
+        data: data, // ✅ Usar 'data' ao invés de 'dadosFiltrados'
         columns,
         getCoreRowModel: getCoreRowModel(),
         state: {
@@ -403,20 +408,18 @@ export function TabelaChamados() {
     });
 
     const totalChamados = useMemo(() => apiData?.totalChamados ?? 0, [apiData?.totalChamados]);
-    const totalChamadosFiltrados = useMemo(() => dadosFiltrados.length, [dadosFiltrados]);
+
+    const totalChamadosFiltrados = useMemo(() => {
+        return apiData?.totalChamados ?? 0;
+    }, [apiData?.totalChamados]);
+
     const chamadosExibidos = useMemo(() => {
-        return hasActiveFilters ? totalChamadosFiltrados : data.length;
-    }, [hasActiveFilters, totalChamadosFiltrados, data.length]);
+        return data.length;
+    }, [data.length]);
 
     const totalOSFiltrados = useMemo(() => {
-        if (!hasActiveFilters) {
-            return totalOS;
-        }
-
-        return dadosFiltrados.reduce((acc, chamado) => {
-            return acc + (chamado.TOTAL_HORAS_OS > 0 ? 1 : 0);
-        }, 0);
-    }, [dadosFiltrados, hasActiveFilters, totalOS]);
+        return apiData?.totalOS ?? 0;
+    }, [apiData?.totalOS]);
 
     // ==================== RENDERIZAÇÃO CONDICIONAL ====================
     if (!isLoggedIn) {
@@ -445,15 +448,15 @@ export function TabelaChamados() {
             <div className="relative flex h-full w-full flex-col overflow-hidden border border-b-slate-500 bg-white shadow-md shadow-black">
                 <Header
                     isAdmin={isAdmin}
-                    totalChamados={totalChamados}
+                    totalChamados={apiData?.totalChamados ?? 0}
                     totalChamadosFiltrados={chamadosExibidos}
-                    totalOS={totalOS}
+                    totalOS={apiData?.totalOS ?? 0}
                     totalOSFiltrados={totalOSFiltrados}
-                    totalHorasOS={totalHorasOS}
+                    totalHorasOS={apiData?.totalHorasOS ?? 0}
                     totalHorasFiltradas={totalHorasFiltradas}
                     hasActiveFilters={hasActiveFilters}
                     clearAllFilters={clearAllFilters}
-                    filteredData={dadosFiltrados}
+                    filteredData={data} // ✅ Usar 'data' ao invés de 'dadosFiltrados'
                     mes={String(mes)}
                     ano={String(ano)}
                     codCliente={codCliente}

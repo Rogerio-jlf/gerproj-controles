@@ -1,3 +1,4 @@
+// src/lib/firebird/firebird-client.ts
 import { executeFirebird, queryFirebird } from './firebird';
 
 const globalForFirebird = globalThis as unknown as {
