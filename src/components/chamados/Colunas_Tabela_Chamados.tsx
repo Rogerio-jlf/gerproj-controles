@@ -39,11 +39,11 @@ const getStylesStatus = (status: string | undefined) => {
         case 'NAO INICIADO':
             return 'bg-red-500 border border-red-700 text-white shadow-sm shadow-black';
         case 'STANDBY':
-            return 'bg-orange-500 border border-orange-700 text-black shadow-sm shadow-black';
+            return 'bg-orange-500 border border-orange-700 text-white shadow-sm shadow-black';
         case 'ATRIBUIDO':
-            return 'bg-cyan-500 border border-cyan-700 text-black shadow-sm shadow-black';
+            return 'bg-cyan-500 border border-cyan-700 text-white shadow-sm shadow-black';
         case 'AGUARDANDO VALIDACAO':
-            return 'bg-yellow-500 border border-yellow-700 text-black shadow-sm shadow-black';
+            return 'bg-yellow-500 border border-yellow-700 text-white shadow-sm shadow-black';
         default:
             return 'bg-gray-600 border border-gray-800 text-black shadow-sm shadow-black';
     }
