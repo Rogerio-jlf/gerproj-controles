@@ -4,8 +4,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { IoCall, IoClose, IoHome, IoLogOut, IoMenu } from 'react-icons/io5';
 import { PiTimerFill } from 'react-icons/pi';
-import { useFilters } from '../../context/FiltersContext';
 import { useLogout } from '../../store/authStore';
+import { useFilters } from '../../store/filtersStore';
 import { ModalSaldoHoras } from '../saldo-horas/Modal_Saldo_Horas';
 
 // ================================================================================

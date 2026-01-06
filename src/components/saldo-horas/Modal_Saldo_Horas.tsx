@@ -7,8 +7,8 @@ import { IoClose } from 'react-icons/io5';
 import { PiTimerFill } from 'react-icons/pi';
 import { SaldoRowProps } from '../../components/saldo-horas/Colunas_Tabela_Saldo';
 import { TabelaSaldoHoras } from '../../components/saldo-horas/Tabela_Saldo_Horas';
-import { useFilters } from '../../context/FiltersContext';
 import { useClienteData, useIsAdmin } from '../../store/authStore';
+import { useFilters } from '../../store/filtersStore';
 import { IsError } from '../shared/IsError';
 import { IsLoading } from '../shared/IsLoading';
 

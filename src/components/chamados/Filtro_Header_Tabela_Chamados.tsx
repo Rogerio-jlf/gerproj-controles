@@ -6,9 +6,9 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FiSearch } from 'react-icons/fi';
 import { IoIosArrowDown } from 'react-icons/io';
 import { IoClose } from 'react-icons/io5';
-import { useFilters } from '../../context/FiltersContext';
 import { formatarDataParaBR } from '../../formatters/formatar-data';
 import { corrigirTextoCorrompido } from '../../formatters/formatar-texto-corrompido';
+import { useFilters } from '../../store/filtersStore';
 
 // ================================================================================
 // INTERFACES

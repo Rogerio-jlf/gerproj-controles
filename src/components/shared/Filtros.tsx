@@ -3,9 +3,9 @@ import { useEffect, useState } from 'react';
 import { IoClose } from 'react-icons/io5';
 import { MdCalendarMonth, MdFilterAlt } from 'react-icons/md';
 import { useDebounce } from 'use-debounce';
-import { useFilters } from '../../context/FiltersContext';
 import { corrigirTextoCorrompido } from '../../formatters/formatar-texto-corrompido';
 import { useClienteData, useIsAdmin } from '../../store/authStore';
+import { useFilters } from '../../store/filtersStore';
 import { Relogio } from './Relogio';
 
 // ==================== INTERFACES ====================

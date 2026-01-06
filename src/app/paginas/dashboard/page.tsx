@@ -5,11 +5,11 @@ import { useEffect } from 'react';
 import { ContainerDashboard } from '../../../components/dashboard/Container_Dashboard';
 import { LayoutDashboard } from '../../../components/dashboard/Layout_Dashboard';
 import { Filtros } from '../../../components/shared/Filtros';
-import { useFilters } from '../../../context/FiltersContext';
-import { useIsLoggedIn } from '../../../store/authStore'; // <- Nova importação
+import { useIsLoggedIn } from '../../../store/authStore';
+import { useFilters } from '../../../store/filtersStore'; // <- Mudança aqui
 
 export default function DashboardPage() {
-    const isLoggedIn = useIsLoggedIn(); // <- Uso simplificado
+    const isLoggedIn = useIsLoggedIn();
     const { filters } = useFilters();
     const router = useRouter();
 

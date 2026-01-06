@@ -6,12 +6,12 @@ import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-tabl
 import { useCallback, useMemo, useState } from 'react';
 import { IoClose } from 'react-icons/io5';
 import { TbFileInvoice } from 'react-icons/tb';
-import { useFilters } from '../../context/FiltersContext';
 import { formatarDataParaBR } from '../../formatters/formatar-data';
 import { formatarNumeros } from '../../formatters/formatar-numeros';
 import { corrigirTextoCorrompido } from '../../formatters/formatar-texto-corrompido';
 import { useRedimensionarColunas } from '../../hooks/useRedimensionarColunas';
 import { useClienteData, useIsAdmin } from '../../store/authStore';
+import { useFilters } from '../../store/filtersStore';
 import { IsError } from '../shared/IsError';
 import { IsLoading } from '../shared/IsLoading';
 import { getColunasOS, OSRowProps } from './Colunas_Tabela_OS';
