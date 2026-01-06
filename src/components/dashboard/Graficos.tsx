@@ -15,7 +15,6 @@ import {
     XAxis,
     YAxis,
 } from 'recharts';
-import { useAuth } from '../../context/AuthContext';
 import {
     formatarHorasArredondadas,
     formatarHorasTotaisSufixo,
@@ -25,6 +24,7 @@ import {
     renderizarDoisPrimeirosNomes,
     renderizarPrimeiroNome,
 } from '../../formatters/remover-acentuacao';
+import { useClienteData, useIsAdmin } from '../../store/authStore';
 
 // ==================== Interfaces ====================
 interface FilterProps {
@@ -268,7 +268,8 @@ const fetchSaldoHistorico = async (
 // COMPONENTE PRINCIPAL
 // ================================================================================
 export function Graficos({ filters }: FilterProps) {
-    const { isAdmin, codCliente } = useAuth();
+    const isAdmin = useIsAdmin();
+    const { codCliente } = useClienteData();
 
     const {
         data: dados,

@@ -12,9 +12,9 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FaEraser } from 'react-icons/fa';
 import { IoCall } from 'react-icons/io5';
 import { MdNavigateBefore, MdNavigateNext } from 'react-icons/md';
-import { useAuth } from '../../context/AuthContext';
 import { useFilters } from '../../context/FiltersContext';
 import { useRedimensionarColunas } from '../../hooks/useRedimensionarColunas';
+import { useClienteData, useIsAdmin, useIsLoggedIn } from '../../store/authStore';
 import { IsError } from '../shared/IsError';
 import { IsLoading } from '../shared/IsLoading';
 import { ExportaExcelChamadosButton } from './Button_Excel';
@@ -58,15 +58,6 @@ declare module '@tanstack/react-table' {
         handleChamadoClick?: (codChamado: number, temOS: boolean) => void;
     }
 }
-
-// ==================== UTILITÁRIOS ====================
-const createAuthHeaders = () => ({
-    'Content-Type': 'application/json',
-    'x-is-logged-in': localStorage.getItem('isLoggedIn') || 'false',
-    'x-is-admin': localStorage.getItem('isAdmin') || 'false',
-    'x-user-email': localStorage.getItem('userEmail') || '',
-    'x-cod-cliente': localStorage.getItem('codCliente') || '',
-});
 
 // ==================== FUNÇÕES DE FETCH ====================
 const fetchChamados = async ({
@@ -118,9 +109,7 @@ const fetchChamados = async ({
         });
     }
 
-    const response = await fetch(`/api/chamados?${params.toString()}`, {
-        headers: createAuthHeaders(),
-    });
+    const response = await fetch(`/api/chamados?${params.toString()}`);
 
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -132,7 +121,9 @@ const fetchChamados = async ({
 
 // ==================== COMPONENTE PRINCIPAL ====================
 export function TabelaChamados() {
-    const { isAdmin, codCliente, isLoggedIn } = useAuth();
+    const isAdmin = useIsAdmin();
+    const isLoggedIn = useIsLoggedIn();
+    const { codCliente } = useClienteData();
     const { filters } = useFilters();
     const { ano, mes, cliente, recurso, status } = filters;
 

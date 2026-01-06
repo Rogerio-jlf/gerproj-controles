@@ -4,8 +4,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { IoCall, IoClose, IoHome, IoLogOut, IoMenu } from 'react-icons/io5';
 import { PiTimerFill } from 'react-icons/pi';
-import { useAuth } from '../../context/AuthContext';
 import { useFilters } from '../../context/FiltersContext';
+import { useLogout } from '../../store/authStore';
 import { ModalSaldoHoras } from '../saldo-horas/Modal_Saldo_Horas';
 
 // ================================================================================
@@ -21,7 +21,7 @@ export function Sidebar() {
     const [isModalSaldoOpen, setIsModalSaldoOpen] = useState(false);
     const [loadingProgress, setLoadingProgress] = useState(0);
 
-    const { logout } = useAuth();
+    const logout = useLogout();
     const { clearFilters, filters } = useFilters();
 
     // Verifica se há cliente selecionado

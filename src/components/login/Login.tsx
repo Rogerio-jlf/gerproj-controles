@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import { ImSpinner2 } from 'react-icons/im';
 import { IoEye, IoEyeOff, IoLockClosed, IoMail } from 'react-icons/io5';
 import { MdOutlineKeyboardArrowRight } from 'react-icons/md';
-import { useAuth } from '../../context/AuthContext';
+import { useLogin } from '../../store/authStore';
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -20,7 +20,7 @@ export function Login() {
     const [isLoading, setIsLoading] = useState(false);
 
     const router = useRouter();
-    const { login } = useAuth();
+    const login = useLogin();
 
     useEffect(() => {
         const rememberedEmail = localStorage.getItem('rememberedEmail');
@@ -36,9 +36,9 @@ export function Login() {
         setIsLoading(true);
 
         try {
-            const userData = await login(email, password);
+            const success = await login(email, password);
 
-            if (userData) {
+            if (success) {
                 if (rememberMe) {
                     localStorage.setItem('rememberedEmail', email);
                 } else {
@@ -47,17 +47,21 @@ export function Login() {
 
                 await sleep(1000);
 
+                // Precisamos buscar os dados do usuário do store
+                const { useAuthStore } = await import('../../store/authStore');
+                const state = useAuthStore.getState();
+
                 // Roteamento baseado no tipo de login
-                if (userData.loginType === 'consultor') {
+                if (state.loginType === 'consultor') {
                     // Consultores sempre vão para a página de chamados
                     await router.push('/paginas/gerproj/chamados');
                 } else {
                     // Cliente - lógica existente
-                    if (userData.isAdmin) {
+                    if (state.isAdmin) {
                         await router.push('/paginas/dashboard');
-                    } else if (userData.codCliente) {
+                    } else if (state.codCliente) {
                         await router.push('/paginas/dashboard');
-                    } else if (userData.codRecurso) {
+                    } else if (state.codRecurso) {
                         await router.push('/paginas/tabela-chamados-abertos');
                     } else {
                         setError('Usuário autenticado, mas sem permissões definidas.');

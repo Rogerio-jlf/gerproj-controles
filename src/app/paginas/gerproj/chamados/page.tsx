@@ -2,16 +2,18 @@
 
 'use client';
 
-import { useAuth } from '@/context/AuthContext';
-import { useConsultorData, useIsConsultor } from '@/hooks/useUserType';
+import { useConsultorData, useIsLoading, useIsLoggedIn } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function ChamadosPage() {
-    const { isLoggedIn, isLoading } = useAuth();
-    const isConsultor = useIsConsultor();
+    const isLoggedIn = useIsLoggedIn();
+    const isLoading = useIsLoading();
     const consultorData = useConsultorData();
     const router = useRouter();
+
+    // Derivar isConsultor dos dados do consultor
+    const isConsultor = consultorData.codUsuario !== null;
 
     // Proteção de rota: apenas consultores podem acessar
     useEffect(() => {
@@ -33,7 +35,7 @@ export default function ChamadosPage() {
         );
     }
 
-    if (!consultorData) {
+    if (!isConsultor || !consultorData.nomeUsuario) {
         return null; // Redirecionando...
     }
 
@@ -84,36 +86,36 @@ export default function ChamadosPage() {
                             <li className="flex items-center gap-2">
                                 <span
                                     className={
-                                        consultorData.permissoes.permtar
+                                        consultorData.permissoes?.permtar
                                             ? 'text-green-600'
                                             : 'text-gray-400'
                                     }
                                 >
-                                    {consultorData.permissoes.permtar ? '✓' : '✗'}
+                                    {consultorData.permissoes?.permtar ? '✓' : '✗'}
                                 </span>
                                 <span>Permissão TAR</span>
                             </li>
                             <li className="flex items-center gap-2">
                                 <span
                                     className={
-                                        consultorData.permissoes.perproj1
+                                        consultorData.permissoes?.perproj1
                                             ? 'text-green-600'
                                             : 'text-gray-400'
                                     }
                                 >
-                                    {consultorData.permissoes.perproj1 ? '✓' : '✗'}
+                                    {consultorData.permissoes?.perproj1 ? '✓' : '✗'}
                                 </span>
                                 <span>Permissão Projeto 1</span>
                             </li>
                             <li className="flex items-center gap-2">
                                 <span
                                     className={
-                                        consultorData.permissoes.perproj2
+                                        consultorData.permissoes?.perproj2
                                             ? 'text-green-600'
                                             : 'text-gray-400'
                                     }
                                 >
-                                    {consultorData.permissoes.perproj2 ? '✓' : '✗'}
+                                    {consultorData.permissoes?.perproj2 ? '✓' : '✗'}
                                 </span>
                                 <span>Permissão Projeto 2</span>
                             </li>

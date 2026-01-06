@@ -2,12 +2,12 @@
 
 import { useRouter } from 'next/navigation';
 import { IoLogOut } from 'react-icons/io5';
-import { useAuth } from '../../context/AuthContext';
 import { useFilters } from '../../context/FiltersContext';
+import { useLogout } from '../../store/authStore';
 
 // Componente funcional para o botão de logout
 export function ButtonLogout() {
-    const { logout } = useAuth(); // Obtém a função de logout do contexto de autenticação
+    const logout = useLogout(); // Obtém a função de logout do contexto de autenticação
     const { clearFilters } = useFilters(); // Obtém a função para limpar filtros do contexto de filtros
     const router = useRouter(); // Inicializa o hook de navegação para redirecionamento
 

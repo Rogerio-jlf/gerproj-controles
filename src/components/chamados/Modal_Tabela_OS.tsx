@@ -6,12 +6,12 @@ import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-tabl
 import { useCallback, useMemo, useState } from 'react';
 import { IoClose } from 'react-icons/io5';
 import { TbFileInvoice } from 'react-icons/tb';
-import { useAuth } from '../../context/AuthContext';
 import { useFilters } from '../../context/FiltersContext';
 import { formatarDataParaBR } from '../../formatters/formatar-data';
 import { formatarNumeros } from '../../formatters/formatar-numeros';
 import { corrigirTextoCorrompido } from '../../formatters/formatar-texto-corrompido';
 import { useRedimensionarColunas } from '../../hooks/useRedimensionarColunas';
+import { useClienteData, useIsAdmin } from '../../store/authStore';
 import { IsError } from '../shared/IsError';
 import { IsLoading } from '../shared/IsLoading';
 import { getColunasOS, OSRowProps } from './Colunas_Tabela_OS';
@@ -50,13 +50,6 @@ interface ModalOSProps {
 }
 
 // ==================== FUNÇÕES DE FETCH ====================
-const createAuthHeaders = () => ({
-    'Content-Type': 'application/json',
-    'x-is-logged-in': localStorage.getItem('isLoggedIn') || 'false',
-    'x-is-admin': localStorage.getItem('isAdmin') || 'false',
-    'x-user-email': localStorage.getItem('userEmail') || '',
-    'x-cod-cliente': localStorage.getItem('codCliente') || '',
-});
 
 const fetchOSByChamado = async ({
     codChamado,
@@ -81,9 +74,7 @@ const fetchOSByChamado = async ({
         params.append('codCliente', codCliente);
     }
 
-    const response = await fetch(`/api/chamados/${codChamado}/os?${params.toString()}`, {
-        headers: createAuthHeaders(),
-    });
+    const response = await fetch(`/api/chamados/${codChamado}/os?${params.toString()}`);
 
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -95,7 +86,8 @@ const fetchOSByChamado = async ({
 
 // ==================== COMPONENTE PRINCIPAL ====================
 export function ModalTabelaOS({ isOpen, codChamado, onClose, onSelectOS }: ModalOSProps) {
-    const { isAdmin, codCliente } = useAuth();
+    const isAdmin = useIsAdmin();
+    const { codCliente } = useClienteData();
     const { filters } = useFilters();
     const { mes, ano } = filters;
 

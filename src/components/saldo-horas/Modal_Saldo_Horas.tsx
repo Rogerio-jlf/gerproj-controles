@@ -7,8 +7,8 @@ import { IoClose } from 'react-icons/io5';
 import { PiTimerFill } from 'react-icons/pi';
 import { SaldoRowProps } from '../../components/saldo-horas/Colunas_Tabela_Saldo';
 import { TabelaSaldoHoras } from '../../components/saldo-horas/Tabela_Saldo_Horas';
-import { useAuth } from '../../context/AuthContext';
 import { useFilters } from '../../context/FiltersContext';
+import { useClienteData, useIsAdmin } from '../../store/authStore';
 import { IsError } from '../shared/IsError';
 import { IsLoading } from '../shared/IsLoading';
 
@@ -37,7 +37,8 @@ interface ModalSaldoHorasProps {
 }
 
 export function ModalSaldoHoras({ isOpen, onClose }: ModalSaldoHorasProps) {
-    const { isAdmin, codCliente } = useAuth();
+    const isAdmin = useIsAdmin();
+    const { codCliente } = useClienteData();
     const { filters } = useFilters();
 
     useEffect(() => {

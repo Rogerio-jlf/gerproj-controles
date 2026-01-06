@@ -4,7 +4,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode, useState } from 'react';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider } from '../context/AuthContext';
 import { FiltersProvider } from '../context/FiltersContext';
 
 export function ClientProviders({ children }: { children: ReactNode }) {
@@ -12,44 +11,42 @@ export function ClientProviders({ children }: { children: ReactNode }) {
 
     return (
         <QueryClientProvider client={queryClient}>
-            <AuthProvider>
-                <FiltersProvider>
-                    {children}
-                    <Toaster
-                        position="top-center"
-                        containerClassName="!z-[9999]"
-                        toastOptions={{
-                            duration: 4000,
-                            success: {
-                                style: {
-                                    background: '#10B981',
-                                    color: '#fff',
-                                    fontWeight: 600,
-                                    padding: '16px',
-                                    borderRadius: '12px',
-                                },
-                                iconTheme: {
-                                    primary: '#fff',
-                                    secondary: '#10B981',
-                                },
+            <FiltersProvider>
+                {children}
+                <Toaster
+                    position="top-center"
+                    containerClassName="!z-[9999]"
+                    toastOptions={{
+                        duration: 4000,
+                        success: {
+                            style: {
+                                background: '#10B981',
+                                color: '#fff',
+                                fontWeight: 600,
+                                padding: '16px',
+                                borderRadius: '12px',
                             },
-                            error: {
-                                style: {
-                                    background: '#EF4444',
-                                    color: '#fff',
-                                    fontWeight: 600,
-                                    padding: '16px',
-                                    borderRadius: '12px',
-                                },
-                                iconTheme: {
-                                    primary: '#fff',
-                                    secondary: '#EF4444',
-                                },
+                            iconTheme: {
+                                primary: '#fff',
+                                secondary: '#10B981',
                             },
-                        }}
-                    />
-                </FiltersProvider>
-            </AuthProvider>
+                        },
+                        error: {
+                            style: {
+                                background: '#EF4444',
+                                color: '#fff',
+                                fontWeight: 600,
+                                padding: '16px',
+                                borderRadius: '12px',
+                            },
+                            iconTheme: {
+                                primary: '#fff',
+                                secondary: '#EF4444',
+                            },
+                        },
+                    }}
+                />
+            </FiltersProvider>
         </QueryClientProvider>
     );
 }

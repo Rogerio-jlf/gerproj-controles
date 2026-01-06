@@ -18,12 +18,12 @@ import {
 import { IoIosSave } from 'react-icons/io';
 import { IoClose } from 'react-icons/io5';
 import { TbAlertOctagonFilled } from 'react-icons/tb';
-import { useAuth } from '../../context/AuthContext';
 import { formatarDataParaBR } from '../../formatters/formatar-data';
 import { formatarHora, formatarHorasTotaisSufixo } from '../../formatters/formatar-hora';
 import { formatarNumeros } from '../../formatters/formatar-numeros';
 import { corrigirTextoCorrompido } from '../../formatters/formatar-texto-corrompido';
 import { removerAcentos } from '../../formatters/remover-acentuacao';
+import { useIsAdmin } from '../../store/authStore';
 import { LoadingButton } from '../shared/Loading_Button';
 import { OSRowProps } from './Colunas_Tabela_OS';
 
@@ -229,7 +229,7 @@ const saveValidationApi = async ({
 
 // ==================== COMPONENTE PRINCIPAL ====================
 export function ModalValidarOS({ isOpen, selectedRow, onClose, onSave }: ModalValidacaoOSProps) {
-    const { isAdmin } = useAuth();
+    const isAdmin = useIsAdmin();
     const queryClient = useQueryClient();
 
     // Estados locais

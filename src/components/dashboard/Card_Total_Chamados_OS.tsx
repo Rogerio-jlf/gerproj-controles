@@ -10,7 +10,7 @@ import {
     FaInfoCircle,
     FaPlay,
 } from 'react-icons/fa';
-import { useAuth } from '../../context/AuthContext';
+import { useClienteData, useIsAdmin } from '../../store/authStore';
 
 // ==================== INTERFACES ====================
 interface FilterProps {
@@ -201,7 +201,8 @@ const SkeletonLoadingCard = () => (
 // COMPONENTE PRINCIPAL
 // ================================================================================
 export function CardTotalChamadosOS({ filters, onStatusClick }: FilterProps) {
-    const { isAdmin, codCliente } = useAuth();
+    const isAdmin = useIsAdmin();
+    const { codCliente } = useClienteData();
 
     const fetchData = async (): Promise<TotalizadoresAPIResponse> => {
         const params = new URLSearchParams();

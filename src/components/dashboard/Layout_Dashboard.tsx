@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { ReactNode, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useIsLoggedIn } from '../../store/authStore';
 import { Sidebar } from '../shared/Sidebar';
 
 interface LayoutProps {
@@ -16,7 +16,7 @@ const ZOOM_COMPENSATION = 100 / ZOOM_LEVEL; // Calcula automaticamente (ex: 100 
 // ================================
 
 export function LayoutDashboard({ children }: LayoutProps) {
-    const { isLoggedIn } = useAuth();
+    const isLoggedIn = useIsLoggedIn();
     const router = useRouter();
 
     useEffect(() => {

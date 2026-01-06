@@ -1,10 +1,11 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useIsLoading, useIsLoggedIn } from '../../store/authStore';
 import { IsLoggedIn } from '../shared/IsLoggedIn';
 
 export function ProtecaoRotas({ children }: { children: React.ReactNode }) {
-    const { isLoggedIn, isLoading } = useAuth();
+    const isLoggedIn = useIsLoggedIn();
+    const isLoading = useIsLoading();
     const router = useRouter();
     const [shouldRender, setShouldRender] = useState(false);
 

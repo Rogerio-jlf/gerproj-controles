@@ -3,8 +3,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { FaCheckCircle, FaClock, FaExclamationTriangle } from 'react-icons/fa';
-import { useAuth } from '../../context/AuthContext';
 import { formatarHorasTotaisSufixo } from '../../formatters/formatar-hora';
+import { useClienteData, useIsAdmin } from '../../store/authStore';
 
 // ==================== INTERFACES ====================
 interface FilterProps {
@@ -168,7 +168,8 @@ const SkeletonLoadingCard = () => (
 // COMPONENTE PRINCIPAL
 // ================================================================================
 export function CardHrsContratadasHrsExecutadas({ filters }: FilterProps) {
-    const { isAdmin, codCliente } = useAuth();
+    const isAdmin = useIsAdmin();
+    const { codCliente } = useClienteData();
 
     const fetchData = async (): Promise<ApiResponse> => {
         const params = new URLSearchParams();

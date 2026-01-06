@@ -5,11 +5,11 @@ import { useEffect } from 'react';
 import { ContainerDashboard } from '../../../components/dashboard/Container_Dashboard';
 import { LayoutDashboard } from '../../../components/dashboard/Layout_Dashboard';
 import { Filtros } from '../../../components/shared/Filtros';
-import { useAuth } from '../../../context/AuthContext';
 import { useFilters } from '../../../context/FiltersContext';
+import { useIsLoggedIn } from '../../../store/authStore'; // <- Nova importação
 
 export default function DashboardPage() {
-    const { isLoggedIn } = useAuth();
+    const isLoggedIn = useIsLoggedIn(); // <- Uso simplificado
     const { filters } = useFilters();
     const router = useRouter();
 
@@ -24,12 +24,10 @@ export default function DashboardPage() {
     return (
         <LayoutDashboard pageTitle="Dashboard">
             <div className="flex h-full flex-col gap-10 overflow-hidden">
-                {/* Área fixa - sem scroll */}
                 <div className="flex-shrink-0">
                     <Filtros />
                 </div>
 
-                {/* Área com scroll - cards e gráficos */}
                 <div className="min-h-0 flex-1">
                     <ContainerDashboard
                         filters={{
