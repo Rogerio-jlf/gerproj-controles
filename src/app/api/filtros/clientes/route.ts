@@ -1,4 +1,4 @@
-// src/app/api/filtros/clientes/route.ts
+// src/app/api/filtros/clientes/route.ts - CORRIGIDO
 import { NextResponse } from 'next/server';
 import { firebirdQuery } from '../../../../lib/firebird/firebird-client';
 
@@ -6,6 +6,7 @@ import { firebirdQuery } from '../../../../lib/firebird/firebird-client';
 interface QueryParams {
     isAdmin: boolean;
     codCliente?: string;
+    codRecurso?: string; // ✅ NOVO: Para consultores
     mes: number;
     ano: number;
 }
@@ -19,6 +20,7 @@ interface Cliente {
 function validarParametros(searchParams: URLSearchParams): QueryParams | NextResponse {
     const isAdmin = searchParams.get('isAdmin') === 'true';
     const codCliente = searchParams.get('codCliente')?.trim();
+    const codRecurso = searchParams.get('codRecurso')?.trim(); // ✅ NOVO
     const mes = Number(searchParams.get('mes'));
     const ano = Number(searchParams.get('ano'));
 
@@ -36,14 +38,17 @@ function validarParametros(searchParams: URLSearchParams): QueryParams | NextRes
         );
     }
 
-    if (!isAdmin && !codCliente) {
+    // ✅ CORRIGIDO: Aceita codCliente OU codRecurso para não-admin
+    if (!isAdmin && !codCliente && !codRecurso) {
         return NextResponse.json(
-            { error: "Parâmetro 'codCliente' é obrigatório para usuários não admin" },
+            {
+                error: "Parâmetro 'codCliente' ou 'codRecurso' é obrigatório para usuários não admin",
+            },
             { status: 400 }
         );
     }
 
-    return { isAdmin, codCliente, mes, ano };
+    return { isAdmin, codCliente, codRecurso, mes, ano };
 }
 
 // ==================== CONSTRUÇÃO DE DATAS ====================
@@ -77,10 +82,17 @@ function aplicarFiltros(
 ): { sql: string; params: any[] } {
     let sql = sqlBase;
 
-    // Filtro obrigatório para não-admin
-    if (!params.isAdmin && params.codCliente) {
-        sql += ` AND CLIENTE.COD_CLIENTE = ?`;
-        paramsArray.push(parseInt(params.codCliente));
+    // ✅ CORRIGIDO: Filtro por codRecurso OU codCliente
+    if (!params.isAdmin) {
+        if (params.codRecurso) {
+            // Consultor não-admin: filtra por recurso
+            sql += ` AND CHAMADO.COD_RECURSO = ?`;
+            paramsArray.push(parseInt(params.codRecurso));
+        } else if (params.codCliente) {
+            // Cliente não-admin: filtra por cliente
+            sql += ` AND CLIENTE.COD_CLIENTE = ?`;
+            paramsArray.push(parseInt(params.codCliente));
+        }
     }
 
     // Ordenação alfabética diretamente no banco

@@ -1,4 +1,4 @@
-// app/api/chamados/route.ts - ATUALIZADO
+// app/api/chamados/route.ts - CORRIGIDO
 import { firebirdQuery } from '@/lib/firebird/firebird-client';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -219,7 +219,7 @@ const buscarChamadosComTotais = async (
         const whereClauses: string[] = [];
         const whereParams: any[] = [];
 
-        // ✅ MODIFICADO: Lógica de filtro por período ou recurso + exclusão de FINALIZADOS para não-admin
+        // ✅ CORRIGIDO: Lógica de filtro por período ou recurso
         if (params.isAdmin) {
             // Admin: Filtra por período (mes/ano)
             if (dataInicio && dataFim) {
@@ -233,14 +233,22 @@ const buscarChamadosComTotais = async (
                 whereParams.push(parseInt(params.codRecurso));
             }
 
-            // ✅ NOVO: Não-admin não vê chamados FINALIZADOS
-            whereClauses.push(`UPPER(CHAMADO.STATUS_CHAMADO) <> UPPER(?)`);
-            whereParams.push('FINALIZADO');
-
             // Se não-admin passou mes/ano, também filtra por período
             if (params.mes && params.ano && dataInicio && dataFim) {
                 whereClauses.push(`(CHAMADO.DATA_CHAMADO >= ? AND CHAMADO.DATA_CHAMADO < ?)`);
                 whereParams.push(dataInicio, dataFim);
+            }
+
+            // ✅ CORRIGIDO: Não-admin não vê FINALIZADOS, EXCETO se filtrar explicitamente por eles
+            const statusFiltroUpper = params.statusFilter?.toUpperCase();
+            const columnStatusUpper = params.columnFilters?.STATUS_CHAMADO?.toUpperCase();
+
+            const usuarioQuerFinalizado =
+                statusFiltroUpper?.includes('FINALIZADO') || columnStatusUpper === 'FINALIZADO';
+
+            if (!usuarioQuerFinalizado) {
+                whereClauses.push(`UPPER(CHAMADO.STATUS_CHAMADO) <> ?`);
+                whereParams.push('FINALIZADO');
             }
         }
 
@@ -632,21 +640,10 @@ export async function GET(request: NextRequest) {
             { status: 200 }
         );
     } catch (error) {
-        console.error('[API CHAMADOS] Erro:', error instanceof Error ? error.message : error);
-
+        console.error('[API CHAMADOS] Erro no GET:', error);
         return NextResponse.json(
-            {
-                success: false,
-                error: 'Erro interno do servidor',
-                message: error instanceof Error ? error.message : 'Erro desconhecido',
-                details: process.env.NODE_ENV === 'development' ? error : undefined,
-            },
+            { success: false, error: 'Erro interno ao processar a requisição' },
             { status: 500 }
         );
     }
-}
-
-export function limparCacheChamados(): void {
-    nomeClienteCache.clear();
-    nomeRecursoCache.clear();
 }

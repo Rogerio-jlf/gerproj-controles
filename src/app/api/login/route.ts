@@ -33,7 +33,7 @@ interface UsuarioConsultor {
     PERPROJ2_USUARIO: string;
 }
 
-// ✅ NOVO: Interface para buscar recurso do consultor
+// ✅ CORRIGIDO: Interface para buscar recurso do consultor
 interface RecursoConsultor {
     COD_RECURSO: number;
 }
@@ -51,7 +51,7 @@ interface LoginResponse {
     nomeUsuario?: string;
     idUsuario?: string;
     tipoUsuario?: 'USU' | 'ADM';
-    codRecurso?: string | null; // ✅ NOVO
+    codRecurso?: string | null;
     permissoes?: {
         permtar: boolean;
         perproj1: boolean;
@@ -173,22 +173,22 @@ async function buscarConsultorPorId(idUsuario: string): Promise<UsuarioConsultor
     }
 }
 
-// ✅ NOVO: Buscar COD_RECURSO do consultor
-async function buscarRecursoDoConsultor(nomeUsuario: string): Promise<string | null> {
+// ✅ CORRIGIDO: Buscar COD_RECURSO usando CODUSR_RECURSO
+async function buscarRecursoDoConsultor(codUsuario: number): Promise<string | null> {
     try {
         const sql = `
             SELECT FIRST 1 COD_RECURSO
             FROM RECURSO
-            WHERE UPPER(TRIM(NOME_RECURSO)) = UPPER(TRIM(?))
+            WHERE CODUSR_RECURSO = ?
         `;
 
-        const resultado = await firebirdQuery<RecursoConsultor>(sql, [nomeUsuario.trim()]);
+        const resultado = await firebirdQuery<RecursoConsultor>(sql, [codUsuario]);
 
         if (resultado && resultado.length > 0) {
             return String(resultado[0].COD_RECURSO);
         }
 
-        console.warn(`[Login] Recurso não encontrado para: ${nomeUsuario}`);
+        console.warn(`[Login] Recurso não encontrado para COD_USUARIO: ${codUsuario}`);
         return null;
     } catch (error) {
         console.error('[Login] Erro ao buscar recurso do consultor:', error);
@@ -202,10 +202,10 @@ function validarSenhaConsultor(senhaDigitada: string, senhaArmazenada: string): 
     return senhaDigitadaTrim === senhaBanco;
 }
 
-// ✅ MODIFICADO: Agora inclui codRecurso
+// ✅ CORRIGIDO: Usa COD_USUARIO ao invés de NOME_USUARIO
 async function construirRespostaConsultor(consultor: UsuarioConsultor): Promise<LoginResponse> {
-    // Busca o COD_RECURSO baseado no NOME_USUARIO
-    const codRecurso = await buscarRecursoDoConsultor(consultor.NOME_USUARIO);
+    // Busca o COD_RECURSO baseado no COD_USUARIO
+    const codRecurso = await buscarRecursoDoConsultor(consultor.COD_USUARIO);
 
     return {
         success: true,
@@ -215,7 +215,7 @@ async function construirRespostaConsultor(consultor: UsuarioConsultor): Promise<
         nomeUsuario: consultor.NOME_USUARIO,
         idUsuario: consultor.ID_USUARIO,
         tipoUsuario: consultor.TIPO_USUARIO,
-        codRecurso, // ✅ NOVO: Inclui o codRecurso
+        codRecurso,
         permissoes: {
             permtar: consultor.PERMTAR_USUARIO === 'SIM',
             perproj1: consultor.PERPROJ1_USUARIO === 'SIM',
@@ -328,11 +328,11 @@ export async function POST(request: Request) {
                                 console.log('[Login] Login de consultor bem-sucedido:', email);
                             }
 
-                            // ✅ MODIFICADO: Agora é async
                             const resposta = await construirRespostaConsultor(consultor);
 
                             if (process.env.NODE_ENV === 'development') {
                                 console.log('[Login] Dados retornados:', {
+                                    codUsuario: resposta.codUsuario,
                                     nomeUsuario: resposta.nomeUsuario,
                                     codRecurso: resposta.codRecurso,
                                     isAdmin: resposta.isAdmin,

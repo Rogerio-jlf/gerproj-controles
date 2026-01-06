@@ -1,5 +1,6 @@
 'use client';
 
+import { useClienteData, useCodRecurso, useIsAdmin } from '@/store/authStore';
 import { useQuery } from '@tanstack/react-query';
 import { debounce } from 'lodash';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -37,10 +38,11 @@ const createAuthHeaders = () => ({
 
 // Função para buscar classificações
 async function fetchClassificacoes(params: {
-    ano: number;
-    mes: number;
+    ano?: number;
+    mes?: number;
     isAdmin: boolean;
     codCliente?: string;
+    codRecurso?: string;
     cliente?: string;
 }): Promise<OptionItem[]> {
     const queryParams = new URLSearchParams({
@@ -48,18 +50,25 @@ async function fetchClassificacoes(params: {
         mes: String(params.mes),
         isAdmin: String(params.isAdmin),
     });
-    if (!params.isAdmin && params.codCliente) {
-        queryParams.append('codCliente', params.codCliente);
+
+    if (!params.isAdmin) {
+        if (params.codRecurso) {
+            queryParams.append('codRecurso', params.codRecurso);
+        } else if (params.codCliente) {
+            queryParams.append('codCliente', params.codCliente);
+        }
     }
+
     if (params.cliente) {
         queryParams.append('cliente', params.cliente);
     }
-    const response = await fetch(`/api/filtros/classificacoes?${queryParams.toString()}`, {
-        headers: createAuthHeaders(),
-    });
+
+    const response = await fetch(`/api/filtros/classificacoes?${queryParams.toString()}`);
+
     if (!response.ok) {
         throw new Error('Erro ao carregar classificações');
     }
+
     return response.json();
 }
 // ===============
@@ -70,6 +79,7 @@ async function fetchRecursos(params: {
     mes: number;
     isAdmin: boolean;
     codCliente?: string;
+    codRecurso?: string;
     cliente?: string;
 }): Promise<OptionItem[]> {
     const queryParams = new URLSearchParams({
@@ -78,17 +88,19 @@ async function fetchRecursos(params: {
         isAdmin: String(params.isAdmin),
     });
 
-    if (!params.isAdmin && params.codCliente) {
-        queryParams.append('codCliente', params.codCliente);
+    if (!params.isAdmin) {
+        if (params.codRecurso) {
+            queryParams.append('codRecurso', params.codRecurso);
+        } else if (params.codCliente) {
+            queryParams.append('codCliente', params.codCliente);
+        }
     }
 
     if (params.cliente) {
         queryParams.append('cliente', params.cliente);
     }
 
-    const response = await fetch(`/api/filtros/recursos?${queryParams.toString()}`, {
-        headers: createAuthHeaders(),
-    });
+    const response = await fetch(`/api/filtros/recursos?${queryParams.toString()}`);
 
     if (!response.ok) {
         throw new Error('Erro ao carregar recursos');
@@ -104,6 +116,7 @@ async function fetchStatus(params: {
     mes: number;
     isAdmin: boolean;
     codCliente?: string;
+    codRecurso?: string;
     cliente?: string;
 }): Promise<OptionItem[]> {
     const queryParams = new URLSearchParams({
@@ -112,17 +125,19 @@ async function fetchStatus(params: {
         isAdmin: String(params.isAdmin),
     });
 
-    if (!params.isAdmin && params.codCliente) {
-        queryParams.append('codCliente', params.codCliente);
+    if (!params.isAdmin) {
+        if (params.codRecurso) {
+            queryParams.append('codRecurso', params.codRecurso);
+        } else if (params.codCliente) {
+            queryParams.append('codCliente', params.codCliente);
+        }
     }
 
     if (params.cliente) {
         queryParams.append('cliente', params.cliente);
     }
 
-    const response = await fetch(`/api/filtros/status?${queryParams.toString()}`, {
-        headers: createAuthHeaders(),
-    });
+    const response = await fetch(`/api/filtros/status?${queryParams.toString()}`);
 
     if (!response.ok) {
         throw new Error('Erro ao carregar status');
@@ -130,10 +145,8 @@ async function fetchStatus(params: {
 
     const data = await response.json();
 
-    //  Normalizar o retorno: se vier array de strings, converter para objetos
     if (Array.isArray(data) && data.length > 0) {
         if (typeof data[0] === 'string') {
-            // Se for array de strings, converter para objetos
             return data.map((status: string) => ({
                 cod: status,
                 nome: status,
@@ -141,7 +154,6 @@ async function fetchStatus(params: {
         }
     }
 
-    // Se já vier como objetos, retornar direto
     return data;
 }
 // ===============
@@ -169,8 +181,11 @@ const DropdownWithFilter = memo(({ value, onChange, columnId }: DropdownFilterPr
     const { filters } = useFilters();
     const { ano, mes, cliente } = filters;
 
-    const isAdmin = localStorage.getItem('isAdmin') === 'true';
-    const codCliente = localStorage.getItem('codCliente') || undefined;
+    const isAdmin = useIsAdmin();
+    const clienteData = useClienteData();
+    const codRecurso = useCodRecurso();
+
+    const codCliente = clienteData.codCliente || undefined;
 
     // Query para buscar dados APENAS DO PERÍODO FILTRADO
     const { data: options = [], isLoading } = useQuery({
@@ -184,6 +199,7 @@ const DropdownWithFilter = memo(({ value, onChange, columnId }: DropdownFilterPr
             mes,
             isAdmin,
             codCliente,
+            codRecurso, // ✅ Agora vem do Zustand
             columnId === 'NOME_RECURSO' ||
             columnId === 'STATUS_CHAMADO' ||
             columnId === 'NOME_CLASSIFICACAO'
@@ -191,36 +207,34 @@ const DropdownWithFilter = memo(({ value, onChange, columnId }: DropdownFilterPr
                 : undefined,
         ],
         queryFn: () => {
-            if (!ano || !mes) {
+            // ✅ Só valida ano/mes para admin
+            if (isAdmin && (!ano || !mes)) {
                 return [];
             }
 
+            const baseParams = {
+                ano: ano || new Date().getFullYear(), // ✅
+                mes: mes || new Date().getMonth() + 1, // ✅
+                isAdmin,
+                codCliente,
+                codRecurso: codRecurso || undefined, // ✅ Converte null para undefined
+            };
+
             if (columnId === 'NOME_CLASSIFICACAO') {
-                return fetchClassificacoes({
-                    ano,
-                    mes,
-                    isAdmin,
-                    codCliente,
-                });
+                return fetchClassificacoes(baseParams);
             } else if (columnId === 'NOME_RECURSO') {
                 return fetchRecursos({
-                    ano,
-                    mes,
-                    isAdmin,
-                    codCliente,
+                    ...baseParams,
                     cliente: cliente ?? undefined,
                 });
             } else {
                 return fetchStatus({
-                    ano,
-                    mes,
-                    isAdmin,
-                    codCliente,
+                    ...baseParams,
                     cliente: cliente ?? undefined,
                 });
             }
         },
-        enabled: !!ano && !!mes,
+        enabled: isAdmin ? !!(ano && mes) : true,
         staleTime: 1000 * 60 * 5,
         refetchOnMount: true,
     });

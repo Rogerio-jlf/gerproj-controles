@@ -2,8 +2,8 @@
 'use client';
 
 import { ReactNode } from 'react';
+import { Sidebar } from '../../../components/gerproj/chamados/Sidebar';
 import { ProtecaoRotas } from '../../shared/ProtecaoRotas';
-import { Sidebar } from '../../shared/Sidebar';
 
 interface LayoutProps {
     children: ReactNode;

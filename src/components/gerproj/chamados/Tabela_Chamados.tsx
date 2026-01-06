@@ -699,7 +699,7 @@ function Header({
     const { cliente, recurso, status } = useFilters().filters;
 
     return (
-        <header className="flex items-center justify-between gap-4 bg-purple-900 p-6">
+        <header className="flex items-center justify-between gap-4 bg-black p-6">
             <div className="flex items-center gap-4">
                 <IoCall className="text-white" size={50} />
                 <h2 className="text-2xl font-extrabold tracking-widest text-white select-none">
