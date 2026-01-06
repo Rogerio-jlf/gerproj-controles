@@ -1,4 +1,4 @@
-// src/app/api/login/route.ts
+// src/app/api/login/route.ts - CORRIGIDO
 import { firebirdQuery } from '@/lib/firebird/firebird-client';
 import bcrypt from 'bcryptjs';
 import fs from 'fs/promises';
@@ -9,7 +9,7 @@ import path from 'path';
 interface LoginRequest {
     email: string;
     password: string;
-    loginType?: 'auto' | 'cliente' | 'consultor'; // auto detecta automaticamente
+    loginType?: 'auto' | 'cliente' | 'consultor';
 }
 
 interface Usuario {
@@ -33,6 +33,11 @@ interface UsuarioConsultor {
     PERPROJ2_USUARIO: string;
 }
 
+// ✅ NOVO: Interface para buscar recurso do consultor
+interface RecursoConsultor {
+    COD_RECURSO: number;
+}
+
 interface LoginResponse {
     success: boolean;
     message?: string;
@@ -46,6 +51,7 @@ interface LoginResponse {
     nomeUsuario?: string;
     idUsuario?: string;
     tipoUsuario?: 'USU' | 'ADM';
+    codRecurso?: string | null; // ✅ NOVO
     permissoes?: {
         permtar: boolean;
         perproj1: boolean;
@@ -55,7 +61,7 @@ interface LoginResponse {
 
 // ==================== CONSTANTES ====================
 const USERS_FILE_PATH = path.join(process.cwd(), 'users', 'usuarios.json');
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+const CACHE_TTL = 5 * 60 * 1000;
 
 const ERROR_MESSAGES = {
     INVALID_CREDENTIALS: 'Usuário ou senha inválidos',
@@ -130,7 +136,6 @@ async function carregarUsuarios(): Promise<Map<string, Usuario>> {
 
 // ==================== DETECÇÃO DE TIPO DE LOGIN ====================
 function detectarTipoLogin(identificador: string): 'email' | 'username' {
-    // Email contém @ e ponto
     if (identificador.includes('@') && identificador.includes('.')) {
         return 'email';
     }
@@ -168,16 +173,40 @@ async function buscarConsultorPorId(idUsuario: string): Promise<UsuarioConsultor
     }
 }
 
+// ✅ NOVO: Buscar COD_RECURSO do consultor
+async function buscarRecursoDoConsultor(nomeUsuario: string): Promise<string | null> {
+    try {
+        const sql = `
+            SELECT FIRST 1 COD_RECURSO
+            FROM RECURSO
+            WHERE UPPER(TRIM(NOME_RECURSO)) = UPPER(TRIM(?))
+        `;
+
+        const resultado = await firebirdQuery<RecursoConsultor>(sql, [nomeUsuario.trim()]);
+
+        if (resultado && resultado.length > 0) {
+            return String(resultado[0].COD_RECURSO);
+        }
+
+        console.warn(`[Login] Recurso não encontrado para: ${nomeUsuario}`);
+        return null;
+    } catch (error) {
+        console.error('[Login] Erro ao buscar recurso do consultor:', error);
+        return null;
+    }
+}
+
 function validarSenhaConsultor(senhaDigitada: string, senhaArmazenada: string): boolean {
-    // Remove espaços extras da senha do banco
     const senhaBanco = senhaArmazenada.trim();
     const senhaDigitadaTrim = senhaDigitada.trim();
-
-    // Comparação direta (Firebird armazena senha em texto plano CHAR(10))
     return senhaDigitadaTrim === senhaBanco;
 }
 
-function construirRespostaConsultor(consultor: UsuarioConsultor): LoginResponse {
+// ✅ MODIFICADO: Agora inclui codRecurso
+async function construirRespostaConsultor(consultor: UsuarioConsultor): Promise<LoginResponse> {
+    // Busca o COD_RECURSO baseado no NOME_USUARIO
+    const codRecurso = await buscarRecursoDoConsultor(consultor.NOME_USUARIO);
+
     return {
         success: true,
         loginType: 'consultor',
@@ -186,6 +215,7 @@ function construirRespostaConsultor(consultor: UsuarioConsultor): LoginResponse 
         nomeUsuario: consultor.NOME_USUARIO,
         idUsuario: consultor.ID_USUARIO,
         tipoUsuario: consultor.TIPO_USUARIO,
+        codRecurso, // ✅ NOVO: Inclui o codRecurso
         permissoes: {
             permtar: consultor.PERMTAR_USUARIO === 'SIM',
             perproj1: consultor.PERPROJ1_USUARIO === 'SIM',
@@ -277,17 +307,12 @@ export async function POST(request: Request) {
             console.log('[Login] Tentativa de login:', email, 'Tipo:', loginType);
         }
 
-        // Validar credenciais
         const erroValidacao = validarCredenciais(email, password);
         if (erroValidacao) {
             return erroValidacao;
         }
 
-        // Detectar tipo de login automaticamente
         const tipoDetectado = detectarTipoLogin(email);
-
-        // Se for loginType='auto', tenta ambos os métodos
-        // Se for 'cliente' ou 'consultor', força apenas aquele tipo
 
         // TENTATIVA 1: Login de Consultor
         if (loginType === 'auto' || loginType === 'consultor') {
@@ -303,22 +328,29 @@ export async function POST(request: Request) {
                                 console.log('[Login] Login de consultor bem-sucedido:', email);
                             }
 
-                            const resposta = construirRespostaConsultor(consultor);
+                            // ✅ MODIFICADO: Agora é async
+                            const resposta = await construirRespostaConsultor(consultor);
+
+                            if (process.env.NODE_ENV === 'development') {
+                                console.log('[Login] Dados retornados:', {
+                                    nomeUsuario: resposta.nomeUsuario,
+                                    codRecurso: resposta.codRecurso,
+                                    isAdmin: resposta.isAdmin,
+                                });
+                            }
+
                             return NextResponse.json(resposta, { status: 200 });
                         }
 
-                        // Se encontrou o usuário mas senha errada, retorna erro
                         if (loginType === 'consultor') {
                             return respostaErroAutenticacao();
                         }
                     }
                 } catch (error) {
                     console.error('[Login] Erro ao tentar login de consultor:', error);
-                    // Se forçou consultor, retorna erro
                     if (loginType === 'consultor') {
                         return respostaErroServidor(error);
                     }
-                    // Se auto, continua para tentar cliente
                 }
             }
         }
@@ -344,7 +376,6 @@ export async function POST(request: Request) {
                     }
                 } catch (error) {
                     console.error('[Login] Erro ao tentar login de cliente:', error);
-                    // Se forçou cliente, retorna erro
                     if (loginType === 'cliente') {
                         return respostaErroServidor(error);
                     }
@@ -352,7 +383,6 @@ export async function POST(request: Request) {
             }
         }
 
-        // Se chegou aqui, não encontrou em nenhum dos dois
         if (process.env.NODE_ENV === 'development') {
             console.log('[Login] Usuário não encontrado em nenhum sistema:', email);
         }

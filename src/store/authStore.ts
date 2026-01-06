@@ -1,4 +1,4 @@
-// src/store/authStore.ts
+// src/store/authStore.ts - ATUALIZADO
 import { create } from 'zustand';
 import { createJSONStorage, devtools, persist } from 'zustand/middleware';
 import { useShallow } from 'zustand/react/shallow';
@@ -19,6 +19,7 @@ type UserDataConsultor = {
     nomeUsuario: string;
     idUsuario: string;
     tipoUsuario: 'USU' | 'ADM';
+    codRecurso: string | null; // ✅ NOVO: Código do recurso do consultor
     permissoes: {
         permtar: boolean;
         perproj1: boolean;
@@ -43,6 +44,8 @@ type AuthState = {
 
     // Dados de Cliente (null se for consultor)
     codCliente: string | null;
+
+    // ✅ MODIFICADO: codRecurso agora é compartilhado entre cliente e consultor
     codRecurso: string | null;
     nomeRecurso: string | null;
 
@@ -96,8 +99,8 @@ function computeStateFromUser(user: UserData | null): Partial<AuthState> {
             isAdmin: user.isAdmin,
             loginType: 'consultor',
             codCliente: null,
-            codRecurso: null,
-            nomeRecurso: null,
+            codRecurso: user.codRecurso, // ✅ NOVO: Pega do consultor
+            nomeRecurso: user.nomeUsuario, // Usa o nome do usuário como nome do recurso
             codUsuario: user.codUsuario,
             nomeUsuario: user.nomeUsuario,
             idUsuario: user.idUsuario,
@@ -142,6 +145,7 @@ async function loginApi(email: string, password: string): Promise<UserData> {
             nomeUsuario: data.nomeUsuario,
             idUsuario: data.idUsuario,
             tipoUsuario: data.tipoUsuario,
+            codRecurso: data.codRecurso ?? null, // ✅ NOVO: Pega codRecurso da API
             permissoes: data.permissoes,
         };
     } else {
@@ -262,18 +266,14 @@ export const useAuthStore = create<AuthStore>()(
                 },
             }),
             {
-                name: 'auth-storage', // Nome da chave no localStorage
+                name: 'auth-storage',
                 storage: createJSONStorage(() => localStorage),
-                // Particionar o que deve ser persistido
                 partialize: (state) => ({
                     isLoggedIn: state.isLoggedIn,
                     user: state.user,
-                    // Os computed values serão recalculados na hidratação
                 }),
-                // Callback após hidratar do localStorage
                 onRehydrateStorage: () => (state) => {
                     if (state && state.user) {
-                        // Recomputar valores derivados após hidratar
                         const computed = computeStateFromUser(state.user);
                         Object.assign(state, computed);
                     }
@@ -288,13 +288,14 @@ export const useAuthStore = create<AuthStore>()(
 );
 
 // ==================== HOOKS ESPECÍFICOS ====================
-// Estes hooks permitem que componentes se inscrevam apenas nos dados que precisam
-
 export const useIsLoggedIn = () => useAuthStore((state) => state.isLoggedIn);
 export const useIsLoading = () => useAuthStore((state) => state.isLoading);
 export const useAuthError = () => useAuthStore((state) => state.error);
 export const useIsAdmin = () => useAuthStore((state) => state.isAdmin);
 export const useLoginType = () => useAuthStore((state) => state.loginType);
+
+// ✅ NOVO: Hook para pegar codRecurso (funciona para cliente e consultor)
+export const useCodRecurso = () => useAuthStore((state) => state.codRecurso);
 
 // Cliente - usando useShallow
 export const useClienteData = () =>
@@ -315,6 +316,7 @@ export const useConsultorData = () =>
             nomeUsuario: state.nomeUsuario,
             idUsuario: state.idUsuario,
             tipoUsuario: state.tipoUsuario,
+            codRecurso: state.codRecurso, // ✅ NOVO
             permissoes: state.permissoes,
             isAdmin: state.isAdmin,
         }))
@@ -330,7 +332,7 @@ export const useIsCliente = () => useAuthStore((state) => state.isCliente());
 export const useUserName = () => useAuthStore((state) => state.getUserName());
 export const useHasPermission = () => useAuthStore((state) => state.hasPermission);
 
-// ==================== HOOK COMPLETO (para casos específicos) ====================
+// ==================== HOOK COMPLETO ====================
 export const useAuth = () => {
     const store = useAuthStore();
 

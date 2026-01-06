@@ -1,8 +1,5 @@
 import { ColumnDef } from '@tanstack/react-table';
-import { BiSolidLike } from 'react-icons/bi';
-import { MdChevronRight, MdInsertDriveFile, MdOutlineStar } from 'react-icons/md';
-import { formatarDataHoraChamado, formatarDataParaBR } from '../../../formatters/formatar-data';
-import { formatarHorasTotaisSufixo } from '../../../formatters/formatar-hora';
+import { MdChevronRight, MdInsertDriveFile } from 'react-icons/md';
 import { formatarNumeros, formatarPrioridade } from '../../../formatters/formatar-numeros';
 import { corrigirTextoCorrompido } from '../../../formatters/formatar-texto-corrompido';
 
@@ -49,77 +46,6 @@ const getStylesStatus = (status: string | undefined) => {
     }
 };
 
-// Componente de Badge para Status com Avaliação Integrada
-const StatusBadge = ({
-    status,
-    avaliacao,
-    obsAvaliacao,
-    onAvaliar,
-}: {
-    status: string;
-    avaliacao: number | null;
-    obsAvaliacao?: string | null;
-    onAvaliar?: () => void;
-}) => {
-    const styles = getStylesStatus(status);
-    const isFinalizado = status.toUpperCase() === 'FINALIZADO';
-
-    // Se avaliacao for null ou undefined, considera como 1 (não avaliado)
-    const avaliacaoValor = avaliacao ?? 1;
-    const foiAvaliado = avaliacaoValor >= 2 && avaliacaoValor <= 5;
-
-    return (
-        <div className="flex w-full items-center gap-2">
-            {/* Badge do Status */}
-            <div
-                className={`flex items-center gap-2 rounded px-4 py-1.5 text-sm font-extrabold tracking-widest select-none ${styles} ${isFinalizado ? 'flex-1' : 'w-full'}`}
-            >
-                {/* Texto do Status */}
-                <span className="flex-1">{status}</span>
-
-                {/* Área de Avaliação (só aparece se finalizado) */}
-                {isFinalizado && foiAvaliado && (
-                    <div className="flex items-center gap-5">
-                        {/* Mostrar estrelas da avaliação (AVALIA_CHAMADO > 1) */}
-                        <div
-                            className="flex gap-0.5"
-                            title={`Avaliação: ${avaliacaoValor} estrelas`}
-                        >
-                            {Array.from({ length: 5 }).map((_, i) => (
-                                <MdOutlineStar
-                                    key={i}
-                                    size={14}
-                                    className={
-                                        i < avaliacaoValor
-                                            ? 'fill-yellow-300 text-yellow-300'
-                                            : 'fill-white/50 text-white/50'
-                                    }
-                                />
-                            ))}
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* Botão de Avaliar (fora da badge, ao lado) */}
-            {isFinalizado && (
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        if (onAvaliar) {
-                            onAvaliar();
-                        }
-                    }}
-                    className="flex-shrink-0 cursor-pointer rounded-md bg-purple-600 p-2 shadow-xs shadow-black transition-all duration-200 hover:scale-110 hover:bg-purple-800 hover:shadow-md hover:shadow-black active:scale-95"
-                    title={foiAvaliado ? 'Reavaliar chamado' : 'Avaliar chamado'}
-                >
-                    <BiSolidLike className="text-white" size={18} />
-                </button>
-            )}
-        </div>
-    );
-};
-
 // ================================================================================
 // COMPONENTE PRINCIPAL
 // ================================================================================
@@ -162,26 +88,6 @@ export const getColunasChamados = (
                         <div className="flex-1 text-left text-sm font-semibold tracking-widest text-black select-none">
                             {formatarNumeros(value)}
                         </div>
-                    </div>
-                );
-            },
-            enableColumnFilter: true,
-        },
-
-        // Data/Hora do Chamado
-        {
-            id: 'DATA_CHAMADO',
-            header: () => (
-                <div className="text-center text-sm font-bold tracking-widest text-white select-none">
-                    ENTRADA
-                </div>
-            ),
-            cell: ({ row }) => {
-                const data = row.original.DATA_CHAMADO;
-                const hora = row.original.HORA_CHAMADO;
-                return (
-                    <div className="text-center text-sm font-semibold tracking-widest text-black select-none">
-                        {formatarDataHoraChamado(data, hora)}
                     </div>
                 );
             },
@@ -388,82 +294,18 @@ export const getColunasChamados = (
             ),
             cell: ({ getValue, row }) => {
                 const value = getValue() as string;
-                const avaliacao = row.original.AVALIA_CHAMADO;
 
                 return (
-                    <StatusBadge
-                        status={value}
-                        avaliacao={avaliacao}
-                        onAvaliar={() => {
-                            if (onOpenAvaliacao) {
-                                onOpenAvaliacao(row.original);
-                            }
-                        }}
-                    />
-                );
-            },
-            enableColumnFilter: true,
-            filterFn: (row, _columnId, filterValue) => {
-                if (!filterValue) return true;
-
-                const value = row.getValue('STATUS_CHAMADO') as string | null | undefined;
-                const cellValueUpper = (value ?? '').toString().toUpperCase().trim();
-                const filterValueUpper = filterValue.toString().toUpperCase().trim();
-
-                return cellValueUpper === filterValueUpper;
-            },
-        },
-
-        // Conclusão do chamado
-        {
-            accessorKey: 'CONCLUSAO_CHAMADO',
-            id: 'CONCLUSAO_CHAMADO',
-            header: () => (
-                <div className="text-center text-sm font-bold tracking-widest text-white select-none">
-                    CONCLUSÃO
-                </div>
-            ),
-            cell: ({ getValue }) => {
-                const value = (getValue() as string) ?? '---------------';
-
-                const isSemConclusaoChamado = value === '---------------';
-
-                if (isSemConclusaoChamado) {
-                    return (
-                        <div className="text-center text-sm font-semibold tracking-widest text-black select-none">
-                            {value}
-                        </div>
-                    );
-                }
-
-                return (
-                    <div className="text-center text-sm font-semibold tracking-widest text-black select-none">
-                        {formatarDataParaBR(value)}
+                    <div
+                        className={`mx-auto flex w-full items-center justify-center rounded-md px-3 py-1 text-sm font-bold tracking-widest select-none ${getStylesStatus(
+                            value
+                        )}`}
+                    >
+                        {value.toUpperCase()}
                     </div>
                 );
             },
             enableColumnFilter: true,
-        },
-
-        // Quantidade de horas
-        {
-            accessorKey: 'TOTAL_HORAS_OS',
-            id: 'TOTAL_HORAS_OS',
-            header: () => (
-                <div className="text-center text-sm font-bold tracking-widest text-white select-none">
-                    QTD. HORAS
-                </div>
-            ),
-            cell: ({ getValue }) => {
-                const value = getValue() as number | null;
-
-                return (
-                    <div className="text-center text-sm font-semibold tracking-widest text-black select-none">
-                        {formatarHorasTotaisSufixo(value)}
-                    </div>
-                );
-            },
-            enableColumnFilter: false,
         },
     ];
 

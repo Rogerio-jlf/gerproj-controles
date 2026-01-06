@@ -1,4 +1,4 @@
-// src/components/chamados/Tabela_Chamados.tsx - PARTE 1
+// src/components/chamados/Tabela_Chamados.tsx - ATUALIZADO
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
@@ -13,7 +13,7 @@ import { FaEraser } from 'react-icons/fa';
 import { IoCall } from 'react-icons/io5';
 import { MdNavigateBefore, MdNavigateNext } from 'react-icons/md';
 import { useRedimensionarColunas } from '../../../hooks/useRedimensionarColunas';
-import { useClienteData, useIsAdmin, useIsLoggedIn } from '../../../store/authStore';
+import { useCodRecurso, useIsAdmin, useIsLoggedIn } from '../../../store/authStore';
 import { useFilters } from '../../../store/filtersStore';
 import { IsError } from '../../shared/IsError';
 import { IsLoading } from '../../shared/IsLoading';
@@ -35,7 +35,6 @@ const HEADER_HEIGHT = 293;
 const BASE_MIN_HEIGHT = 400;
 const MAX_HEIGHT = `calc(${ZOOM_COMPENSATION}vh - ${HEADER_HEIGHT}px)`;
 const MIN_HEIGHT = `${(BASE_MIN_HEIGHT * ZOOM_COMPENSATION) / 100}px`;
-// ============================================
 
 // ==================== INTERFACE ====================
 interface ApiResponseChamados {
@@ -61,50 +60,56 @@ declare module '@tanstack/react-table' {
 
 // ==================== FUNÇÕES DE FETCH ====================
 const fetchChamados = async ({
+    isAdmin,
+    codRecurso, // ✅ NOVO
     ano,
     mes,
-    isAdmin,
-    codCliente,
     cliente,
     recurso,
     status,
     page,
     limit,
-    columnFilters, // ✅ NOVO
+    columnFilters,
 }: {
-    ano: string;
-    mes: string;
     isAdmin: boolean;
-    codCliente: string | null;
+    codRecurso: string | null; // ✅ NOVO
+    ano?: string;
+    mes?: string;
     cliente?: string;
     recurso?: string;
     status?: string;
     page: number;
     limit: number;
-    columnFilters?: ColumnFiltersState; // ✅ NOVO
+    columnFilters?: ColumnFiltersState;
 }): Promise<ApiResponseChamados> => {
     const params = new URLSearchParams({
-        ano,
-        mes,
         isAdmin: String(isAdmin),
         page: String(page),
         limit: String(limit),
-        ...(cliente && { codClienteFilter: cliente }),
-        ...(recurso && { codRecursoFilter: recurso }),
-        ...(status && { statusFilter: status }),
     });
 
-    if (!isAdmin && codCliente) {
-        params.append('codCliente', codCliente);
+    // ✅ NOVO: Adiciona codRecurso para não-admin
+    if (!isAdmin && codRecurso) {
+        params.append('codRecurso', codRecurso);
     }
 
-    // ✅ NOVO: Adicionar filtros de coluna
+    // ✅ MODIFICADO: Ano e mes são opcionais
+    if (ano && mes) {
+        params.append('ano', ano);
+        params.append('mes', mes);
+    }
+
+    // ✅ Filtros apenas para admin
+    if (isAdmin) {
+        if (cliente) params.append('codClienteFilter', cliente);
+        if (recurso) params.append('codRecursoFilter', recurso);
+        if (status) params.append('statusFilter', status);
+    }
+
     if (columnFilters && columnFilters.length > 0) {
         columnFilters.forEach((filter) => {
             if (filter.value && String(filter.value).trim() !== '') {
-                // Mapear os IDs das colunas para os nomes dos parâmetros
-                const paramName = `filter_${filter.id}`;
-                params.append(paramName, String(filter.value));
+                params.append(`filter_${filter.id}`, String(filter.value));
             }
         });
     }
@@ -123,13 +128,12 @@ const fetchChamados = async ({
 export function TabelaChamados() {
     const isAdmin = useIsAdmin();
     const isLoggedIn = useIsLoggedIn();
-    const { codCliente } = useClienteData();
+    const codRecurso = useCodRecurso(); // ✅ NOVO
     const { filters } = useFilters();
     const { ano, mes, cliente, recurso, status } = filters;
 
-    // Estados
     const [page, setPage] = useState(1);
-    const [limit] = useState(50); // Pode tornar configurável depois
+    const [limit] = useState(50);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
     const [isModalListaOSOpen, setIsModalListaOSOpen] = useState(false);
     const [isModalOSOpen, setIsModalOSOpen] = useState(false);
@@ -143,9 +147,6 @@ export function TabelaChamados() {
     const [isModalAvaliacaoOpen, setIsModalAvaliacaoOpen] = useState(false);
     const [selectedChamadoAvaliacao, setSelectedChamadoAvaliacao] =
         useState<ChamadoRowProps | null>(null);
-    const [observacaoChamadoAvaliacao, setObservacaoChamadoAvaliacao] = useState<string | null>(
-        null
-    );
 
     const { columnFilterFn } = useFiltrosChamados();
 
@@ -166,7 +167,7 @@ export function TabelaChamados() {
     const { columnWidths, handleMouseDown, handleDoubleClick, resizingColumn } =
         useRedimensionarColunas(initialColumnWidths);
 
-    // Query de Chamados
+    // ✅ MODIFICADO: Query diferente para admin e não-admin
     const {
         data: apiData,
         isLoading,
@@ -175,83 +176,60 @@ export function TabelaChamados() {
     } = useQuery({
         queryKey: [
             'tabela-chamados',
-            ano ?? 0,
-            mes ?? 0,
-            cliente ?? '',
-            recurso ?? '',
-            status ?? '',
             isAdmin,
-            codCliente ?? '',
+            codRecurso,
+            ano,
+            mes,
+            cliente,
+            recurso,
+            status,
             page,
             limit,
-            columnFilters, // ✅ NOVO: Adicionar na chave
+            columnFilters,
         ],
         queryFn: () =>
             fetchChamados({
-                ano: String(ano ?? new Date().getFullYear()),
-                mes: String(mes ?? new Date().getMonth() + 1),
                 isAdmin,
-                codCliente,
-                cliente: cliente ?? '',
-                recurso: recurso ?? '',
-                status: status ?? '',
+                codRecurso, // ✅ NOVO
+                ano: isAdmin ? String(ano ?? new Date().getFullYear()) : undefined,
+                mes: isAdmin ? String(mes ?? new Date().getMonth() + 1) : undefined,
+                cliente: isAdmin ? (cliente ?? '') : undefined,
+                recurso: isAdmin ? (recurso ?? '') : undefined,
+                status: isAdmin ? (status ?? '') : undefined,
                 page,
                 limit,
-                columnFilters, // ✅ NOVO: Passar para a função
+                columnFilters,
             }),
-        enabled: isLoggedIn && !!ano && !!mes,
+        enabled: isLoggedIn && (isAdmin ? !!(ano && mes) : !!codRecurso && codRecurso !== ''),
         staleTime: 0,
         gcTime: 5 * 60 * 1000,
         refetchOnMount: true,
         retry: 2,
     });
 
-    const data = useMemo(() => {
-        const chamados = apiData?.data ?? [];
-        return chamados; // Dados já vêm filtrados do servidor
-    }, [apiData?.data]);
-
-    const totalOS = useMemo(() => apiData?.totalOS ?? 0, [apiData?.totalOS]);
+    const data = useMemo(() => apiData?.data ?? [], [apiData?.data]);
     const pagination = useMemo(() => apiData?.pagination, [apiData?.pagination]);
 
-    React.useEffect(() => {
-        console.log('Estado de page atualizado para:', page);
-    }, [page]);
-
-    React.useEffect(() => {
-        console.log('Dados da API atualizados:', {
-            currentPage: pagination?.page,
-            totalPages: pagination?.totalPages,
-            hasData: !!apiData,
-        });
-    }, [apiData, pagination]);
-
-    // Funções de paginação
     const handleNextPage = useCallback(() => {
         if (pagination?.hasNextPage) {
             setPage((prev) => prev + 1);
-            // ✅ REMOVIDO: setColumnFilters([])
         }
     }, [pagination?.hasNextPage]);
 
     const handlePreviousPage = useCallback(() => {
         if (pagination?.hasPreviousPage) {
             setPage((prev) => Math.max(1, prev - 1));
-            // ✅ REMOVIDO: setColumnFilters([])
         }
     }, [pagination?.hasPreviousPage]);
 
     const handleGoToPage = useCallback((pageNumber: number) => {
         setPage(pageNumber);
-        // ✅ REMOVIDO: setColumnFilters([])
-
         const tableContainer = document.querySelector('.scrollbar-thin');
         if (tableContainer) {
             tableContainer.scrollTop = 0;
         }
     }, []);
 
-    // Função para abrir modal de lista de OS's
     const handleChamadoClick = useCallback((codChamado: number, temOS: boolean) => {
         if (temOS) {
             setSelectedChamado(codChamado);
@@ -259,62 +237,49 @@ export function TabelaChamados() {
         }
     }, []);
 
-    // Função para abrir modal de detalhes da OS
     const handleOSSelect = useCallback((os: OSRowProps) => {
         setSelectedOS(os);
         setIsModalOSOpen(true);
     }, []);
 
-    // Função para fechar modal de lista de OS's
     const handleCloseModalListaOS = useCallback(() => {
         setIsModalListaOSOpen(false);
         setSelectedChamado(null);
     }, []);
 
-    // Função para fechar modal de detalhes da OS
     const handleCloseModalOS = useCallback(() => {
         setIsModalOSOpen(false);
         setSelectedOS(null);
     }, []);
 
-    // Função para salvar validação
-    const handleSaveValidation = useCallback(
-        (updatedRow: OSRowProps) => {
-            refetch();
-        },
-        [refetch]
-    );
+    const handleSaveValidation = useCallback(() => {
+        refetch();
+    }, [refetch]);
 
-    // Função para abrir modal de solicitação
     const handleOpenSolicitacao = useCallback((chamado: ChamadoRowProps) => {
         setSelectedChamadoSolicitacao(chamado);
         setIsModalSolicitacaoOpen(true);
     }, []);
 
-    // Função para fechar modal de solicitação
     const handleCloseSolicitacao = useCallback(() => {
         setIsModalSolicitacaoOpen(false);
         setSelectedChamadoSolicitacao(null);
     }, []);
 
-    // Função para abrir modal de avaliação
     const handleOpenAvaliacao = useCallback((chamado: ChamadoRowProps) => {
         setSelectedChamadoAvaliacao(chamado);
         setIsModalAvaliacaoOpen(true);
     }, []);
 
-    // Função para fechar modal de avaliação
     const handleCloseAvaliacao = useCallback(() => {
         setIsModalAvaliacaoOpen(false);
         setSelectedChamadoAvaliacao(null);
     }, []);
 
-    // Função para salvar avaliação
     const handleSaveAvaliacao = useCallback(() => {
         refetch();
     }, [refetch]);
 
-    // Colunas dinâmicas
     const columns = useMemo(
         () =>
             getColunasChamados(
@@ -327,12 +292,10 @@ export function TabelaChamados() {
         [isAdmin, columnWidths, handleOpenSolicitacao, handleOpenAvaliacao]
     );
 
-    // ==================== CALLBACKS ====================
     const clearAllFilters = useCallback(() => {
         setColumnFilters([]);
     }, []);
 
-    // ==================== MEMORIZAÇÕES ====================
     const hasActiveFilters = useMemo(() => {
         return columnFilters.some((filter) => {
             const value = filter.value;
@@ -350,43 +313,8 @@ export function TabelaChamados() {
         }
     }, [columnFilters]);
 
-    const dadosFiltrados = useMemo(() => {
-        if (!hasActiveFilters) {
-            return data;
-        }
-
-        return data.filter((row) => {
-            return columnFilters.every((filter) => {
-                const columnId = filter.id;
-                const filterValue = filter.value;
-
-                if (
-                    !filterValue ||
-                    (typeof filterValue === 'string' && filterValue.trim() === '')
-                ) {
-                    return true;
-                }
-
-                const normalizedFilterValue =
-                    typeof filterValue === 'string' ? filterValue : String(filterValue);
-
-                const fakeRow: any = {
-                    getValue: (id: string) => row[id as keyof ChamadoRowProps],
-                };
-
-                return columnFilterFn(fakeRow, columnId as string, normalizedFilterValue);
-            });
-        });
-    }, [data, columnFilters, hasActiveFilters, columnFilterFn]);
-
-    const totalHorasOS = useMemo(() => apiData?.totalHorasOS ?? 0, [apiData?.totalHorasOS]);
-
-    const totalHorasFiltradas = useMemo(() => {
-        return apiData?.totalHorasOS ?? 0;
-    }, [apiData?.totalHorasOS]);
-
     const table = useReactTable<ChamadoRowProps>({
-        data: data, // ✅ Usar 'data' ao invés de 'dadosFiltrados'
+        data,
         columns,
         getCoreRowModel: getCoreRowModel(),
         state: {
@@ -398,21 +326,6 @@ export function TabelaChamados() {
         },
     });
 
-    const totalChamados = useMemo(() => apiData?.totalChamados ?? 0, [apiData?.totalChamados]);
-
-    const totalChamadosFiltrados = useMemo(() => {
-        return apiData?.totalChamados ?? 0;
-    }, [apiData?.totalChamados]);
-
-    const chamadosExibidos = useMemo(() => {
-        return data.length;
-    }, [data.length]);
-
-    const totalOSFiltrados = useMemo(() => {
-        return apiData?.totalOS ?? 0;
-    }, [apiData?.totalOS]);
-
-    // ==================== RENDERIZAÇÃO CONDICIONAL ====================
     if (!isLoggedIn) {
         return (
             <IsError
@@ -433,24 +346,20 @@ export function TabelaChamados() {
         );
     }
 
-    // ==================== RENDERIZAÇÃO PRINCIPAL ====================
     return (
         <>
             <div className="relative flex h-full w-full flex-col overflow-hidden border border-b-slate-500 bg-white shadow-md shadow-black">
                 <Header
                     isAdmin={isAdmin}
-                    totalChamados={apiData?.totalChamados ?? 0}
-                    totalChamadosFiltrados={chamadosExibidos}
-                    totalOS={apiData?.totalOS ?? 0}
-                    totalOSFiltrados={totalOSFiltrados}
-                    totalHorasOS={apiData?.totalHorasOS ?? 0}
-                    totalHorasFiltradas={totalHorasFiltradas}
+                    totalChamadosFiltrados={data.length}
+                    totalOSFiltrados={apiData?.totalOS ?? 0}
+                    totalHorasFiltradas={apiData?.totalHorasOS ?? 0}
                     hasActiveFilters={hasActiveFilters}
                     clearAllFilters={clearAllFilters}
-                    filteredData={data} // ✅ Usar 'data' ao invés de 'dadosFiltrados'
-                    mes={String(mes)}
-                    ano={String(ano)}
-                    codCliente={codCliente}
+                    filteredData={data}
+                    mes={isAdmin ? String(mes) : undefined}
+                    ano={isAdmin ? String(ano) : undefined}
+                    codRecurso={codRecurso}
                     onRefresh={() => {
                         clearAllFilters();
                         setPage(1);
@@ -494,7 +403,6 @@ export function TabelaChamados() {
                     </div>
                 </div>
 
-                {/* Controles de Paginação */}
                 {pagination && pagination.totalPages > 1 && (
                     <PaginationControls
                         currentPage={pagination.page}
@@ -504,13 +412,12 @@ export function TabelaChamados() {
                         onNextPage={handleNextPage}
                         onPreviousPage={handlePreviousPage}
                         onGoToPage={handleGoToPage}
-                        totalChamados={totalChamados}
+                        totalChamados={apiData?.totalChamados ?? 0}
                         limit={limit}
                     />
                 )}
             </div>
 
-            {/* Modal Lista de OS's */}
             <ModalTabelaOS
                 isOpen={isModalListaOSOpen}
                 codChamado={selectedChamado}
@@ -518,7 +425,6 @@ export function TabelaChamados() {
                 onSelectOS={handleOSSelect}
             />
 
-            {/* Modal Detalhes da OS */}
             <ModalValidarOS
                 isOpen={isModalOSOpen}
                 selectedRow={selectedOS}
@@ -526,7 +432,6 @@ export function TabelaChamados() {
                 onSave={handleSaveValidation}
             />
 
-            {/* Modal Solicitação do Chamado */}
             <ModalSolicitacaoChamado
                 isOpen={isModalSolicitacaoOpen}
                 onClose={handleCloseSolicitacao}
@@ -536,7 +441,6 @@ export function TabelaChamados() {
                 dataChamado={selectedChamadoSolicitacao?.DATA_CHAMADO}
             />
 
-            {/* Modal Avaliação do Chamado */}
             <ModalAvaliarChamado
                 isOpen={isModalAvaliacaoOpen}
                 onClose={handleCloseAvaliacao}
@@ -554,7 +458,6 @@ export function TabelaChamados() {
 // ========== SUB-COMPONENTES =================================
 // ============================================================
 
-// ==================== PAGINATION CONTROLS ====================
 interface PaginationControlsProps {
     currentPage: number;
     totalPages: number;
@@ -578,38 +481,31 @@ function PaginationControls({
     totalChamados,
     limit,
 }: PaginationControlsProps) {
-    // Calcular range de registros exibidos
     const startRecord = (currentPage - 1) * limit + 1;
     const endRecord = Math.min(currentPage * limit, totalChamados);
 
-    // Gerar números de páginas para exibir
     const getPageNumbers = () => {
         const pages: (number | string)[] = [];
-        const maxPagesToShow = 7; // Número máximo de botões de página
+        const maxPagesToShow = 7;
 
         if (totalPages <= maxPagesToShow) {
-            // Mostrar todas as páginas
             for (let i = 1; i <= totalPages; i++) {
                 pages.push(i);
             }
         } else {
-            // Lógica para mostrar páginas com reticências
             if (currentPage <= 4) {
-                // Início: 1 2 3 4 5 ... 10
                 for (let i = 1; i <= 5; i++) {
                     pages.push(i);
                 }
                 pages.push('...');
                 pages.push(totalPages);
             } else if (currentPage >= totalPages - 3) {
-                // Final: 1 ... 6 7 8 9 10
                 pages.push(1);
                 pages.push('...');
                 for (let i = totalPages - 4; i <= totalPages; i++) {
                     pages.push(i);
                 }
             } else {
-                // Meio: 1 ... 4 5 6 ... 10
                 pages.push(1);
                 pages.push('...');
                 for (let i = currentPage - 1; i <= currentPage + 1; i++) {
@@ -625,7 +521,6 @@ function PaginationControls({
 
     return (
         <div className="flex items-center justify-between border-t border-b border-black bg-gray-200 px-10 py-2 shadow-inner">
-            {/* Informações de registros */}
             <div className="flex items-center gap-2">
                 <span className="text-base font-semibold tracking-widest text-black select-none">
                     Exibindo do{' '}
@@ -641,9 +536,7 @@ function PaginationControls({
                 </span>
             </div>
 
-            {/* Controles de navegação */}
             <div className="flex items-center gap-4">
-                {/* Botão Anterior */}
                 <button
                     onClick={onPreviousPage}
                     disabled={!hasPreviousPage}
@@ -658,7 +551,6 @@ function PaginationControls({
                     Anterior
                 </button>
 
-                {/* Números das páginas */}
                 <div className="flex items-center gap-4">
                     {getPageNumbers().map((pageNum, idx) => {
                         if (pageNum === '...') {
@@ -677,12 +569,7 @@ function PaginationControls({
                         return (
                             <button
                                 key={pageNum}
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    console.log('Clicou no botão da página:', pageNum);
-                                    onGoToPage(pageNum as number);
-                                }}
+                                onClick={() => onGoToPage(pageNum as number)}
                                 disabled={pageNum === currentPage}
                                 className={`min-w-[40px] rounded-md px-4 py-1 text-base font-semibold tracking-widest shadow-md shadow-black transition-all duration-200 select-none ${
                                     isCurrentPage
@@ -697,7 +584,6 @@ function PaginationControls({
                     })}
                 </div>
 
-                {/* Botão Próximo */}
                 <button
                     onClick={onNextPage}
                     disabled={!hasNextPage}
@@ -713,7 +599,6 @@ function PaginationControls({
                 </button>
             </div>
 
-            {/* Info da página atual */}
             <div className="flex items-center gap-2">
                 <span className="text-base font-semibold tracking-widest text-black select-none">
                     Página{' '}
@@ -727,21 +612,17 @@ function PaginationControls({
     );
 }
 
-// ==================== HEADER ====================
 interface HeaderProps {
     isAdmin: boolean;
-    totalChamados: number;
     totalChamadosFiltrados: number;
-    totalOS: number;
     totalOSFiltrados: number;
-    totalHorasOS: number;
     totalHorasFiltradas: number;
     hasActiveFilters: boolean;
     clearAllFilters: () => void;
     filteredData: ChamadoRowProps[];
-    mes: string;
-    ano: string;
-    codCliente: string | null;
+    mes?: string;
+    ano?: string;
+    codRecurso: string | null;
     onRefresh: () => void;
 }
 
@@ -755,21 +636,18 @@ function Header({
     filteredData,
     mes,
     ano,
-    codCliente,
 }: HeaderProps) {
     const { cliente, recurso, status } = useFilters().filters;
 
     return (
         <header className="flex items-center justify-between gap-4 bg-purple-900 p-6">
-            {/* Esquerda: Título */}
             <div className="flex items-center gap-4">
                 <IoCall className="text-white" size={50} />
                 <h2 className="text-2xl font-extrabold tracking-widest text-white select-none">
-                    CHAMADOS - {mes}/{ano}
+                    {isAdmin && mes && ano ? `CHAMADOS - ${mes}/${ano}` : 'MEUS CHAMADOS'}
                 </h2>
             </div>
 
-            {/* Direita: Ações */}
             <div className="flex items-center gap-6">
                 {hasActiveFilters && (
                     <button
@@ -787,13 +665,13 @@ function Header({
                 <ExportaExcelChamadosButton
                     data={filteredData}
                     isAdmin={isAdmin}
-                    codCliente={codCliente}
+                    codCliente={null}
                     filtros={{
-                        ano,
-                        mes,
-                        cliente,
-                        recurso,
-                        status,
+                        ano: ano ?? '',
+                        mes: mes ?? '',
+                        cliente: isAdmin ? cliente : undefined,
+                        recurso: isAdmin ? recurso : undefined,
+                        status: isAdmin ? status : undefined,
                         totalChamados: totalChamadosFiltrados,
                         totalOS: totalOSFiltrados,
                         totalHorasOS: totalHorasFiltradas,
@@ -804,13 +682,13 @@ function Header({
                 <ExportaPDFChamadosButton
                     data={filteredData}
                     isAdmin={isAdmin}
-                    codCliente={codCliente}
+                    codCliente={null}
                     filtros={{
-                        ano,
-                        mes,
-                        cliente,
-                        recurso,
-                        status,
+                        ano: ano ?? '',
+                        mes: mes ?? '',
+                        cliente: isAdmin ? cliente : undefined,
+                        recurso: isAdmin ? recurso : undefined,
+                        status: isAdmin ? status : undefined,
                         totalChamados: totalChamadosFiltrados,
                         totalOS: totalOSFiltrados,
                         totalHorasOS: totalHorasFiltradas,

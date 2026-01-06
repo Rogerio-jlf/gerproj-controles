@@ -1,15 +1,17 @@
+// src/components/shared/Filtros.tsx - ATUALIZADO
+'use client';
+
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { IoClose } from 'react-icons/io5';
 import { MdCalendarMonth, MdFilterAlt } from 'react-icons/md';
 import { useDebounce } from 'use-debounce';
 import { corrigirTextoCorrompido } from '../../formatters/formatar-texto-corrompido';
-import { useClienteData, useIsAdmin } from '../../store/authStore';
+import { useIsAdmin } from '../../store/authStore';
 import { useFilters } from '../../store/filtersStore';
 import { Relogio } from './Relogio';
 
 // ==================== INTERFACES ====================
-
 interface Cliente {
     cod: string;
     nome: string;
@@ -21,14 +23,12 @@ interface Recurso {
 }
 
 // ==================== FUNÇÕES AUXILIARES ====================
-// Limita o nome a um número máximo de palavras
 function limitarNome(nome: string, maxPalavras: number = 2): string {
     if (!nome || typeof nome !== 'string') return '';
     const palavras = nome.trim().split(/\s+/);
     return palavras.slice(0, maxPalavras).join(' ');
 }
 
-// Processa o nome corrigindo texto corrompido e limitando palavras
 function processarNome(nome: string, maxPalavras: number = 2): string {
     if (!nome || typeof nome !== 'string') return '';
     const nomeCorrigido = corrigirTextoCorrompido(nome);
@@ -36,122 +36,82 @@ function processarNome(nome: string, maxPalavras: number = 2): string {
 }
 
 // ==================== FUNÇÕES DE FETCH ====================
-const fetchClientes = async ({
-    mes,
-    ano,
-    isAdmin,
-    codCliente,
-}: {
-    mes: number;
-    ano: number;
-    isAdmin: boolean;
-    codCliente: string | null;
-}): Promise<Cliente[]> => {
-    const params = new URLSearchParams();
-    params.append('mes', mes.toString());
-    params.append('ano', ano.toString());
-    params.append('isAdmin', isAdmin.toString());
-
-    if (!isAdmin && codCliente) {
-        params.append('codCliente', codCliente);
-    }
+const fetchClientes = async ({ mes, ano }: { mes: number; ano: number }): Promise<Cliente[]> => {
+    const params = new URLSearchParams({
+        mes: mes.toString(),
+        ano: ano.toString(),
+        isAdmin: 'true',
+    });
 
     const response = await fetch(`/api/filtros/clientes?${params.toString()}`);
-
-    if (!response.ok) {
-        throw new Error('Erro ao carregar clientes');
-    }
-
+    if (!response.ok) throw new Error('Erro ao carregar clientes');
     return response.json();
 };
 
 const fetchRecursos = async ({
     mes,
     ano,
-    isAdmin,
-    codCliente,
     clienteSelecionado,
 }: {
     mes: number;
     ano: number;
-    isAdmin: boolean;
-    codCliente: string | null;
     clienteSelecionado: string;
 }): Promise<Recurso[]> => {
-    const params = new URLSearchParams();
-    params.append('mes', mes.toString());
-    params.append('ano', ano.toString());
-    params.append('isAdmin', isAdmin.toString());
-
-    if (!isAdmin && codCliente) {
-        params.append('codCliente', codCliente);
-    }
-
-    if (isAdmin && clienteSelecionado) {
-        params.append('cliente', clienteSelecionado);
-    }
+    const params = new URLSearchParams({
+        mes: mes.toString(),
+        ano: ano.toString(),
+        isAdmin: 'true',
+        ...(clienteSelecionado && { cliente: clienteSelecionado }),
+    });
 
     const response = await fetch(`/api/filtros/recursos?${params.toString()}`);
-
-    if (!response.ok) {
-        throw new Error('Erro ao carregar recursos');
-    }
-
+    if (!response.ok) throw new Error('Erro ao carregar recursos');
     return response.json();
 };
 
 const fetchStatus = async ({
     mes,
     ano,
-    isAdmin,
-    codCliente,
     clienteSelecionado,
     recursoSelecionado,
 }: {
     mes: number;
     ano: number;
-    isAdmin: boolean;
-    codCliente: string | null;
     clienteSelecionado: string;
     recursoSelecionado: string;
 }): Promise<string[]> => {
-    const params = new URLSearchParams();
-    params.append('mes', mes.toString());
-    params.append('ano', ano.toString());
-    params.append('isAdmin', isAdmin.toString());
-
-    if (!isAdmin && codCliente) {
-        params.append('codCliente', codCliente);
-    }
-
-    if (isAdmin && clienteSelecionado) {
-        params.append('cliente', clienteSelecionado);
-    }
-
-    if (recursoSelecionado) {
-        params.append('recurso', recursoSelecionado);
-    }
+    const params = new URLSearchParams({
+        mes: mes.toString(),
+        ano: ano.toString(),
+        isAdmin: 'true',
+        ...(clienteSelecionado && { cliente: clienteSelecionado }),
+        ...(recursoSelecionado && { recurso: recursoSelecionado }),
+    });
 
     const response = await fetch(`/api/filtros/status?${params.toString()}`);
-
-    if (!response.ok) {
-        throw new Error('Erro ao carregar status');
-    }
-
+    if (!response.ok) throw new Error('Erro ao carregar status');
     return response.json();
 };
 
-// ================================================================================
-// COMPONENTE PRINCIPAL
-// ================================================================================
+// ==================== COMPONENTE PRINCIPAL ====================
 export function Filtros() {
+    const isAdmin = useIsAdmin();
+
+    // ✅ NOVO: Não renderiza nada se não for admin
+    if (!isAdmin) {
+        return null;
+    }
+
+    return <FiltrosContent />;
+}
+
+// ==================== COMPONENTE DE CONTEÚDO ====================
+function FiltrosContent() {
     const hoje = new Date();
     const anoAtual = hoje.getFullYear();
     const mesAtual = hoje.getMonth() + 1;
 
     const { filters, setFilters } = useFilters();
-    const isAdmin = useIsAdmin();
-    const { codCliente } = useClienteData();
 
     const [ano, setAno] = useState(filters.ano);
     const [mes, setMes] = useState(filters.mes);
@@ -167,7 +127,6 @@ export function Filtros() {
         setRecursoSelecionado(filters.recurso);
         setStatusSelecionado(filters.status);
         setIsInitialized(true);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const [debouncedClienteSelecionado] = useDebounce(clienteSelecionado, 300);
@@ -175,48 +134,36 @@ export function Filtros() {
     const [debouncedStatusSelecionado] = useDebounce(statusSelecionado, 300);
 
     const { data: clientesData = [], isLoading: clientesLoading } = useQuery({
-        queryKey: ['clientes', mes, ano, isAdmin, codCliente],
-        queryFn: () => fetchClientes({ mes, ano, isAdmin, codCliente }),
+        queryKey: ['clientes', mes, ano],
+        queryFn: () => fetchClientes({ mes, ano }),
         enabled: !!(mes && ano && isInitialized),
         staleTime: 1000 * 60 * 5,
         retry: 2,
     });
 
     const { data: recursosData = [], isLoading: recursosLoading } = useQuery({
-        queryKey: ['recursos', mes, ano, isAdmin, codCliente, debouncedClienteSelecionado],
+        queryKey: ['recursos', mes, ano, debouncedClienteSelecionado],
         queryFn: () =>
             fetchRecursos({
                 mes,
                 ano,
-                isAdmin,
-                codCliente,
                 clienteSelecionado: debouncedClienteSelecionado,
             }),
-        enabled: !!(mes && ano && (isAdmin || codCliente) && isInitialized),
+        enabled: !!(mes && ano && isInitialized),
         staleTime: 1000 * 60 * 5,
         retry: 2,
     });
 
     const { data: statusData = [], isLoading: statusLoading } = useQuery({
-        queryKey: [
-            'status',
-            mes,
-            ano,
-            isAdmin,
-            codCliente,
-            debouncedClienteSelecionado,
-            debouncedRecursoSelecionado,
-        ],
+        queryKey: ['status', mes, ano, debouncedClienteSelecionado, debouncedRecursoSelecionado],
         queryFn: () =>
             fetchStatus({
                 mes,
                 ano,
-                isAdmin,
-                codCliente,
                 clienteSelecionado: debouncedClienteSelecionado,
                 recursoSelecionado: debouncedRecursoSelecionado,
             }),
-        enabled: !!(mes && ano && isInitialized && (isAdmin || codCliente)),
+        enabled: !!(mes && ano && isInitialized),
         staleTime: 1000 * 60 * 5,
         retry: 2,
     });
@@ -255,13 +202,6 @@ export function Filtros() {
 
     useEffect(() => {
         if (!isInitialized) return;
-        if (!isAdmin && codCliente && clientesData.length > 0) {
-            setClienteSelecionado(codCliente);
-        }
-    }, [isAdmin, codCliente, clientesData, isInitialized]);
-
-    useEffect(() => {
-        if (!isInitialized) return;
         if (recursoSelecionado && recursosData.length > 0) {
             const recursoExiste = recursosData.some((r) => r.cod === recursoSelecionado);
             if (!recursoExiste) {
@@ -281,7 +221,6 @@ export function Filtros() {
         }
     }, [statusData, statusSelecionado, isInitialized]);
 
-    // ==================== CONSTANTES ====================
     const years = [2024, 2025, 2026];
     const months = [
         'Janeiro',
@@ -300,14 +239,12 @@ export function Filtros() {
 
     const isLoading = recursosLoading || statusLoading;
 
-    // ==================== VERIFICAÇÃO DE FILTROS ATIVOS ====================
     const isAnoAtivo = ano !== anoAtual;
     const isMesAtivo = mes !== mesAtual;
     const isClienteAtivo = clienteSelecionado !== '';
     const isRecursoAtivo = recursoSelecionado !== '';
     const isStatusAtivo = statusSelecionado !== '';
 
-    // ==================== COMPONENTE SELECT COM CLEAR ====================
     interface SelectWithClearProps {
         value: string | number;
         onChange: (value: string) => void;
@@ -396,12 +333,8 @@ export function Filtros() {
         );
     }
 
-    // ================================================================================
-    // RENDERIZAÇÃO PRINCIPAL
-    // ================================================================================
     return (
         <div className="flex flex-col gap-2">
-            {/* Cabeçalho compacto */}
             <header className="flex items-center justify-between px-4">
                 <div className="flex items-center gap-3">
                     <MdFilterAlt className="text-black" size={24} />
@@ -423,7 +356,6 @@ export function Filtros() {
                 </div>
             </header>
 
-            {/* Filtros compactos */}
             <div className="grid grid-cols-5 gap-6 px-4">
                 {/* Ano */}
                 <select
@@ -468,10 +400,9 @@ export function Filtros() {
                     value={clienteSelecionado}
                     onChange={setClienteSelecionado}
                     onClear={() => setClienteSelecionado('')}
-                    disabled={!clientesData.length || !!codCliente || clientesLoading}
+                    disabled={!clientesData.length || clientesLoading}
                     options={clientesData.map((c) => ({ value: c.cod, label: c.nome }))}
                     placeholder={clientesLoading ? 'Carregando...' : 'Selecione o cliente'}
-                    showClear={!codCliente}
                     isActive={isClienteAtivo}
                     className="w-full cursor-pointer rounded-md border p-2 text-base font-extrabold tracking-widest shadow-md shadow-black transition-all duration-200 select-none hover:shadow-xl hover:shadow-black focus:ring-2 focus:ring-purple-600 focus:outline-none disabled:cursor-not-allowed disabled:opacity-30"
                 />
