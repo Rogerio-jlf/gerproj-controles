@@ -58,9 +58,9 @@ export function Login() {
                 } else {
                     // Cliente - lógica existente
                     if (state.isAdmin) {
-                        await router.push('/paginas/dashboard');
+                        await router.push('/paginas/cliente/dashboard');
                     } else if (state.codCliente) {
-                        await router.push('/paginas/dashboard');
+                        await router.push('/paginas/cliente/dashboard');
                     } else if (state.codRecurso) {
                         await router.push('/paginas/tabela-chamados-abertos');
                     } else {

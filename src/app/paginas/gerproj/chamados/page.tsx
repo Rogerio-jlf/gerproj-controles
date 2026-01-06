@@ -22,7 +22,7 @@ export default function ChamadosPage() {
                 router.push('/');
             } else if (!isConsultor) {
                 // Se não for consultor, redireciona para dashboard
-                router.push('/paginas/dashboard');
+                router.push('/paginas/cliente/dashboard');
             }
         }
     }, [isLoggedIn, isLoading, isConsultor, router]);

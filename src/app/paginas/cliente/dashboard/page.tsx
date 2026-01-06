@@ -2,11 +2,11 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { ContainerDashboard } from '../../../components/dashboard/Container_Dashboard';
-import { LayoutDashboard } from '../../../components/dashboard/Layout_Dashboard';
-import { Filtros } from '../../../components/shared/Filtros';
-import { useIsLoggedIn } from '../../../store/authStore';
-import { useFilters } from '../../../store/filtersStore'; // <- Mudança aqui
+import { ContainerDashboard } from '../../../../components/dashboard/Container_Dashboard';
+import { LayoutDashboard } from '../../../../components/dashboard/Layout_Dashboard';
+import { Filtros } from '../../../../components/shared/Filtros';
+import { useIsLoggedIn } from '../../../../store/authStore';
+import { useFilters } from '../../../../store/filtersStore'; // <- Mudança aqui
 
 export default function DashboardPage() {
     const isLoggedIn = useIsLoggedIn();

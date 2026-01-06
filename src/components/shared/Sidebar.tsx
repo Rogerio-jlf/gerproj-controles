@@ -180,17 +180,6 @@ export function Sidebar() {
                                     )}
                                 </div>
                             </div>
-
-                            {/* Texto */}
-                            {/* <div className="flex flex-col items-center gap-2 px-4">
-                                <h3 className="text-xl font-extrabold tracking-widest text-white select-none">
-                                    Carregando
-                                </h3>
-                                <p className="text-center text-sm font-semibold tracking-wider text-white/80 select-none">
-                                    {targetRoute === '/paginas/dashboard' && 'Dashboard'}
-                                    {targetRoute === '/paginas/chamados' && 'Chamados'}
-                                </p>
-                            </div> */}
                         </div>
                     </div>
                 )}
@@ -243,20 +232,20 @@ export function Sidebar() {
                     <div className="flex w-full flex-1 flex-col gap-10">
                         {/* Dashboard Link */}
                         <Link
-                            href="/paginas/dashboard"
-                            onClick={(e) => handleNavigation(e, '/paginas/dashboard')}
+                            href="/paginas/cliente/dashboard"
+                            onClick={(e) => handleNavigation(e, '/paginas/cliente/dashboard')}
                             className={`group relative flex items-center overflow-hidden rounded-xl border-b-2 p-3 transition-all duration-200 ${
-                                pathname === '/paginas/dashboard'
+                                pathname === '/paginas/cliente/dashboard'
                                     ? 'border-teal-400 bg-gradient-to-r from-purple-950 via-indigo-950 to-blue-950 shadow-xl ring-2 shadow-teal-500/30 ring-teal-400/60'
                                     : 'border border-purple-900 bg-purple-700 shadow-md shadow-black hover:shadow-xl hover:shadow-black'
                             } ${
-                                isNavigating && targetRoute === '/paginas/dashboard'
+                                isNavigating && targetRoute === '/paginas/cliente/dashboard'
                                     ? 'pointer-events-none opacity-60'
                                     : 'hover:scale-[1.03] active:scale-[0.98]'
                             }`}
                         >
                             {/* Brilho animado para botão ativo */}
-                            {pathname === '/paginas/dashboard' && (
+                            {pathname === '/paginas/cliente/dashboard' && (
                                 <>
                                     <div className="animate-shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
                                     <div className="absolute top-1/2 -left-1 h-3 w-3 -translate-y-1/2 animate-pulse rounded-full bg-teal-400 opacity-100 shadow-lg shadow-teal-400/70 transition-opacity md:opacity-0 md:group-hover/sidebar:opacity-100"></div>
@@ -265,17 +254,17 @@ export function Sidebar() {
                             )}
 
                             {/* Efeito de brilho no hover para botões inativos */}
-                            {pathname !== '/paginas/dashboard' && (
+                            {pathname !== '/paginas/cliente/dashboard' && (
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-300/0 to-transparent transition-all duration-200 group-hover:via-purple-300/20"></div>
                             )}
 
                             <div className="relative flex w-full items-center justify-center gap-4 md:justify-start">
-                                {isNavigating && targetRoute === '/paginas/dashboard' ? (
+                                {isNavigating && targetRoute === '/paginas/cliente/dashboard' ? (
                                     <div className="h-7 w-7 flex-shrink-0 animate-spin rounded-full border-3 border-white/20 border-t-white"></div>
                                 ) : (
                                     <IoHome
                                         className={`h-7 w-7 flex-shrink-0 transition-all duration-200 ${
-                                            pathname === '/paginas/dashboard'
+                                            pathname === '/paginas/cliente/dashboard'
                                                 ? 'scale-110 text-white drop-shadow-[0_0_12px_rgba(94,234,212,0.8)]'
                                                 : 'text-white/70 group-hover:scale-110 group-hover:text-white group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]'
                                         }`}
@@ -284,7 +273,7 @@ export function Sidebar() {
 
                                 <span
                                     className={`overflow-hidden text-base font-extrabold tracking-widest whitespace-nowrap transition-all duration-200 select-none ${
-                                        pathname === '/paginas/dashboard'
+                                        pathname === '/paginas/cliente/dashboard'
                                             ? 'text-white drop-shadow-[0_0_8px_rgba(94,234,212,0.5)]'
                                             : 'text-white/70 group-hover:text-white group-hover:drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]'
                                     } ${
@@ -300,20 +289,20 @@ export function Sidebar() {
 
                         {/* Chamados Link */}
                         <Link
-                            href="/paginas/chamados"
-                            onClick={(e) => handleNavigation(e, '/paginas/chamados')}
+                            href="/paginas/cliente/chamados"
+                            onClick={(e) => handleNavigation(e, '/paginas/cliente/chamados')}
                             className={`group relative flex items-center overflow-hidden rounded-xl border-b-2 p-3 transition-all duration-200 ${
-                                pathname === '/paginas/chamados'
+                                pathname === '/paginas/cliente/chamados'
                                     ? 'border-teal-400 bg-gradient-to-r from-purple-950 via-indigo-950 to-blue-950 shadow-xl ring-2 shadow-teal-500/30 ring-teal-400/60'
                                     : 'border border-purple-900 bg-purple-700 shadow-md shadow-black hover:shadow-xl hover:shadow-black'
                             } ${
-                                isNavigating && targetRoute === '/paginas/chamados'
+                                isNavigating && targetRoute === '/paginas/cliente/chamados'
                                     ? 'pointer-events-none opacity-60'
                                     : 'hover:scale-[1.03] active:scale-[0.98]'
                             }`}
                         >
                             {/* Brilho animado para botão ativo */}
-                            {pathname === '/paginas/chamados' && (
+                            {pathname === '/paginas/cliente/chamados' && (
                                 <>
                                     <div className="animate-shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
                                     <div className="absolute top-1/2 -left-1 h-3 w-3 -translate-y-1/2 animate-pulse rounded-full bg-teal-400 opacity-100 shadow-lg shadow-teal-400/70 transition-opacity md:opacity-0 md:group-hover/sidebar:opacity-100"></div>
@@ -322,17 +311,17 @@ export function Sidebar() {
                             )}
 
                             {/* Efeito de brilho no hover para botões inativos */}
-                            {pathname !== '/paginas/chamados' && (
+                            {pathname !== '/paginas/cliente/chamados' && (
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-300/0 to-transparent transition-all duration-200 group-hover:via-purple-300/20"></div>
                             )}
 
                             <div className="relative flex w-full items-center justify-center gap-4 md:justify-start">
-                                {isNavigating && targetRoute === '/paginas/chamados' ? (
+                                {isNavigating && targetRoute === '/paginas/cliente/chamados' ? (
                                     <div className="h-7 w-7 flex-shrink-0 animate-spin rounded-full border-3 border-white/20 border-t-white"></div>
                                 ) : (
                                     <IoCall
                                         className={`h-7 w-7 flex-shrink-0 transition-all duration-200 ${
-                                            pathname === '/paginas/chamados'
+                                            pathname === '/paginas/cliente/chamados'
                                                 ? 'scale-110 text-white drop-shadow-[0_0_12px_rgba(94,234,212,0.8)]'
                                                 : 'text-white/70 group-hover:scale-110 group-hover:text-white group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]'
                                         }`}
@@ -341,7 +330,7 @@ export function Sidebar() {
 
                                 <span
                                     className={`overflow-hidden text-base font-extrabold tracking-widest whitespace-nowrap transition-all duration-200 select-none ${
-                                        pathname === '/paginas/chamados'
+                                        pathname === '/paginas/cliente/chamados'
                                             ? 'text-white drop-shadow-[0_0_8px_rgba(94,234,212,0.5)]'
                                             : 'text-white/70 group-hover:text-white group-hover:drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]'
                                     } ${

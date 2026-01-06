@@ -1,9 +1,9 @@
-// src/app/paginas/chamados/page.tsx
+// src/app/paginas/cliente/chamados/page.tsx
 'use client';
 
-import { LayoutTabelaChamados } from '../../../components/chamados/Layout_Tabela_Chamados';
-import { TabelaChamados } from '../../../components/chamados/Tabela_Chamados';
-import { Filtros } from '../../../components/shared/Filtros';
+import { LayoutTabelaChamados } from '../../../../components/chamados/Layout_Tabela_Chamados';
+import { TabelaChamados } from '../../../../components/chamados/Tabela_Chamados';
+import { Filtros } from '../../../../components/shared/Filtros';
 
 export default function ChamadosPage() {
     return (
