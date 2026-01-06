@@ -1,4 +1,4 @@
-// src/components/chamados/Tabela_Chamados.tsx - ATUALIZADO
+// src/components/chamados/Tabela_Chamados.tsx - ATUALIZADO COM DROPDOWN DE STATUS
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
@@ -23,6 +23,7 @@ import { ChamadoRowProps, getColunasChamados } from './Colunas_Tabela_Chamados';
 import { OSRowProps } from './Colunas_Tabela_OS';
 import { FiltroHeaderChamados, useFiltrosChamados } from './Filtro_Header_Tabela_Chamados';
 import { ModalAvaliarChamado } from './Modal_Avaliar_Chamado';
+import { ModalMudarStatusChamado } from './Modal_Mudar_Status_Chamado';
 import { ModalSolicitacaoChamado } from './Modal_Solicitacao_Chamado';
 import { ModalTabelaOS } from './Modal_Tabela_OS';
 import { ModalValidarOS } from './Modal_Validar_OS';
@@ -61,7 +62,7 @@ declare module '@tanstack/react-table' {
 // ==================== FUNÇÕES DE FETCH ====================
 const fetchChamados = async ({
     isAdmin,
-    codRecurso, // ✅ NOVO
+    codRecurso,
     ano,
     mes,
     cliente,
@@ -72,7 +73,7 @@ const fetchChamados = async ({
     columnFilters,
 }: {
     isAdmin: boolean;
-    codRecurso: string | null; // ✅ NOVO
+    codRecurso: string | null;
     ano?: string;
     mes?: string;
     cliente?: string;
@@ -88,18 +89,15 @@ const fetchChamados = async ({
         limit: String(limit),
     });
 
-    // ✅ NOVO: Adiciona codRecurso para não-admin
     if (!isAdmin && codRecurso) {
         params.append('codRecurso', codRecurso);
     }
 
-    // ✅ MODIFICADO: Ano e mes são opcionais
     if (ano && mes) {
         params.append('ano', ano);
         params.append('mes', mes);
     }
 
-    // ✅ Filtros apenas para admin
     if (isAdmin) {
         if (cliente) params.append('codClienteFilter', cliente);
         if (recurso) params.append('codRecursoFilter', recurso);
@@ -128,7 +126,7 @@ const fetchChamados = async ({
 export function TabelaChamados() {
     const isAdmin = useIsAdmin();
     const isLoggedIn = useIsLoggedIn();
-    const codRecurso = useCodRecurso(); // ✅ NOVO
+    const codRecurso = useCodRecurso();
     const { filters } = useFilters();
     const { ano, mes, cliente, recurso, status } = filters;
 
@@ -148,26 +146,31 @@ export function TabelaChamados() {
     const [selectedChamadoAvaliacao, setSelectedChamadoAvaliacao] =
         useState<ChamadoRowProps | null>(null);
 
+    // ✅ NOVO: Estado para mudança de status
+    const [isModalMudarStatusOpen, setIsModalMudarStatusOpen] = useState(false);
+    const [statusChangeData, setStatusChangeData] = useState<{
+        codChamado: number;
+        statusAtual: string;
+        novoStatus: string;
+    } | null>(null);
+
     const { columnFilterFn } = useFiltrosChamados();
 
     const initialColumnWidths = {
         COD_CHAMADO: 110,
-        DATA_CHAMADO: 170,
         PRIOR_CHAMADO: 110,
+        NOME_CLIENTE: 110,
         ASSUNTO_CHAMADO: 280,
         EMAIL_CHAMADO: 220,
         NOME_CLASSIFICACAO: 180,
         DTENVIO_CHAMADO: 170,
         NOME_RECURSO: 180,
         STATUS_CHAMADO: 220,
-        CONCLUSAO_CHAMADO: 150,
-        TOTAL_HORAS_OS: 120,
     };
 
     const { columnWidths, handleMouseDown, handleDoubleClick, resizingColumn } =
         useRedimensionarColunas(initialColumnWidths);
 
-    // ✅ MODIFICADO: Query diferente para admin e não-admin
     const {
         data: apiData,
         isLoading,
@@ -190,7 +193,7 @@ export function TabelaChamados() {
         queryFn: () =>
             fetchChamados({
                 isAdmin,
-                codRecurso, // ✅ NOVO
+                codRecurso,
                 ano: isAdmin ? String(ano ?? new Date().getFullYear()) : undefined,
                 mes: isAdmin ? String(mes ?? new Date().getMonth() + 1) : undefined,
                 cliente: isAdmin ? (cliente ?? '') : undefined,
@@ -280,6 +283,49 @@ export function TabelaChamados() {
         refetch();
     }, [refetch]);
 
+    // ✅ NOVO: Handler para mudança de status
+    const handleChangeStatus = useCallback(
+        (codChamado: number, statusAtual: string, novoStatus: string) => {
+            // Se for "EM ATENDIMENTO", atualiza diretamente sem modal
+            if (novoStatus.toUpperCase() === 'EM ATENDIMENTO') {
+                fetch('/api/chamados/mudar-status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        codChamado,
+                        novoStatus,
+                        descricao: '',
+                        hrInicio: '',
+                        hrFim: '',
+                        data: '',
+                    }),
+                })
+                    .then((res) => {
+                        if (res.ok) {
+                            refetch();
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('Erro ao mudar status:', error);
+                    });
+            } else {
+                // Para outros status, abre o modal
+                setStatusChangeData({ codChamado, statusAtual, novoStatus });
+                setIsModalMudarStatusOpen(true);
+            }
+        },
+        [refetch]
+    );
+
+    const handleCloseMudarStatus = useCallback(() => {
+        setIsModalMudarStatusOpen(false);
+        setStatusChangeData(null);
+    }, []);
+
+    const handleSaveMudarStatus = useCallback(() => {
+        refetch();
+    }, [refetch]);
+
     const columns = useMemo(
         () =>
             getColunasChamados(
@@ -287,9 +333,10 @@ export function TabelaChamados() {
                 new Set(),
                 columnWidths,
                 handleOpenSolicitacao,
-                handleOpenAvaliacao
+                handleOpenAvaliacao,
+                handleChangeStatus // ✅ NOVO: Passa o callback de mudança de status
             ),
-        [isAdmin, columnWidths, handleOpenSolicitacao, handleOpenAvaliacao]
+        [isAdmin, columnWidths, handleOpenSolicitacao, handleOpenAvaliacao, handleChangeStatus]
     );
 
     const clearAllFilters = useCallback(() => {
@@ -450,12 +497,24 @@ export function TabelaChamados() {
                 observacaoChamado={selectedChamadoAvaliacao?.OBSAVAL_CHAMADO || null}
                 onSave={handleSaveAvaliacao}
             />
+
+            {/* ✅ NOVO: Modal de mudança de status */}
+            {statusChangeData && (
+                <ModalMudarStatusChamado
+                    isOpen={isModalMudarStatusOpen}
+                    onClose={handleCloseMudarStatus}
+                    onSave={handleSaveMudarStatus}
+                    codChamado={statusChangeData.codChamado}
+                    statusAtual={statusChangeData.statusAtual}
+                    novoStatus={statusChangeData.novoStatus}
+                />
+            )}
         </>
     );
 }
 
 // ============================================================
-// ========== SUB-COMPONENTES =================================
+// ========== SUB-COMPONENTES (mantidos iguais) ==============
 // ============================================================
 
 interface PaginationControlsProps {

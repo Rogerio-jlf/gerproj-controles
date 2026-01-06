@@ -1,7 +1,9 @@
+// src/components/chamados/Colunas_Tabela_Chamados.tsx - ATUALIZADO
 import { ColumnDef } from '@tanstack/react-table';
 import { MdChevronRight, MdInsertDriveFile } from 'react-icons/md';
 import { formatarNumeros, formatarPrioridade } from '../../../formatters/formatar-numeros';
 import { corrigirTextoCorrompido } from '../../../formatters/formatar-texto-corrompido';
+import { DropdownStatus } from './Dropdown_Status';
 
 // ==================== TIPOS ====================
 export type ChamadoRowProps = {
@@ -18,32 +20,11 @@ export type ChamadoRowProps = {
     AVALIA_CHAMADO: number | null;
     OBSAVAL_CHAMADO: string | null;
 
+    NOME_CLIENTE: string | null;
     NOME_RECURSO: string | null;
     NOME_CLASSIFICACAO: string | null;
     TOTAL_HORAS_OS: number;
     TEM_OS?: boolean;
-};
-
-// Função para obter as classes de estilo com base no status
-const getStylesStatus = (status: string | undefined) => {
-    switch (status?.toUpperCase()) {
-        case 'NAO FINALIZADO':
-            return 'bg-red-600 border border-red-800 text-white shadow-sm shadow-black';
-        case 'EM ATENDIMENTO':
-            return 'bg-blue-600 border border-blue-800 text-white shadow-sm shadow-black';
-        case 'FINALIZADO':
-            return 'bg-green-600 border border-green-800 text-white shadow-sm shadow-black';
-        case 'NAO INICIADO':
-            return 'bg-red-500 border border-red-700 text-white shadow-sm shadow-black';
-        case 'STANDBY':
-            return 'bg-orange-500 border border-orange-700 text-white shadow-sm shadow-black';
-        case 'ATRIBUIDO':
-            return 'bg-cyan-500 border border-cyan-700 text-white shadow-sm shadow-black';
-        case 'AGUARDANDO VALIDACAO':
-            return 'bg-yellow-500 border border-yellow-700 text-white shadow-sm shadow-black';
-        default:
-            return 'bg-gray-600 border border-gray-800 text-black shadow-sm shadow-black';
-    }
 };
 
 // ================================================================================
@@ -54,7 +35,8 @@ export const getColunasChamados = (
     expandedRows: Set<number>,
     columnWidths?: Record<string, number>,
     onOpenSolicitacao?: (chamado: ChamadoRowProps) => void,
-    onOpenAvaliacao?: (chamado: ChamadoRowProps) => void
+    onOpenAvaliacao?: (chamado: ChamadoRowProps) => void,
+    onChangeStatus?: (codChamado: number, statusAtual: string, novoStatus: string) => void
 ): ColumnDef<ChamadoRowProps>[] => {
     const allColumns: ColumnDef<ChamadoRowProps>[] = [
         // CÓDIGO DO CHAMADO COM ÍCONE
@@ -108,6 +90,30 @@ export const getColunasChamados = (
                 return (
                     <div className="text-center text-sm font-semibold tracking-widest text-black select-none">
                         {formatarPrioridade(value)}
+                    </div>
+                );
+            },
+            enableColumnFilter: true,
+        },
+
+        // Cliente do Chamado
+        {
+            accessorKey: 'NOME_CLIENTE',
+            id: 'NOME_CLIENTE',
+            header: () => (
+                <div className="text-center text-sm font-bold tracking-widest text-white select-none">
+                    CLIENTE
+                </div>
+            ),
+            cell: ({ getValue }) => {
+                const value = getValue() as string | null;
+                const correctedTextValue = corrigirTextoCorrompido(value);
+                return (
+                    <div
+                        className="flex-1 cursor-help truncate overflow-hidden text-sm font-semibold tracking-widest whitespace-nowrap text-black select-none"
+                        title={correctedTextValue}
+                    >
+                        {correctedTextValue}
                     </div>
                 );
             },
@@ -283,7 +289,7 @@ export const getColunasChamados = (
             enableColumnFilter: true,
         },
 
-        // Status do Chamado
+        // ✅ NOVO: Status do Chamado COM DROPDOWN
         {
             accessorKey: 'STATUS_CHAMADO',
             id: 'STATUS_CHAMADO',
@@ -295,13 +301,28 @@ export const getColunasChamados = (
             cell: ({ getValue, row }) => {
                 const value = getValue() as string;
 
+                // Se não houver callback de mudança de status, renderiza apenas o badge
+                if (!onChangeStatus) {
+                    return (
+                        <div
+                            className={`mx-auto flex w-full items-center justify-center rounded-md border px-3 py-1 text-sm font-bold tracking-widest text-white shadow-sm shadow-black select-none ${getStatusStyles(
+                                value
+                            )}`}
+                        >
+                            {value.toUpperCase()}
+                        </div>
+                    );
+                }
+
+                // Renderiza o dropdown de status
                 return (
-                    <div
-                        className={`mx-auto flex w-full items-center justify-center rounded-md px-3 py-1 text-sm font-bold tracking-widest select-none ${getStylesStatus(
-                            value
-                        )}`}
-                    >
-                        {value.toUpperCase()}
+                    <div onClick={(e) => e.stopPropagation()}>
+                        <DropdownStatus
+                            statusAtual={value}
+                            onChangeStatus={(novoStatus) => {
+                                onChangeStatus(row.original.COD_CHAMADO, value, novoStatus);
+                            }}
+                        />
                     </div>
                 );
             },
@@ -310,4 +331,26 @@ export const getColunasChamados = (
     ];
 
     return allColumns;
+};
+
+// Função auxiliar para obter as classes de estilo com base no status
+const getStatusStyles = (status: string | undefined) => {
+    switch (status?.toUpperCase()) {
+        case 'NAO FINALIZADO':
+            return 'bg-red-600 border-red-800';
+        case 'EM ATENDIMENTO':
+            return 'bg-blue-600 border-blue-800';
+        case 'FINALIZADO':
+            return 'bg-green-600 border-green-800';
+        case 'NAO INICIADO':
+            return 'bg-red-500 border-red-700';
+        case 'STANDBY':
+            return 'bg-orange-500 border-orange-700';
+        case 'ATRIBUIDO':
+            return 'bg-cyan-500 border-cyan-700';
+        case 'AGUARDANDO VALIDACAO':
+            return 'bg-yellow-500 border-yellow-700';
+        default:
+            return 'bg-gray-600 border-gray-800';
+    }
 };
